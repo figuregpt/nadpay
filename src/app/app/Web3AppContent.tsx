@@ -387,7 +387,7 @@ export default function Web3AppContent() {
                   href="/app/dashboard" 
                   className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all transform hover:scale-105 text-sm font-bold font-inter shadow-lg hover:shadow-xl"
                 >
-                  <span className="mr-2">📊</span>
+                  <Link2 className="w-4 h-4 mr-2" />
                   Dashboard
                 </a>
               </div>
