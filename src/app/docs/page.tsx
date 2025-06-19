@@ -11,7 +11,7 @@ import {
   Shield, 
   Zap,
   Copy,
-  ExternalLink,
+
   ChevronRight,
   ChevronDown,
   FileText,

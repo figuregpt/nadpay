@@ -19,7 +19,24 @@ import { useAccount } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { useCreatorPaymentLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
 
-// PaymentLinkData interface removed - using contract types instead
+interface PaymentLinkData {
+  linkId: string;
+  _id: string;
+  creator: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  price: string;
+  totalSales: bigint;
+  maxPerWallet: bigint;
+  salesCount: bigint;
+  totalEarned: string;
+  isActive: boolean;
+  createdAt: string;
+  creatorAddress: string;
+  purchases: unknown[];
+  uniqueBuyersCount?: number;
+}
 
 export default function DashboardContent() {
   const { address, isConnected } = useAccount();
@@ -47,22 +64,22 @@ export default function DashboardContent() {
   } = useDeactivatePaymentLink();
 
     // Convert contract data to display format and sort by newest first
-  const paymentLinks = creatorLinksData ? creatorLinksData
-    .map((link: any) => {
+  const paymentLinks: PaymentLinkData[] = creatorLinksData ? creatorLinksData
+    .map((link: unknown) => {
       try {
         const formatted = formatPaymentLink(link);
         console.log('Raw link data:', link);
         console.log('Formatted link data:', formatted);
-        console.log('uniqueBuyersCount from link:', link.uniqueBuyersCount);
+        console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
         
         return {
           ...formatted,
-          linkId: link.linkId.toString(), // Use actual linkId from contract
-          _id: link.linkId.toString(),
+          linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
+          _id: (link as { linkId: { toString(): string } }).linkId.toString(),
           creatorAddress: formatted.creator,
           price: formatPrice(formatted.price),
           totalEarned: formatPrice(formatted.totalEarned),
-          uniqueBuyersCount: link.uniqueBuyersCount || 0, // Add this explicitly
+          uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
           purchases: [], // Will be fetched separately if needed
           createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
         };
@@ -88,7 +105,7 @@ export default function DashboardContent() {
       };
     }
   })
-    .sort((a: any, b: any) => {
+    .sort((a: PaymentLinkData, b: PaymentLinkData) => {
       // Sort by linkId descending (newest first)
       return parseInt(b.linkId) - parseInt(a.linkId);
     }) : [];
@@ -132,7 +149,7 @@ export default function DashboardContent() {
     const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
     
     // CSV data
-    const csvData = filteredPaymentLinks.map((link: any) => [
+    const csvData = filteredPaymentLinks.map((link: PaymentLinkData) => [
       link.creatorAddress || address || '',
       `${link.salesCount}/${link.totalSales > 0 ? link.totalSales : '∞'}`,
       `${link.price} MON`,
@@ -162,7 +179,7 @@ export default function DashboardContent() {
     document.body.removeChild(link);
   };
 
-  const exportSingleLinkToCSV = (link: any) => {
+  const exportSingleLinkToCSV = (link: PaymentLinkData) => {
     // CSV headers
     const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
     
@@ -201,7 +218,7 @@ export default function DashboardContent() {
   };
 
   // Filter payment links based on search query
-  const filteredPaymentLinks = paymentLinks.filter((link: any) => {
+  const filteredPaymentLinks = paymentLinks.filter((link: PaymentLinkData) => {
     if (!searchQuery.trim()) return true;
     
     const query = searchQuery.toLowerCase();
@@ -214,16 +231,16 @@ export default function DashboardContent() {
   });
 
   const getTotalStats = () => {
-    const totalEarned = paymentLinks.reduce((sum: number, link: any) => {
+    const totalEarned = paymentLinks.reduce((sum: number, link: PaymentLinkData) => {
       const earned = typeof link.totalEarned === 'string' ? parseFloat(link.totalEarned) : 0;
       return sum + (isNaN(earned) ? 0 : earned);
     }, 0);
-    const totalSales = paymentLinks.reduce((sum: number, link: any) => {
+    const totalSales = paymentLinks.reduce((sum: number, link: PaymentLinkData) => {
       const sales = typeof link.salesCount === 'bigint' ? Number(link.salesCount) : 
                    typeof link.salesCount === 'number' ? link.salesCount : 0;
       return sum + sales;
     }, 0);
-    const totalBuyers = paymentLinks.reduce((sum: number, link: any) => {
+    const totalBuyers = paymentLinks.reduce((sum: number, link: PaymentLinkData) => {
       return sum + (link.uniqueBuyersCount || 0);
     }, 0);
 
@@ -397,7 +414,7 @@ export default function DashboardContent() {
               <div className="ml-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Links</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {paymentLinks.filter((link: any) => link.isActive).length}
+                  {paymentLinks.filter((link: PaymentLinkData) => link.isActive).length}
                 </p>
               </div>
             </div>
@@ -479,7 +496,7 @@ export default function DashboardContent() {
                 No links found
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                No payment links match your search "{searchQuery}"
+                No payment links match your search &quot;{searchQuery}&quot;
               </p>
               <button
                 onClick={() => setSearchQuery("")}
@@ -490,7 +507,7 @@ export default function DashboardContent() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredPaymentLinks.map((link: any, index: number) => (
+              {filteredPaymentLinks.map((link: PaymentLinkData, index: number) => (
                 <motion.div
                   key={link._id}
                   initial={{ opacity: 0, x: -20 }}
@@ -534,7 +551,6 @@ export default function DashboardContent() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">Buyers</p>
                           <p className="font-medium text-gray-900 dark:text-white">
                             {link.uniqueBuyersCount || 0}
-                            {console.log('UI link data:', link, 'uniqueBuyersCount:', link.uniqueBuyersCount)}
                           </p>
                         </div>
                         <div>
@@ -550,51 +566,49 @@ export default function DashboardContent() {
                           </p>
                         </div>
                       </div>
-
-                      {/* Recent Purchases - Will be implemented later */}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="ml-6 flex flex-col space-y-2">
-                      <button
-                        onClick={() => copyLink(link.linkId)}
-                        className="inline-flex items-center px-3 py-2 text-sm bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        <Copy className="w-4 h-4 mr-1" />
-                        Copy Link
-                      </button>
-                      <a
-                        href={`/pay/${address ? createSecureLinkId(parseInt(link.linkId), address) : link.linkId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-2 text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        View
-                      </a>
-                      <button
-                        onClick={() => exportSingleLinkToCSV(link)}
-                        className="inline-flex items-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
-                      >
-                        <Download className="w-4 h-4 mr-1" />
-                        Export CSV
-                      </button>
-                      {link.isActive && (
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center space-x-3">
                         <button
-                          onClick={() => deactivateLink(link.linkId)}
-                          className="inline-flex items-center px-3 py-2 text-sm bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                          onClick={() => copyLink(link.linkId)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
                         >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Deactivate
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy Link
                         </button>
-                      )}
+                        <a
+                          href={`/pay/${createSecureLinkId(parseInt(link.linkId), address || '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View
+                        </a>
+                        <button
+                          onClick={() => exportSingleLinkToCSV(link)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Export
+                        </button>
+                        {link.isActive && (
+                          <button
+                            onClick={() => deactivateLink(link.linkId)}
+                            className="inline-flex items-center px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
           )}
-                </motion.div>
+        </motion.div>
       </div>
     </div>
   );
