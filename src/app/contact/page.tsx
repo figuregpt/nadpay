@@ -27,10 +27,10 @@ export default function Contact() {
                     </h3>
                     <p className="text-gray-300 mb-2">For general questions and platform support</p>
                     <a 
-                      href="mailto:support@nadpay.com" 
+                      href="mailto:support@nadpay.xyz" 
                       className="text-[#836EF9] hover:text-[#A855F7] transition-colors"
                     >
-                      support@nadpay.com
+                      support@nadpay.xyz
                     </a>
                   </div>
 
@@ -41,10 +41,10 @@ export default function Contact() {
                     </h3>
                     <p className="text-gray-300 mb-2">Privacy concerns and legal inquiries</p>
                     <a 
-                      href="mailto:legal@nadpay.com" 
+                      href="mailto:legal@nadpay.xyz" 
                       className="text-[#836EF9] hover:text-[#A855F7] transition-colors"
                     >
-                      legal@nadpay.com
+                      legal@nadpay.xyz
                     </a>
                   </div>
 
@@ -55,10 +55,10 @@ export default function Contact() {
                     </h3>
                     <p className="text-gray-300 mb-2">Report security vulnerabilities</p>
                     <a 
-                      href="mailto:security@nadpay.com" 
+                      href="mailto:security@nadpay.xyz" 
                       className="text-[#836EF9] hover:text-[#A855F7] transition-colors"
                     >
-                      security@nadpay.com
+                      security@nadpay.xyz
                     </a>
                   </div>
 
@@ -69,10 +69,10 @@ export default function Contact() {
                     </h3>
                     <p className="text-gray-300 mb-2">Integration and partnership opportunities</p>
                     <a 
-                      href="mailto:partnerships@nadpay.com" 
+                      href="mailto:partnerships@nadpay.xyz" 
                       className="text-[#836EF9] hover:text-[#A855F7] transition-colors"
                     >
-                      partnerships@nadpay.com
+                      partnerships@nadpay.xyz
                     </a>
                   </div>
                 </div>

@@ -164,7 +164,7 @@ export default function PrivacyPolicy() {
                 If you have questions about this Privacy Policy or our data practices, please contact us at:
               </p>
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
-                <p><strong>Email:</strong> privacy@nadpay.com</p>
+                <p><strong>Email:</strong> privacy@nadpay.xyz</p>
                 <p><strong>Platform:</strong> NadPay Decentralized Payment Platform</p>
                 <p><strong>Blockchain:</strong> Monad Testnet</p>
               </div>

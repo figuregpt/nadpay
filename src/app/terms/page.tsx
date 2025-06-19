@@ -276,7 +276,7 @@ export default function TermsOfService() {
                 For questions about these Terms of Service, please contact us at:
               </p>
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
-                <p><strong>Email:</strong> legal@nadpay.com</p>
+                <p><strong>Email:</strong> legal@nadpay.xyz</p>
                 <p><strong>Platform:</strong> NadPay Decentralized Payment Platform</p>
                 <p><strong>Blockchain:</strong> Monad Testnet</p>
               </div>
