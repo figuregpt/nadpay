@@ -1,102 +1,186 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+
+import { Moon, Sun, ArrowRight, Link2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
+
+export default function HomePage() {
+  const { theme, setTheme } = useTheme();
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-white dark:bg-dark-950">
+      {/* Header */}
+      <header className="border-b border-gray-200 dark:border-dark-800">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+              <Link2 className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">NadPay</span>
+          </div>
+          
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
+            <a
+              href="/app"
+              className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+            >
+              Launch App
+            </a>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-display-xl md:text-display-2xl font-inter text-gray-900 dark:text-white mb-6">
+              Payment Solutions
+              <br />
+              <span className="bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
+                on Monad
+              </span>
+            </h1>
+            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+              Create payment links, subscriptions, and more on the fastest EVM-compatible blockchain. 
+              Simple, secure, and lightning-fast transactions.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="/app"
+                className="px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
+              >
+                Launch App
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </a>
+              <a
+                href="/docs"
+                className="px-8 py-4 border border-gray-200 dark:border-dark-700 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors text-body-lg font-inter font-semibold flex items-center justify-center"
+              >
+                Documentation
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-display-lg font-inter text-gray-900 dark:text-white mb-4">
+              How it Works
+            </h2>
+            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Create and share payment links in just a few simple steps
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">1</span>
+              </div>
+              <h3 className="text-heading-xl font-inter text-gray-900 dark:text-white mb-4">Connect Wallet</h3>
+              <p className="text-body-md font-inter text-gray-600 dark:text-gray-300">
+                Connect your wallet to Monad Testnet and start creating payment links instantly.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">2</span>
+              </div>
+              <h3 className="text-heading-xl font-inter text-gray-900 dark:text-white mb-4">Create Link</h3>
+              <p className="text-body-md font-inter text-gray-600 dark:text-gray-300">
+                Fill in your payment details, set limits, and generate your unique payment link.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">3</span>
+              </div>
+              <h3 className="text-heading-xl font-inter text-gray-900 dark:text-white mb-4">Share & Earn</h3>
+              <p className="text-body-md font-inter text-gray-600 dark:text-gray-300">
+                Share your link anywhere and start receiving payments directly to your wallet.
+              </p>
+            </motion.div>
+          </div>
+
+
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 dark:border-dark-800 py-12 px-4">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                <Link2 className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">NadPay</span>
+            </div>
+            <div className="flex space-x-6">
+              <a href="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Terms of Service
+              </a>
+              <a href="/contact" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Contact
+              </a>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 dark:border-dark-800 mt-8 pt-8 text-center">
+            <p className="text-gray-600 dark:text-gray-300">
+              © 2024 NadPay. Built for the Monad ecosystem.
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   );
