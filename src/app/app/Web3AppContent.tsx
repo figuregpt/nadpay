@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, Link2, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
+import { useCreatePaymentLink } from "@/hooks/useNadPayContract";
 import { LogOut } from "lucide-react";
 
 export default function Web3AppContent() {
@@ -32,6 +33,16 @@ export default function Web3AppContent() {
   
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // Contract hooks
+  const { 
+    createPaymentLink, 
+    isPending: isCreating, 
+    isConfirming, 
+    isConfirmed, 
+    error: contractError,
+    hash 
+  } = useCreatePaymentLink();
 
   const handleSwitchToMonad = () => {
     if (switchChain) {
@@ -120,35 +131,30 @@ export default function Web3AppContent() {
     }
     
     try {
-      const response = await fetch('/api/payment-links', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          creatorAddress: address,
-          title: formData.title,
-          description: formData.description,
-          coverImage: formData.coverImage,
-          price: formData.price,
-          totalSales: formData.totalSales,
-          maxPerWallet: formData.maxPerWallet,
-        }),
+      await createPaymentLink({
+        title: formData.title,
+        description: formData.description,
+        coverImage: formData.coverImage || '',
+        price: formData.price,
+        totalSales: parseInt(formData.totalSales) || 0,
+        maxPerWallet: parseInt(formData.maxPerWallet) || 0,
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const paymentLink = `${window.location.origin}/pay/${data.linkId}`;
-        setGeneratedLink(paymentLink);
-      } else {
-        alert(data.error || 'Failed to create payment link');
-      }
     } catch (error) {
       console.error('Error creating payment link:', error);
       alert('Failed to create payment link. Please try again.');
     }
   };
+
+  // Handle successful contract interaction
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      // Get the link ID from transaction events (we'll need to implement this)
+      // For now, we'll use a placeholder
+      const linkId = Date.now(); // Temporary - should get from contract events
+      const paymentLink = `${window.location.origin}/pay/${linkId}`;
+      setGeneratedLink(paymentLink);
+    }
+  }, [isConfirmed, hash]);
 
   // Reconnection loading state - sadece kısa süre göster
   if ((status === 'connecting' || (status === 'disconnected' && !hasAttemptedReconnect)) && hasAttemptedReconnect === false) {
@@ -484,10 +490,31 @@ export default function Web3AppContent() {
               {/* Create Button */}
               <button
                 onClick={handleCreatePaymentLink}
-                className="w-full px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold text-lg"
+                disabled={isCreating || isConfirming}
+                className="w-full px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Payment Link
+                {isCreating ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Creating...</span>
+                  </div>
+                ) : isConfirming ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Confirming...</span>
+                  </div>
+                ) : (
+                  'Create Payment Link'
+                )}
               </button>
+              
+              {contractError && (
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-red-600 dark:text-red-400 text-sm">
+                    Error: {contractError.message}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Wallet, 
@@ -15,59 +15,41 @@ import {
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectKitButton } from "connectkit";
+import { useCreatorLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
 
-interface PaymentLinkData {
-  _id: string;
-  linkId: string;
-  creatorAddress: string;
-  title: string;
-  description: string;
-  coverImage: string;
-  price: string;
-  totalSales: number;
-  maxPerWallet: number;
-  salesCount: number;
-  totalEarned: string;
-  isActive: boolean;
-  purchases: Array<{
-    buyerAddress: string;
-    amount: number;
-    txHash: string;
-    timestamp: string;
-  }>;
-  createdAt: string;
-}
+// PaymentLinkData interface removed - using contract types instead
 
 export default function DashboardContent() {
   const { address, isConnected } = useAccount();
-  const [paymentLinks, setPaymentLinks] = useState<PaymentLinkData[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Contract hooks
+  const { data: creatorLinksData, isLoading: loadingLinks, refetch } = useCreatorLinks(address);
+  const { 
+    deactivatePaymentLink, 
+    isConfirmed: deactivationConfirmed 
+  } = useDeactivatePaymentLink();
 
-  const fetchPaymentLinks = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/payment-links?creator=${address}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setPaymentLinks(data.paymentLinks);
-      } else {
-        console.error(data.error || 'Failed to fetch payment links');
-      }
-    } catch {
-      console.error('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Convert contract data to display format
+  const paymentLinks = creatorLinksData ? creatorLinksData.map((link: unknown, index: number) => {
+    const formatted = formatPaymentLink(link);
+    return {
+      ...formatted,
+      linkId: index.toString(), // Use index as linkId for now
+      _id: index.toString(),
+      creatorAddress: formatted.creator,
+      price: formatPrice(formatted.price),
+      totalEarned: formatPrice(formatted.totalEarned),
+      purchases: [], // Will be fetched separately if needed
+      createdAt: new Date(Number(formatted.createdAt) * 1000).toISOString(),
+    };
+  }) : [];
 
+  // Refetch when deactivation is confirmed
   useEffect(() => {
-    if (isConnected && address) {
-      fetchPaymentLinks();
-    } else {
-      setLoading(false);
+    if (deactivationConfirmed) {
+      refetch();
     }
-  }, [isConnected, address]);
+  }, [deactivationConfirmed, refetch]);
 
   const copyLink = (linkId: string) => {
     const fullLink = `${window.location.origin}/pay/${linkId}`;
@@ -82,25 +64,7 @@ export default function DashboardContent() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/payment-links/${linkId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isActive: false,
-          creatorAddress: address,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert('Payment link deactivated successfully');
-        fetchPaymentLinks(); // Refresh the list
-      } else {
-        alert(data.error || 'Failed to deactivate payment link');
-      }
+      await deactivatePaymentLink(parseInt(linkId));
     } catch (error) {
       console.error('Error deactivating payment link:', error);
       alert('Failed to deactivate payment link');
@@ -109,10 +73,8 @@ export default function DashboardContent() {
 
   const getTotalStats = () => {
     const totalEarned = paymentLinks.reduce((sum, link) => sum + parseFloat(link.totalEarned), 0);
-    const totalSales = paymentLinks.reduce((sum, link) => sum + link.salesCount, 0);
-    const totalBuyers = new Set(
-      paymentLinks.flatMap(link => link.purchases.map(p => p.buyerAddress))
-    ).size;
+    const totalSales = paymentLinks.reduce((sum, link) => sum + Number(link.salesCount), 0);
+    const totalBuyers = 0; // Will be calculated when we implement purchase tracking
 
     return { totalEarned, totalSales, totalBuyers };
   };
@@ -154,7 +116,7 @@ export default function DashboardContent() {
     );
   }
 
-  if (loading) {
+  if (loadingLinks) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
         <div className="text-center">
@@ -351,7 +313,7 @@ export default function DashboardContent() {
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Buyers</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {new Set(link.purchases.map(p => p.buyerAddress)).size}
+                            0
                           </p>
                         </div>
                         <div>
@@ -368,25 +330,7 @@ export default function DashboardContent() {
                         </div>
                       </div>
 
-                      {/* Recent Purchases */}
-                      {link.purchases.length > 0 && (
-                        <div className="mt-4">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                            Recent Buyers
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {link.purchases.slice(-3).map((purchase, idx) => (
-                              <div 
-                                key={idx}
-                                className="text-xs bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded"
-                              >
-                                {purchase.buyerAddress.slice(0, 6)}...{purchase.buyerAddress.slice(-4)} 
-                                ({purchase.amount} items)
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {/* Recent Purchases - Will be implemented later */}
                     </div>
 
                     {/* Actions */}
