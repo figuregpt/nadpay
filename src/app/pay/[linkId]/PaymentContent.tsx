@@ -184,12 +184,6 @@ export default function PaymentContent() {
             </div>
             <div className="flex items-center space-x-4">
               <a 
-                href="/docs"
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
-              >
-                Docs
-              </a>
-              <a 
                 href="/app"
                 className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
               >

@@ -384,15 +384,10 @@ export default function Web3AppContent() {
             </p>
               <div className="flex items-center space-x-2">
                 <a 
-                  href="/docs" 
-                  className="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-xs font-medium font-inter"
-                >
-                  Docs
-                </a>
-                <a 
                   href="/app/dashboard" 
-                  className="inline-flex items-center px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-xs font-medium font-inter"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all transform hover:scale-105 text-sm font-bold font-inter shadow-lg hover:shadow-xl"
                 >
+                  <span className="mr-2">📊</span>
                   Dashboard
                 </a>
               </div>
