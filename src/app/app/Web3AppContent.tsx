@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Wallet, Link2 } from "lucide-react";
+import { Wallet, Link2, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
@@ -31,6 +32,7 @@ export default function Web3AppContent() {
   });
   
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleSwitchToMonad = () => {
     if (switchChain) {
@@ -43,6 +45,67 @@ export default function Web3AppContent() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // File size check (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // File type check
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const base64 = await convertToBase64(file);
+      
+      const response = await fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Client-ID 546c25a59c58ad7', // Public Imgur client ID
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64.split(',')[1], // Remove data:image/...;base64, prefix
+          type: 'base64',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data.link) {
+        handleInputChange('coverImage', data.data.link);
+      } else {
+        alert('Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const removeImage = () => {
+    handleInputChange('coverImage', '');
   };
 
   const handleCreatePaymentLink = async () => {
@@ -314,18 +377,63 @@ export default function Web3AppContent() {
                 />
               </div>
 
-              {/* Cover Image */}
+              {/* Cover Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Cover Image URL
+                  Cover Image
                 </label>
-                <input
-                  type="url"
-                  value={formData.coverImage}
-                  onChange={(e) => handleInputChange('coverImage', e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
-                />
+                
+                {!formData.coverImage ? (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                      disabled={uploadingImage}
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className={`w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors ${
+                        uploadingImage ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Uploading...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-gray-400 mb-3" />
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                            Click to upload cover image
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG, GIF up to 5MB
+                          </p>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Image
+                      src={formData.coverImage}
+                      alt="Cover preview"
+                      width={600}
+                      height={192}
+                      className="w-full h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                    />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
