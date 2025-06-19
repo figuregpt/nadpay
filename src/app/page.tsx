@@ -23,6 +23,12 @@ export default function HomePage() {
 
 
           <div className="flex items-center space-x-4">
+            <a
+              href="/docs"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
+            >
+              Docs
+            </a>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
@@ -164,6 +170,9 @@ export default function HomePage() {
               <span className="text-xl font-bold text-gray-900 dark:text-white">NadPay</span>
             </div>
             <div className="flex space-x-6">
+              <a href="/docs" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Documentation
+              </a>
               <a href="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Privacy Policy
               </a>

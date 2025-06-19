@@ -67,12 +67,14 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
             hideBalance: false,
             hideTooltips: false,
             hideQuestionMarkCTA: false,
-            hideNoWalletCTA: false,
-            hideRecentBadge: false,
+            hideNoWalletCTA: true, // Hide "I don't have a wallet"
+            hideRecentBadge: true, // Hide "Recent" badge
             walletConnectCTA: "link",
             enforceSupportedChains: false,
             embedGoogleFonts: true,
             initialChainId: 10143,
+            avoidLayoutShift: true,
+            bufferPolyfill: false,
           }}
           customTheme={{
             "--ck-brand-color": "#836EF9",

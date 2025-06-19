@@ -37,12 +37,27 @@ export default function Web3AppContent() {
   // Contract hooks
   const { 
     createPaymentLink, 
+    getLinkIdFromTransaction,
     isPending: isCreating, 
     isConfirming, 
     isConfirmed, 
     error: contractError,
     hash 
   } = useCreatePaymentLink();
+
+  // Create secure link ID using transaction hash as seed
+  const createSecureLinkId = (internalId: number, txHash: string): string => {
+    // Use transaction hash as timestamp to ensure consistency
+    const hashSeed = parseInt(txHash.slice(-8), 16); // Last 8 chars of tx hash as number
+    const combined = `${internalId}_${hashSeed}_nadpay`;
+    let hash = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const char = combined.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `${hashSeed}_${Math.abs(hash).toString(16).slice(0, 8)}`;
+  };
 
   const handleSwitchToMonad = () => {
     if (switchChain) {
@@ -61,13 +76,13 @@ export default function Web3AppContent() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // File size check (max 5MB)
+    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
     }
 
-    // File type check
+    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
@@ -76,33 +91,67 @@ export default function Web3AppContent() {
     setUploadingImage(true);
 
     try {
-      const base64 = await convertToBase64(file);
-      
-      const response = await fetch('https://api.imgur.com/3/image', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Client-ID 546c25a59c58ad7', // Public Imgur client ID
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: base64.split(',')[1], // Remove data:image/...;base64, prefix
-          type: 'base64',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.data.link) {
-        handleInputChange('coverImage', data.data.link);
-      } else {
-        alert('Failed to upload image');
-      }
+      // Compress image to reduce gas costs
+      const compressedFile = await compressImage(file);
+      const base64 = await convertToBase64(compressedFile);
+      handleInputChange('coverImage', base64);
     } catch (error) {
       console.error('Image upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      alert('Failed to process image. Please try again.');
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions (max 800x600 to keep gas costs reasonable)
+        const maxWidth = 800;
+        const maxHeight = 600;
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file); // Fallback to original
+            }
+          },
+          'image/jpeg',
+          0.8 // 80% quality
+        );
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
   };
 
   const convertToBase64 = (file: File): Promise<string> => {
@@ -147,14 +196,36 @@ export default function Web3AppContent() {
 
   // Handle successful contract interaction
   useEffect(() => {
-    if (isConfirmed && hash) {
-      // Get the link ID from transaction events (we'll need to implement this)
-      // For now, we'll use a placeholder
-      const linkId = Date.now(); // Temporary - should get from contract events
-      const paymentLink = `${window.location.origin}/pay/${linkId}`;
-      setGeneratedLink(paymentLink);
-    }
-  }, [isConfirmed, hash]);
+    const handleTransactionSuccess = async () => {
+      if (isConfirmed && hash) {
+        try {
+          // Try to get the real link ID from transaction events
+          const linkId = await getLinkIdFromTransaction(hash);
+          
+          if (linkId !== null) {
+            // Create secure public ID instead of using raw link ID
+            const secureId = createSecureLinkId(linkId, hash);
+            const paymentLink = `${window.location.origin}/pay/${secureId}`;
+            setGeneratedLink(paymentLink);
+          } else {
+            // Fallback: use timestamp (this should not happen in normal cases)
+            console.warn('Could not extract link ID from transaction, using fallback');
+            const fallbackId = Date.now();
+            const paymentLink = `${window.location.origin}/pay/${fallbackId}`;
+            setGeneratedLink(paymentLink);
+          }
+        } catch (error) {
+          console.error('Error processing transaction:', error);
+          // Fallback
+          const fallbackId = Date.now();
+          const paymentLink = `${window.location.origin}/pay/${fallbackId}`;
+          setGeneratedLink(paymentLink);
+        }
+      }
+    };
+
+    handleTransactionSuccess();
+  }, [isConfirmed, hash, getLinkIdFromTransaction]);
 
   // Reconnection loading state - sadece kısa süre göster
   if ((status === 'connecting' || (status === 'disconnected' && !hasAttemptedReconnect)) && hasAttemptedReconnect === false) {
@@ -301,22 +372,30 @@ export default function Web3AppContent() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-right">
+          <div className="text-right">
               <p className="text-sm font-medium text-primary-800 dark:text-primary-200 font-inter">
-                {chain?.name || 'Monad Testnet'}
-              </p>
+              {chain?.name || 'Monad Testnet'}
+            </p>
               <p className="text-xs text-primary-600 dark:text-primary-300 font-inter">
                 Chain ID: {chain?.id || '10143'}
               </p>
               <p className="text-xs text-primary-600 dark:text-primary-300 font-semibold font-inter mb-2">
                 Balance: {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 MON'}
-              </p>
-              <a 
-                href="/app/dashboard" 
-                className="inline-flex items-center px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-xs font-medium font-inter"
-              >
-                View Dashboard
-              </a>
+            </p>
+              <div className="flex items-center space-x-2">
+                <a 
+                  href="/docs" 
+                  className="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-xs font-medium font-inter"
+                >
+                  Docs
+                </a>
+                <a 
+                  href="/app/dashboard" 
+                  className="inline-flex items-center px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-xs font-medium font-inter"
+                >
+                  Dashboard
+                </a>
+              </div>
             </div>
             <button
               onClick={persistentDisconnect}
@@ -334,22 +413,22 @@ export default function Web3AppContent() {
 
       {/* Payment Link Creation Form */}
       {!generatedLink ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
-        >
+      >
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8">
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Link2 className="w-8 h-8 text-white" />
+                <span className="text-white font-bold text-xl">N</span>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Create Payment Link
               </h2>
               <p className="text-gray-600 dark:text-gray-300">
-                Fill in the details to create your payment link
+                Fill in the details to create your NadPay link on Monad
               </p>
             </div>
 
@@ -416,7 +495,7 @@ export default function Web3AppContent() {
                             Click to upload cover image
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            PNG, JPG, GIF up to 5MB
+                            PNG, JPG, GIF up to 5MB (auto-compressed to reduce gas costs)
                           </p>
                         </>
                       )}
@@ -434,8 +513,8 @@ export default function Web3AppContent() {
                       className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                     >
                       <X className="w-4 h-4" />
-                    </button>
-                  </div>
+          </button>
+        </div>
                 )}
               </div>
 
@@ -485,7 +564,7 @@ export default function Web3AppContent() {
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
                 </div>
-              </div>
+        </div>
 
               {/* Create Button */}
               <button
@@ -552,8 +631,8 @@ export default function Web3AppContent() {
                 >
                   Copy
                 </button>
-              </div>
-            </div>
+        </div>
+      </div>
 
             <button
               onClick={() => {
@@ -571,7 +650,7 @@ export default function Web3AppContent() {
             >
               Create Another Link
             </button>
-          </div>
+    </div>
         </motion.div>
       )}
     </div>

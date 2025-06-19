@@ -2,7 +2,7 @@
 // Do not edit manually - run 'npm run generate-abi' to regenerate
 
 export const NADPAY_CONTRACT = {
-  "address": "0x7d3B3A31D84Aa66CFDa807137556a0f27097770d",
+  "address": "0x7B9aAd7f00D51AdC57Ff82952F2fAfE0E6F3b7A4",
   "abi": [
     {
       "inputs": [],

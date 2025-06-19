@@ -2,20 +2,6 @@ import { http, createConfig } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { createStorage, noopStorage } from "wagmi";
 
-// TypeScript declarations for wallet providers
-declare global {
-  interface Window {
-    okxwallet?: {
-      isOkxWallet?: boolean;
-      request?: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-    };
-    haha?: {
-      isHahaWallet?: boolean;
-      request?: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-    };
-  }
-}
-
 // Monad testnet konfigürasyonu (EVM-compatible) - Güncellenmiş parametreler
 export const monadTestnet = {
   id: 10143, // Doğru Chain ID (Resmi Monad Docs'a göre)
@@ -40,21 +26,42 @@ export const config = createConfig({
   // Sadece Monad testnet - daha odaklı deneyim
   chains: [monadTestnet],
   ssr: true,
-  multiInjectedProviderDiscovery: false,
   storage: createStorage({
     storage: typeof window !== 'undefined' ? localStorage : noopStorage,
     key: 'nadpay-wagmi', // Custom key for our app
   }),
   connectors: [
-    // Injected wallets için - Phantom, MetaMask destekli
+    // MetaMask - en popüler
     injected({
       target: "metaMask",
     }),
+    // Phantom Wallet - sadece Ethereum provider'ı
     injected({
-      target: "phantom", 
+      target: () => {
+        if (typeof window === 'undefined') return undefined;
+        const phantom = (window as any).phantom?.ethereum;
+        if (!phantom || !phantom.isPhantom) return undefined;
+        return phantom;
+      },
     }),
-    // Generic injected connector for other wallets (OKX, HaHa, etc.)
-    injected(),
+    // OKX Wallet - popüler exchange wallet
+    injected({
+      target: () => {
+        if (typeof window === 'undefined') return undefined;
+        const okx = (window as any).okxwallet;
+        if (!okx || !okx.isOkxWallet) return undefined;
+        return okx;
+      },
+    }),
+    // HaHa Wallet - Monad ekosistemi
+    injected({
+      target: () => {
+        if (typeof window === 'undefined') return undefined;
+        const haha = (window as any).haha;
+        if (!haha || !haha.isHahaWallet) return undefined;
+        return haha;
+      },
+    }),
   ],
   transports: {
     [monadTestnet.id]: http(),

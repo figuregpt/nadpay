@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Wallet, 
@@ -11,38 +11,87 @@ import {
   Copy,
   ExternalLink,
   DollarSign,
-  XCircle
+  XCircle,
+  Search,
+  Download
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectKitButton } from "connectkit";
-import { useCreatorLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
+import { useCreatorPaymentLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
 
 // PaymentLinkData interface removed - using contract types instead
 
 export default function DashboardContent() {
   const { address, isConnected } = useAccount();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Create secure link ID using internal ID + creator address as seed
+  const createSecureLinkId = (internalId: number, creatorAddress: string): string => {
+    // Use creator address as seed to ensure consistency
+    const addressSeed = parseInt(creatorAddress.slice(-8), 16); // Last 8 chars of address as number
+    const combined = `${internalId}_${addressSeed}_nadpay`;
+    let hash = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const char = combined.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `${addressSeed}_${Math.abs(hash).toString(16).slice(0, 8)}`;
+  };
   
   // Contract hooks
-  const { data: creatorLinksData, isLoading: loadingLinks, refetch } = useCreatorLinks(address);
+  const { data: creatorLinksData, isLoading: loadingLinks, refetch } = useCreatorPaymentLinks(address);
   const { 
     deactivatePaymentLink, 
     isConfirmed: deactivationConfirmed 
   } = useDeactivatePaymentLink();
 
-  // Convert contract data to display format
-  const paymentLinks = creatorLinksData ? creatorLinksData.map((link: unknown, index: number) => {
-    const formatted = formatPaymentLink(link);
-    return {
-      ...formatted,
-      linkId: index.toString(), // Use index as linkId for now
-      _id: index.toString(),
-      creatorAddress: formatted.creator,
-      price: formatPrice(formatted.price),
-      totalEarned: formatPrice(formatted.totalEarned),
-      purchases: [], // Will be fetched separately if needed
-      createdAt: new Date(Number(formatted.createdAt) * 1000).toISOString(),
-    };
-  }) : [];
+    // Convert contract data to display format and sort by newest first
+  const paymentLinks = creatorLinksData ? creatorLinksData
+    .map((link: any) => {
+      try {
+        const formatted = formatPaymentLink(link);
+        console.log('Raw link data:', link);
+        console.log('Formatted link data:', formatted);
+        console.log('uniqueBuyersCount from link:', link.uniqueBuyersCount);
+        
+        return {
+          ...formatted,
+          linkId: link.linkId.toString(), // Use actual linkId from contract
+          _id: link.linkId.toString(),
+          creatorAddress: formatted.creator,
+          price: formatPrice(formatted.price),
+          totalEarned: formatPrice(formatted.totalEarned),
+          uniqueBuyersCount: link.uniqueBuyersCount || 0, // Add this explicitly
+          purchases: [], // Will be fetched separately if needed
+          createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
+        };
+    } catch (error) {
+      console.error('Error formatting payment link:', error, link);
+      // Return a default object to prevent crashes
+      return {
+        linkId: '0',
+        _id: '0',
+        creator: '',
+        title: 'Error Loading Link',
+        description: 'This link could not be loaded',
+        coverImage: '',
+        price: '0',
+        totalSales: BigInt(0),
+        maxPerWallet: BigInt(0),
+        salesCount: BigInt(0),
+        totalEarned: '0',
+        isActive: false,
+        createdAt: new Date().toISOString(),
+        creatorAddress: '',
+        purchases: [],
+      };
+    }
+  })
+    .sort((a: any, b: any) => {
+      // Sort by linkId descending (newest first)
+      return parseInt(b.linkId) - parseInt(a.linkId);
+    }) : [];
 
   // Refetch when deactivation is confirmed
   useEffect(() => {
@@ -52,7 +101,9 @@ export default function DashboardContent() {
   }, [deactivationConfirmed, refetch]);
 
   const copyLink = (linkId: string) => {
-    const fullLink = `${window.location.origin}/pay/${linkId}`;
+    if (!address) return;
+    const secureId = createSecureLinkId(parseInt(linkId), address);
+    const fullLink = `${window.location.origin}/pay/${secureId}`;
     navigator.clipboard.writeText(fullLink);
     alert('Payment link copied to clipboard!');
   };
@@ -71,10 +122,110 @@ export default function DashboardContent() {
     }
   };
 
+  const exportToCSV = () => {
+    if (filteredPaymentLinks.length === 0) {
+      alert('No payment links to export');
+      return;
+    }
+
+    // CSV headers
+    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
+    
+    // CSV data
+    const csvData = filteredPaymentLinks.map((link: any) => [
+      link.creatorAddress || address || '',
+      `${link.salesCount}/${link.totalSales > 0 ? link.totalSales : '∞'}`,
+      `${link.price} MON`,
+      `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
+      `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
+      link.isActive ? 'Active' : 'Inactive',
+      new Date(link.createdAt).toLocaleDateString(),
+      link.salesCount.toString(),
+      (link.uniqueBuyersCount || 0).toString(),
+      `${parseFloat(link.totalEarned).toFixed(4)} MON`
+    ]);
+
+    // Combine headers and data
+    const csvContent = [headers, ...csvData]
+      .map(row => row.join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `nadpay-payment-links-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportSingleLinkToCSV = (link: any) => {
+    // CSV headers
+    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
+    
+    // Single link data
+    const csvData = [
+      link.creatorAddress || address || '',
+      `${link.salesCount}/${link.totalSales > 0 ? link.totalSales : '∞'}`,
+      `${link.price} MON`,
+      `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
+      `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
+      link.isActive ? 'Active' : 'Inactive',
+      new Date(link.createdAt).toLocaleDateString(),
+      link.salesCount.toString(),
+      (link.uniqueBuyersCount || 0).toString(),
+      `${parseFloat(link.totalEarned).toFixed(4)} MON`
+    ];
+
+    // Combine headers and data
+    const csvContent = [headers, csvData]
+      .map(row => row.join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const linkElement = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    linkElement.setAttribute('href', url);
+    
+    // Use link title for filename (sanitized)
+    const sanitizedTitle = link.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    linkElement.setAttribute('download', `nadpay-${sanitizedTitle}-${link.linkId}.csv`);
+    linkElement.style.visibility = 'hidden';
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    document.body.removeChild(linkElement);
+  };
+
+  // Filter payment links based on search query
+  const filteredPaymentLinks = paymentLinks.filter((link: any) => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      link.title.toLowerCase().includes(query) ||
+      link.description.toLowerCase().includes(query) ||
+      link.linkId.toString().includes(query) ||
+      link.price.toString().includes(query)
+    );
+  });
+
   const getTotalStats = () => {
-    const totalEarned = paymentLinks.reduce((sum, link) => sum + parseFloat(link.totalEarned), 0);
-    const totalSales = paymentLinks.reduce((sum, link) => sum + Number(link.salesCount), 0);
-    const totalBuyers = 0; // Will be calculated when we implement purchase tracking
+    const totalEarned = paymentLinks.reduce((sum: number, link: any) => {
+      const earned = typeof link.totalEarned === 'string' ? parseFloat(link.totalEarned) : 0;
+      return sum + (isNaN(earned) ? 0 : earned);
+    }, 0);
+    const totalSales = paymentLinks.reduce((sum: number, link: any) => {
+      const sales = typeof link.salesCount === 'bigint' ? Number(link.salesCount) : 
+                   typeof link.salesCount === 'number' ? link.salesCount : 0;
+      return sum + sales;
+    }, 0);
+    const totalBuyers = paymentLinks.reduce((sum: number, link: any) => {
+      return sum + (link.uniqueBuyersCount || 0);
+    }, 0);
 
     return { totalEarned, totalSales, totalBuyers };
   };
@@ -131,25 +282,44 @@ export default function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
+      {/* NadPay Header */}
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                My Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Manage your payment links and track earnings
-              </p>
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+                <Link2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  NadPay Dashboard
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Manage your payment links and track earnings on Monad
+                </p>
+              </div>
             </div>
-            <a
-              href="/app"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </a>
+            <div className="flex items-center space-x-3">
+              <a
+                href="/docs"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+              >
+                Documentation
+              </a>
+              <a
+                href="/app"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold"
+              >
+                Create New Link
+              </a>
+              <a
+                href="/app"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -227,7 +397,7 @@ export default function DashboardContent() {
               <div className="ml-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Links</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {paymentLinks.filter(link => link.isActive).length}
+                  {paymentLinks.filter((link: any) => link.isActive).length}
                 </p>
               </div>
             </div>
@@ -242,12 +412,44 @@ export default function DashboardContent() {
           className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700"
         >
           <div className="p-6 border-b border-gray-200 dark:border-dark-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Your Payment Links
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Manage and track all your payment links
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Your Payment Links
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Manage and track all your payment links
+                </p>
+              </div>
+              {paymentLinks.length > 0 && (
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={exportToCSV}
+                    className="inline-flex items-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Export CSV
+                  </button>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search links..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="block w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Found {filteredPaymentLinks.length} of {paymentLinks.length} links
+              </div>
+            )}
           </div>
 
           {paymentLinks.length === 0 ? (
@@ -268,9 +470,27 @@ export default function DashboardContent() {
                 Create Payment Link
               </a>
             </div>
+          ) : filteredPaymentLinks.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No links found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                No payment links match your search "{searchQuery}"
+              </p>
+              <button
+                onClick={() => setSearchQuery("")}
+                className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              >
+                Clear Search
+              </button>
+            </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {paymentLinks.map((link, index) => (
+              {filteredPaymentLinks.map((link: any, index: number) => (
                 <motion.div
                   key={link._id}
                   initial={{ opacity: 0, x: -20 }}
@@ -313,7 +533,8 @@ export default function DashboardContent() {
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Buyers</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            0
+                            {link.uniqueBuyersCount || 0}
+                            {console.log('UI link data:', link, 'uniqueBuyersCount:', link.uniqueBuyersCount)}
                           </p>
                         </div>
                         <div>
@@ -343,7 +564,7 @@ export default function DashboardContent() {
                         Copy Link
                       </button>
                       <a
-                        href={`/pay/${link.linkId}`}
+                        href={`/pay/${address ? createSecureLinkId(parseInt(link.linkId), address) : link.linkId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center px-3 py-2 text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
@@ -351,6 +572,13 @@ export default function DashboardContent() {
                         <ExternalLink className="w-4 h-4 mr-1" />
                         View
                       </a>
+                      <button
+                        onClick={() => exportSingleLinkToCSV(link)}
+                        className="inline-flex items-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Export CSV
+                      </button>
                       {link.isActive && (
                         <button
                           onClick={() => deactivateLink(link.linkId)}
@@ -366,7 +594,7 @@ export default function DashboardContent() {
               ))}
             </div>
           )}
-        </motion.div>
+                </motion.div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@
     "connectkit": "^1.9.1",
     "dotenv": "^16.5.0",
     "framer-motion": "^12.18.1",
+    "ipfs-http-client": "^60.0.1",
     "lucide-react": "^0.517.0",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.0",
