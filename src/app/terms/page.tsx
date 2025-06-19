@@ -9,8 +9,8 @@ export default function TermsOfService() {
           
           <div className="space-y-8 text-gray-300">
             <div className="text-sm text-gray-400 mb-8">
-              <p><strong>Effective Date:</strong> January 1, 2025</p>
-              <p><strong>Last Updated:</strong> January 1, 2025</p>
+              <p><strong>Effective Date:</strong> June 20, 2025</p>
+              <p><strong>Last Updated:</strong> June 20, 2025</p>
             </div>
 
             <section>

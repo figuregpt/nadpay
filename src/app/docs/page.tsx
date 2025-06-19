@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState("getting-started");
+  const [activeSection, setActiveSection] = useState("introduction");
   const [expandedSections, setExpandedSections] = useState<string[]>(["getting-started"]);
 
   const toggleSection = (sectionId: string) => {
@@ -447,15 +447,15 @@ export default function DocsPage() {
                 Contract Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+                <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
-                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
                       0x7d3B3A31D84Aa66CFDa807137556a0f27097770d
                     </code>
                     <button 
                       onClick={() => copyToClipboard("0x7d3B3A31D84Aa66CFDa807137556a0f27097770d")}
-                      className="ml-2 p-2 text-gray-500 hover:text-gray-700"
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
