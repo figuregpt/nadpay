@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Wallet, Link2, Upload, X } from "lucide-react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
@@ -419,11 +418,9 @@ export default function Web3AppContent() {
                   </div>
                 ) : (
                   <div className="relative">
-                    <Image
+                    <img
                       src={formData.coverImage}
                       alt="Cover preview"
-                      width={600}
-                      height={192}
                       className="w-full h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                     />
                     <button
