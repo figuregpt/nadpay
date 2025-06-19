@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock } from "lucide-react";
 import { useAccount, useSendTransaction, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
@@ -47,10 +48,6 @@ export default function PaymentContent() {
   const [quantity, setQuantity] = useState(1);
   const [purchasing, setPurchasing] = useState(false);
 
-  useEffect(() => {
-    fetchPaymentLink();
-  }, [linkId]);
-
   const fetchPaymentLink = async () => {
     try {
       setLoading(true);
@@ -62,12 +59,16 @@ export default function PaymentContent() {
       } else {
         setError(data.error || 'Payment link not found');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load payment link');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPaymentLink();
+  }, [linkId]);
 
   const handlePurchase = async () => {
     if (!isConnected || !paymentLink || !address) {
@@ -199,11 +200,12 @@ export default function PaymentContent() {
         >
           {/* Cover Image */}
           {paymentLink.coverImage && (
-            <div className="w-full h-64 bg-gray-100 dark:bg-dark-700">
-              <img
+            <div className="w-full h-64 bg-gray-100 dark:bg-dark-700 relative">
+              <Image
                 src={paymentLink.coverImage}
                 alt={paymentLink.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           )}

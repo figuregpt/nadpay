@@ -4,12 +4,12 @@ import PaymentLink from '@/models/PaymentLink';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { linkId: string } }
+  { params }: { params: Promise<{ linkId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { linkId } = params;
+    const { linkId } = await params;
 
     const paymentLink = await PaymentLink.findOne({ linkId, isActive: true });
 
@@ -39,12 +39,12 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { linkId: string } }
+  { params }: { params: Promise<{ linkId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { linkId } = params;
+    const { linkId } = await params;
     const body = await request.json();
     const { buyerAddress, amount, txHash } = body;
 
@@ -75,9 +75,9 @@ export async function POST(
     // Check wallet limit
     if (paymentLink.maxPerWallet > 0) {
       const userPurchases = paymentLink.purchases.filter(
-        (purchase: any) => purchase.buyerAddress.toLowerCase() === buyerAddress.toLowerCase()
+        (purchase: { buyerAddress: string }) => purchase.buyerAddress.toLowerCase() === buyerAddress.toLowerCase()
       );
-      const userTotal = userPurchases.reduce((sum: number, purchase: any) => sum + purchase.amount, 0);
+      const userTotal = userPurchases.reduce((sum: number, purchase: { amount: number }) => sum + purchase.amount, 0);
       
       if (userTotal + amount > paymentLink.maxPerWallet) {
         return NextResponse.json(

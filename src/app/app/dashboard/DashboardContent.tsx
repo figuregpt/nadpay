@@ -8,11 +8,8 @@ import {
   ArrowLeft, 
   ShoppingCart, 
   Users, 
-  Clock, 
   Copy,
   ExternalLink,
-  TrendingUp,
-  Eye,
   DollarSign,
   XCircle
 } from "lucide-react";
@@ -42,18 +39,9 @@ interface PaymentLinkData {
 }
 
 export default function DashboardContent() {
-  const { address, isConnected, chain } = useAccount();
+  const { address, isConnected } = useAccount();
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinkData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchPaymentLinks();
-    } else {
-      setLoading(false);
-    }
-  }, [isConnected, address]);
 
   const fetchPaymentLinks = async () => {
     try {
@@ -64,14 +52,22 @@ export default function DashboardContent() {
       if (data.success) {
         setPaymentLinks(data.paymentLinks);
       } else {
-        setError(data.error || 'Failed to fetch payment links');
+        console.error(data.error || 'Failed to fetch payment links');
       }
-    } catch (err) {
-      setError('Failed to load dashboard data');
+    } catch {
+      console.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchPaymentLinks();
+    } else {
+      setLoading(false);
+    }
+  }, [isConnected, address]);
 
   const copyLink = (linkId: string) => {
     const fullLink = `${window.location.origin}/pay/${linkId}`;

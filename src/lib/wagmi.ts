@@ -1,12 +1,18 @@
 import { http, createConfig } from "wagmi";
-import { injected, walletConnect, coinbaseWallet } from "wagmi/connectors";
+import { injected } from "wagmi/connectors";
 import { createStorage, noopStorage } from "wagmi";
 
 // TypeScript declarations for wallet providers
 declare global {
   interface Window {
-    okxwallet?: any;
-    haha?: any;
+    okxwallet?: {
+      isOkxWallet?: boolean;
+      request?: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+    };
+    haha?: {
+      isHahaWallet?: boolean;
+      request?: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+    };
   }
 }
 
@@ -30,8 +36,6 @@ export const monadTestnet = {
   testnet: true,
 } as const;
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id";
-
 export const config = createConfig({
   // Sadece Monad testnet - daha odaklı deneyim
   chains: [monadTestnet],
@@ -42,45 +46,15 @@ export const config = createConfig({
     key: 'nadpay-wagmi', // Custom key for our app
   }),
   connectors: [
-    // Injected wallets için - Phantom, MetaMask, OKX Wallet, HaHa Wallet destekli
+    // Injected wallets için - Phantom, MetaMask destekli
     injected({
       target: "metaMask",
     }),
     injected({
       target: "phantom", 
     }),
-    injected({
-      target: () => ({
-        id: "okxWallet",
-        name: "OKX Wallet",
-        provider: typeof window !== "undefined" ? window.okxwallet : undefined,
-      }),
-    }),
-    injected({
-      target: () => ({
-        id: "hahaWallet",
-        name: "HaHa Wallet", 
-        provider: typeof window !== "undefined" ? window.haha : undefined,
-      }),
-    }),
-    // Generic injected connector for other wallets
+    // Generic injected connector for other wallets (OKX, HaHa, etc.)
     injected(),
-    // WalletConnect geçici olarak devre dışı - connection hatası veriyor
-    // walletConnect({
-    //   projectId,
-    //   metadata: {
-    //     name: "NadPay",
-    //     description: "Payment links on Monad",
-    //     url: "https://nadpay.com",
-    //     icons: ["https://nadpay.com/icon.png"],
-    //   },
-    //   showQrModal: true,
-    // }),
-    // Coinbase Wallet da geçici devre dışı
-    // coinbaseWallet({
-    //   appName: "NadPay",
-    //   appLogoUrl: "https://nadpay.com/icon.png",
-    // }),
   ],
   transports: {
     [monadTestnet.id]: http(),

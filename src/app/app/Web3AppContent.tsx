@@ -11,10 +11,7 @@ import { LogOut } from "lucide-react";
 export default function Web3AppContent() {
   const { address, isConnected, chain, status } = useAccount();
   const { 
-    address: persistentAddress, 
-    isConnected: isPersistentConnected,
     hasAttemptedReconnect,
-    status: persistentStatus,
     disconnect: persistentDisconnect
   } = usePersistentWallet();
   const { switchChain } = useSwitchChain();
@@ -194,7 +191,7 @@ export default function Web3AppContent() {
             Wrong Network
           </h2>
           <p className="text-gray-600 dark:text-gray-300 text-lg mb-6 leading-relaxed">
-            You're connected to <span className="font-semibold">{chain?.name || 'Unknown Network'}</span> but NadPay requires <span className="text-primary-500 font-semibold">Monad Testnet</span>.
+            You&apos;re connected to <span className="font-semibold">{chain?.name || 'Unknown Network'}</span> but NadPay requires <span className="text-primary-500 font-semibold">Monad Testnet</span>.
           </p>
           <div className="flex flex-col space-y-4">
             <button

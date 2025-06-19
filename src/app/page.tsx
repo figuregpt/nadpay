@@ -177,7 +177,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-gray-200 dark:border-dark-800 mt-8 pt-8 text-center">
             <p className="text-gray-600 dark:text-gray-300">
-              © 2024 NadPay. Built for the Monad ecosystem.
+              © 2025 NadPay. Built with ❤️ by <a href="https://x.com/figuregpt" className="text-primary-500 hover:text-primary-600 transition-colors">Figure</a>
             </p>
           </div>
         </div>

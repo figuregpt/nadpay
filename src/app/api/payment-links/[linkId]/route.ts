@@ -4,12 +4,12 @@ import PaymentLink from '@/models/PaymentLink';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { linkId: string } }
+  { params }: { params: Promise<{ linkId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { linkId } = params;
+    const { linkId } = await params;
     const body = await request.json();
     const { isActive, creatorAddress } = body;
 
