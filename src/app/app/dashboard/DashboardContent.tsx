@@ -33,6 +33,7 @@ interface PaymentLinkData {
   totalEarned: string;
   isActive: boolean;
   createdAt: string;
+  expiresAt: bigint;
   creatorAddress: string;
   purchases: unknown[];
   uniqueBuyersCount?: number;
@@ -82,6 +83,7 @@ export default function DashboardContent() {
           uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
           purchases: [], // Will be fetched separately if needed
           createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
+          expiresAt: formatted.expiresAt || BigInt(0),
         };
     } catch (error) {
       console.error('Error formatting payment link:', error, link);
@@ -100,6 +102,7 @@ export default function DashboardContent() {
         totalEarned: '0',
         isActive: false,
         createdAt: new Date().toISOString(),
+        expiresAt: BigInt(0),
         creatorAddress: '',
         purchases: [],
       };
@@ -125,6 +128,17 @@ export default function DashboardContent() {
     alert('Payment link copied to clipboard!');
   };
 
+  const isExpired = (link: PaymentLinkData) => {
+    if (!link.expiresAt || Number(link.expiresAt) === 0) return false;
+    return Date.now() > Number(link.expiresAt) * 1000;
+  };
+
+  const getLinkStatus = (link: PaymentLinkData) => {
+    if (!link.isActive) return 'Inactive';
+    if (isExpired(link)) return 'Expired';
+    return 'Active';
+  };
+
   const deactivateLink = async (linkId: string) => {
     if (!address) return;
     
@@ -146,7 +160,7 @@ export default function DashboardContent() {
     }
 
     // CSV headers
-    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
+    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Expires', 'Sales', 'Buyers', 'Earned'];
     
     // CSV data
     const csvData = filteredPaymentLinks.map((link: PaymentLinkData) => [
@@ -155,8 +169,11 @@ export default function DashboardContent() {
       `${link.price} MON`,
       `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
       `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
-      link.isActive ? 'Active' : 'Inactive',
+      getLinkStatus(link),
       new Date(link.createdAt).toLocaleDateString(),
+      link.expiresAt && Number(link.expiresAt) > 0
+        ? new Date(Number(link.expiresAt) * 1000).toLocaleString()
+        : 'Never',
       link.salesCount.toString(),
       (link.uniqueBuyersCount || 0).toString(),
       `${parseFloat(link.totalEarned).toFixed(4)} MON`
@@ -181,7 +198,7 @@ export default function DashboardContent() {
 
   const exportSingleLinkToCSV = (link: PaymentLinkData) => {
     // CSV headers
-    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Sales', 'Buyers', 'Earned'];
+    const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Expires', 'Sales', 'Buyers', 'Earned'];
     
     // Single link data
     const csvData = [
@@ -190,8 +207,11 @@ export default function DashboardContent() {
       `${link.price} MON`,
       `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
       `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
-      link.isActive ? 'Active' : 'Inactive',
+      getLinkStatus(link),
       new Date(link.createdAt).toLocaleDateString(),
+      link.expiresAt && Number(link.expiresAt) > 0
+        ? new Date(Number(link.expiresAt) * 1000).toLocaleString()
+        : 'Never',
       link.salesCount.toString(),
       (link.uniqueBuyersCount || 0).toString(),
       `${parseFloat(link.totalEarned).toFixed(4)} MON`
@@ -301,57 +321,56 @@ export default function DashboardContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
       {/* NadPay Header */}
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Link2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+                <Link2 className="w-7 h-7 text-white" />
               </div>
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   NadPay Dashboard
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
                   Manage your payment links and track earnings on Monad
                 </p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+            <div className="flex items-center space-x-3">
               <a
                 href="/app"
-                className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm sm:text-base"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold"
               >
                 Create New Link
               </a>
               <a
                 href="/app"
-                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm sm:text-base"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Back to Home</span>
-                <span className="sm:hidden">Back</span>
+                Back to Home
               </a>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl border border-gray-200 dark:border-dark-700"
           >
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Earned</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+              <div className="ml-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Earned</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalEarned.toFixed(4)} MON
                 </p>
               </div>
@@ -362,15 +381,15 @@ export default function DashboardContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl border border-gray-200 dark:border-dark-700"
           >
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <ShoppingCart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="ml-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalSales}
                 </p>
               </div>
@@ -381,15 +400,15 @@ export default function DashboardContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl border border-gray-200 dark:border-dark-700"
           >
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Buyers</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="ml-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Buyers</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalBuyers}
                 </p>
               </div>
@@ -400,16 +419,16 @@ export default function DashboardContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl border border-gray-200 dark:border-dark-700"
           >
             <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Link2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
+                <Link2 className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Links</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  {paymentLinks.filter((link: PaymentLinkData) => link.isActive).length}
+              <div className="ml-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Active Links</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {paymentLinks.filter((link: PaymentLinkData) => getLinkStatus(link) === 'Active').length}
                 </p>
               </div>
             </div>
@@ -423,21 +442,21 @@ export default function DashboardContent() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700"
         >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-dark-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 mb-4">
+          <div className="p-6 border-b border-gray-200 dark:border-dark-700">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Your Payment Links
                 </h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
                   Manage and track all your payment links
                 </p>
               </div>
               {paymentLinks.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={exportToCSV}
-                    className="inline-flex items-center justify-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                    className="inline-flex items-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
                   >
                     <Download className="w-4 h-4 mr-1" />
                     Export CSV
@@ -451,7 +470,7 @@ export default function DashboardContent() {
                       placeholder="Search links..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="block w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="block w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -508,100 +527,106 @@ export default function DashboardContent() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                  className="p-4 sm:p-6"
+                  className="p-6"
                 >
-                  <div className="flex flex-col space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-2 sm:space-y-0">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center mb-2 space-y-1 sm:space-y-0">
-                          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate">
-                            {link.title}
-                          </h3>
-                          <span className={`self-start sm:ml-3 px-2 py-1 text-xs font-medium rounded-full ${
-                            link.isActive 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                          }`}>
-                            {link.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {link.title}
+                        </h3>
+                        <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+                          getLinkStatus(link) === 'Active'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : getLinkStatus(link) === 'Expired'
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        }`}>
+                          {getLinkStatus(link)}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 mb-3">
+                        {link.description}
+                      </p>
+                      
+                      {/* Stats Row */}
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {link.price} MON
+                          </p>
                         </div>
-                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                          {link.description}
-                        </p>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Sold</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {link.totalSales > 0 ? `${link.salesCount}/${link.totalSales}` : link.salesCount}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Buyers</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {link.uniqueBuyersCount || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Earned</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {parseFloat(link.totalEarned).toFixed(4)} MON
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {new Date(link.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Expires</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {link.expiresAt && Number(link.expiresAt) > 0
+                              ? new Date(Number(link.expiresAt) * 1000).toLocaleString()
+                              : 'Never'
+                            }
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Stats Row */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
-                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">
-                          {link.price} MON
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Sold</p>
-                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {link.totalSales > 0 ? `${link.salesCount}/${link.totalSales}` : link.salesCount}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Buyers</p>
-                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {link.uniqueBuyersCount || 0}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Earned</p>
-                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">
-                          {parseFloat(link.totalEarned).toFixed(4)} MON
-                        </p>
-                      </div>
-                      <div className="col-span-2 sm:col-span-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
-                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {new Date(link.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => copyLink(link.linkId)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
-                      >
-                        <Copy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="hidden sm:inline">Copy Link</span>
-                        <span className="sm:hidden">Copy</span>
-                      </button>
-                      <a
-                        href={`/pay/${createSecureLinkId(parseInt(link.linkId), address || '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        View
-                      </a>
-                      <button
-                        onClick={() => exportSingleLinkToCSV(link)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
-                      >
-                        <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="hidden sm:inline">Export</span>
-                        <span className="sm:hidden">CSV</span>
-                      </button>
-                      {link.isActive && (
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center space-x-3">
                         <button
-                          onClick={() => deactivateLink(link.linkId)}
-                          className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                          onClick={() => copyLink(link.linkId)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
                         >
-                          <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          <span className="hidden sm:inline">Deactivate</span>
-                          <span className="sm:hidden">Stop</span>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy Link
                         </button>
-                      )}
+                        <a
+                          href={`/pay/${createSecureLinkId(parseInt(link.linkId), address || '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View
+                        </a>
+                        <button
+                          onClick={() => exportSingleLinkToCSV(link)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Export
+                        </button>
+                        {getLinkStatus(link) === 'Active' && (
+                          <button
+                            onClick={() => deactivateLink(link.linkId)}
+                            className="inline-flex items-center px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>

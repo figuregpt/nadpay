@@ -89,6 +89,12 @@ export const NADPAY_ABI = [
         "internalType": "uint256",
         "name": "maxPerWallet",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
       }
     ],
     "name": "PaymentLinkCreated",
@@ -200,6 +206,11 @@ export const NADPAY_ABI = [
       {
         "internalType": "uint256",
         "name": "maxPerWallet",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
         "type": "uint256"
       }
     ],
@@ -331,6 +342,11 @@ export const NADPAY_ABI = [
           {
             "internalType": "uint256",
             "name": "createdAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiresAt",
             "type": "uint256"
           }
         ],
@@ -535,6 +551,11 @@ export const NADPAY_ABI = [
       {
         "internalType": "uint256",
         "name": "createdAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
         "type": "uint256"
       }
     ],

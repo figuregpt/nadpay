@@ -17,6 +17,7 @@ contract NadPay is ReentrancyGuard, Ownable {
         uint256 totalEarned;
         bool isActive;
         uint256 createdAt;
+        uint256 expiresAt; // 0 means never expires
     }
 
     struct Purchase {
@@ -44,7 +45,8 @@ contract NadPay is ReentrancyGuard, Ownable {
         string title,
         uint256 price,
         uint256 totalSales,
-        uint256 maxPerWallet
+        uint256 maxPerWallet,
+        uint256 expiresAt
     );
 
     event PurchaseMade(
@@ -79,7 +81,8 @@ contract NadPay is ReentrancyGuard, Ownable {
         string memory coverImage,
         uint256 price,
         uint256 totalSales,
-        uint256 maxPerWallet
+        uint256 maxPerWallet,
+        uint256 expiresAt
     ) external returns (uint256) {
         require(bytes(title).length > 0, "Title required");
         require(bytes(description).length > 0, "Description required");
@@ -98,7 +101,8 @@ contract NadPay is ReentrancyGuard, Ownable {
             salesCount: 0,
             totalEarned: 0,
             isActive: true,
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            expiresAt: expiresAt
         });
 
         emit PaymentLinkCreated(
@@ -107,7 +111,8 @@ contract NadPay is ReentrancyGuard, Ownable {
             title,
             price,
             totalSales,
-            maxPerWallet
+            maxPerWallet,
+            expiresAt
         );
 
         return linkId;
@@ -123,6 +128,11 @@ contract NadPay is ReentrancyGuard, Ownable {
         
         require(link.isActive, "Payment link is not active");
         require(amount > 0, "Amount must be greater than 0");
+        
+        // Check expiration
+        if (link.expiresAt > 0) {
+            require(block.timestamp <= link.expiresAt, "Payment link has expired");
+        }
         
         // Check total sales limit
         if (link.totalSales > 0) {

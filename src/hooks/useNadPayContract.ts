@@ -178,6 +178,7 @@ export function useCreatePaymentLink() {
     price: string; // in MON
     totalSales: number;
     maxPerWallet: number;
+    expiresAt: number; // Unix timestamp, 0 means never expires
   }) => {
     const priceInWei = parseEther(params.price);
     
@@ -192,6 +193,7 @@ export function useCreatePaymentLink() {
         priceInWei,
         BigInt(params.totalSales),
         BigInt(params.maxPerWallet),
+        BigInt(params.expiresAt),
       ],
     });
   };
@@ -311,6 +313,7 @@ export function formatPaymentLink(rawLink: unknown): PaymentLink & { linkId: num
     totalEarned: link?.totalEarned || BigInt(0),
     isActive: link?.isActive || false,
     createdAt: link?.createdAt || BigInt(0),
+    expiresAt: link?.expiresAt || BigInt(0),
     uniqueBuyersCount: link?.uniqueBuyersCount || 0, // Preserve uniqueBuyersCount
   };
 }

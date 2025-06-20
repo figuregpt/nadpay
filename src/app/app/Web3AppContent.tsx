@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, Link2, Upload, X } from "lucide-react";
+import { Wallet, Link2, Upload, X, Calendar, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
+import QRCode from "qrcode";
 import { useAccount, useSwitchChain, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
@@ -28,11 +29,14 @@ export default function Web3AppContent() {
     coverImage: '',
     totalSales: '',
     maxPerWallet: '',
-    price: ''
+    price: '',
+    expireDate: ''
   });
   
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
   
   // Contract hooks
   const { 
@@ -167,6 +171,22 @@ export default function Web3AppContent() {
     handleInputChange('coverImage', '');
   };
 
+  const generateQRCode = async (url: string) => {
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(url, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeUrl(qrCodeDataUrl);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    }
+  };
+
   const handleCreatePaymentLink = async () => {
     if (!isConnected || !address) {
       alert("Please connect your wallet first");
@@ -180,6 +200,12 @@ export default function Web3AppContent() {
     }
     
     try {
+      // Convert expire date to Unix timestamp
+      let expiresAt = 0;
+      if (formData.expireDate) {
+        expiresAt = Math.floor(new Date(formData.expireDate).getTime() / 1000);
+      }
+
       await createPaymentLink({
         title: formData.title,
         description: formData.description,
@@ -187,6 +213,7 @@ export default function Web3AppContent() {
         price: formData.price,
         totalSales: parseInt(formData.totalSales) || 0,
         maxPerWallet: parseInt(formData.maxPerWallet) || 0,
+        expiresAt: expiresAt,
       });
     } catch (error) {
       console.error('Error creating payment link:', error);
@@ -207,12 +234,16 @@ export default function Web3AppContent() {
             const secureId = createSecureLinkId(linkId, hash);
             const paymentLink = `${window.location.origin}/pay/${secureId}`;
             setGeneratedLink(paymentLink);
+            // Generate QR code for the link
+            await generateQRCode(paymentLink);
           } else {
             // Fallback: use timestamp (this should not happen in normal cases)
             console.warn('Could not extract link ID from transaction, using fallback');
             const fallbackId = Date.now();
             const paymentLink = `${window.location.origin}/pay/${fallbackId}`;
             setGeneratedLink(paymentLink);
+            // Generate QR code for the fallback link
+            await generateQRCode(paymentLink);
           }
         } catch (error) {
           console.error('Error processing transaction:', error);
@@ -220,6 +251,8 @@ export default function Web3AppContent() {
           const fallbackId = Date.now();
           const paymentLink = `${window.location.origin}/pay/${fallbackId}`;
           setGeneratedLink(paymentLink);
+          // Generate QR code for the fallback link
+          await generateQRCode(paymentLink);
         }
       }
     };
@@ -513,7 +546,7 @@ export default function Web3AppContent() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 {/* Total Sales */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -523,8 +556,8 @@ export default function Web3AppContent() {
                     type="number"
                     value={formData.totalSales}
                     onChange={(e) => handleInputChange('totalSales', e.target.value)}
-                    placeholder="100"
-                    min="1"
+                    placeholder="100 (0 = unlimited)"
+                    min="0"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -538,12 +571,14 @@ export default function Web3AppContent() {
                     type="number"
                     value={formData.maxPerWallet}
                     onChange={(e) => handleInputChange('maxPerWallet', e.target.value)}
-                    placeholder="5"
-                    min="1"
+                    placeholder="5 (0 = unlimited)"
+                    min="0"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -558,6 +593,24 @@ export default function Web3AppContent() {
                     step="0.001"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
+                </div>
+
+                {/* Expire Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Expire Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.expireDate}
+                    onChange={(e) => handleInputChange('expireDate', e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Leave empty for no expiration
+                  </p>
                 </div>
         </div>
 
@@ -613,7 +666,7 @@ export default function Web3AppContent() {
             
             <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Your Payment Link:</p>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mb-4">
                 <input
                   type="text"
                   value={generatedLink}
@@ -626,19 +679,52 @@ export default function Web3AppContent() {
                 >
                   Copy
                 </button>
-        </div>
-      </div>
+                <button
+                  onClick={() => setShowQRCode(!showQRCode)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm flex items-center space-x-1"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>QR</span>
+                </button>
+              </div>
+              
+              {/* QR Code Display */}
+              {showQRCode && qrCodeUrl && (
+                <div className="text-center p-4 bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Scan with any QR reader:</p>
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="Payment Link QR Code" 
+                    className="mx-auto mb-3 rounded-lg"
+                  />
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = qrCodeUrl;
+                      link.download = `nadpay-qr-${Date.now()}.png`;
+                      link.click();
+                    }}
+                    className="text-xs text-primary-500 hover:text-primary-600 underline"
+                  >
+                    Download QR Code
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => {
                 setGeneratedLink(null);
+                setQrCodeUrl(null);
+                setShowQRCode(false);
                 setFormData({
                   title: '',
                   description: '',
                   coverImage: '',
                   totalSales: '',
                   maxPerWallet: '',
-                  price: ''
+                  price: '',
+                  expireDate: ''
                 });
               }}
               className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"

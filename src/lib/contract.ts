@@ -2,7 +2,7 @@
 // Do not edit manually - run 'npm run generate-abi' to regenerate
 
 export const NADPAY_CONTRACT = {
-  "address": "0x7B9aAd7f00D51AdC57Ff82952F2fAfE0E6F3b7A4",
+  "address": "0xa81F9ED8cf8030424F049b385a1dB32cA504177d",
   "abi": [
     {
       "inputs": [],
@@ -92,6 +92,12 @@ export const NADPAY_CONTRACT = {
           "indexed": false,
           "internalType": "uint256",
           "name": "maxPerWallet",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "expiresAt",
           "type": "uint256"
         }
       ],
@@ -204,6 +210,11 @@ export const NADPAY_CONTRACT = {
         {
           "internalType": "uint256",
           "name": "maxPerWallet",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiresAt",
           "type": "uint256"
         }
       ],
@@ -335,6 +346,11 @@ export const NADPAY_CONTRACT = {
             {
               "internalType": "uint256",
               "name": "createdAt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiresAt",
               "type": "uint256"
             }
           ],
@@ -540,6 +556,11 @@ export const NADPAY_CONTRACT = {
           "internalType": "uint256",
           "name": "createdAt",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiresAt",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -663,6 +684,7 @@ export type PaymentLink = {
   totalEarned: bigint;
   isActive: boolean;
   createdAt: bigint;
+  expiresAt: bigint;
 };
 
 export type Purchase = {

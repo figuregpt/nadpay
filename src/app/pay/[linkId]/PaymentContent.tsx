@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock } from "lucide-react";
+import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock, Calendar } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePaymentLink, usePurchase, useUserPurchaseCount, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
@@ -112,11 +112,20 @@ export default function PaymentContent() {
     return Number(userPurchaseCount || 0);
   };
 
+  const isExpired = () => {
+    if (!paymentLink) return false;
+    if (!paymentLink.expiresAt || Number(paymentLink.expiresAt) === 0) return false;
+    return Date.now() > Number(paymentLink.expiresAt) * 1000;
+  };
+
   const canPurchase = () => {
     if (!paymentLink || !isConnected) return false;
     
     // Check if link is active
     if (!paymentLink.isActive) return false;
+    
+    // Check if expired
+    if (isExpired()) return false;
     
     // Check total sales limit
     if (Number(paymentLink.totalSales) > 0 && Number(paymentLink.salesCount) >= Number(paymentLink.totalSales)) {
@@ -225,7 +234,7 @@ export default function PaymentContent() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
                     <ShoppingCart className="w-5 h-5 text-primary-500 mr-1" />
@@ -252,8 +261,20 @@ export default function PaymentContent() {
                     <Clock className="w-5 h-5 text-green-500 mr-1" />
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
                     {new Date(paymentLink.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Calendar className="w-5 h-5 text-orange-500 mr-1" />
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Expires</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {paymentLink.expiresAt && Number(paymentLink.expiresAt) > 0
+                      ? new Date(Number(paymentLink.expiresAt) * 1000).toLocaleString()
+                      : 'Never'
+                    }
                   </p>
                 </div>
               </div>
@@ -317,6 +338,28 @@ export default function PaymentContent() {
                   <p className="text-gray-600 dark:text-gray-400">
                     This payment link has been deactivated by the creator
                   </p>
+                </div>
+              ) : isExpired() ? (
+                /* Expired Link */
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-orange-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Payment Link Expired
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    This payment link expired on{' '}
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {new Date(Number(paymentLink.expiresAt) * 1000).toLocaleString()}
+                    </span>
+                  </p>
+                  <button
+                    disabled
+                    className="w-full px-6 py-4 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-lg cursor-not-allowed"
+                  >
+                    Expired - Cannot Purchase
+                  </button>
                 </div>
               ) : (
                 /* Purchase Form */
