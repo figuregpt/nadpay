@@ -24,6 +24,7 @@ import {
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("introduction");
   const [expandedSections, setExpandedSections] = useState<string[]>(["getting-started"]);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
@@ -107,10 +108,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Welcome to NadPay
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 The decentralized payment link platform built on Monad blockchain.
               </p>
             </div>
@@ -126,31 +127,31 @@ export default function DocsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <Zap className="w-8 h-8 text-yellow-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6">
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 mb-3 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Lightning Fast
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                   Built on Monad's high-performance blockchain for instant transactions.
                 </p>
               </div>
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <Shield className="w-8 h-8 text-green-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6">
+                <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 mb-3 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Secure & Trustless
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                   Smart contract-based payments with no intermediaries or custody risks.
                 </p>
               </div>
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <Users className="w-8 h-8 text-blue-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 mb-3 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Easy to Use
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                   Simple interface for creators and seamless experience for customers.
                 </p>
               </div>
@@ -162,10 +163,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Quick Start Guide
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 Get started with NadPay in just a few minutes.
               </p>
             </div>
@@ -242,10 +243,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Wallet Setup
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 Configure your wallet for Monad Testnet.
               </p>
             </div>
@@ -332,10 +333,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Creating Basic Payment Links
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 Learn how to create your first payment link.
               </p>
             </div>
@@ -434,10 +435,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Smart Contract Overview
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 Understanding NadPay's smart contract architecture.
               </p>
             </div>
@@ -450,7 +451,7 @@ export default function DocsPage() {
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
-                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
                       0x7d3B3A31D84Aa66CFDa807137556a0f27097770d
                     </code>
                     <button 
@@ -530,10 +531,10 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Security Features
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 NadPay's comprehensive security measures.
               </p>
             </div>
@@ -625,37 +626,53 @@ export default function DocsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
       {/* Header */}
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <Book className="w-7 h-7 text-white" />
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+                <Book className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                   NadPay Documentation
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base hidden sm:block">
                   Complete guide to using NadPay on Monad blockchain
                 </p>
               </div>
             </div>
             <a
               href="/app"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+              className="inline-flex items-center px-3 py-2 sm:px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to App
+              <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Back to App</span>
+              <span className="sm:hidden">Back</span>
             </a>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        {/* Mobile Sidebar Toggle */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            className="w-full flex items-center justify-between p-3 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg"
+          >
+            <span className="font-medium text-gray-900 dark:text-white">Navigation</span>
+            {mobileSidebarOpen ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Sidebar */}
-          <div className="w-80 flex-shrink-0">
-            <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sticky top-8">
+          <div className={`w-full lg:w-80 flex-shrink-0 ${mobileSidebarOpen ? 'block' : 'hidden'} lg:block`}>
+            <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 lg:sticky lg:top-8">
               <nav className="space-y-2">
                 {sections.map((section) => (
                   <div key={section.id}>
@@ -664,8 +681,8 @@ export default function DocsPage() {
                       className="w-full flex items-center justify-between px-3 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
                     >
                       <div className="flex items-center">
-                        <section.icon className="w-5 h-5 mr-3" />
-                        <span className="font-medium">{section.title}</span>
+                        <section.icon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+                        <span className="font-medium text-sm sm:text-base">{section.title}</span>
                       </div>
                       {expandedSections.includes(section.id) ? (
                         <ChevronDown className="w-4 h-4" />
@@ -675,11 +692,14 @@ export default function DocsPage() {
                     </button>
                     
                     {expandedSections.includes(section.id) && section.subsections && (
-                      <div className="ml-8 mt-2 space-y-1">
+                      <div className="ml-6 sm:ml-8 mt-2 space-y-1">
                         {section.subsections.map((subsection) => (
                           <button
                             key={subsection.id}
-                            onClick={() => setActiveSection(subsection.id)}
+                            onClick={() => {
+                              setActiveSection(subsection.id);
+                              setMobileSidebarOpen(false); // Close mobile sidebar on selection
+                            }}
                             className={`block w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                               activeSection === subsection.id
                                 ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
@@ -704,7 +724,7 @@ export default function DocsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-8"
+              className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6 lg:p-8"
             >
               {renderContent()}
             </motion.div>
