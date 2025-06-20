@@ -1,6 +1,7 @@
 import { http, createConfig } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { createStorage, noopStorage } from "wagmi";
+import { createPublicClient } from "viem";
 
 // Monad testnet konfigürasyonu (EVM-compatible) - Güncellenmiş parametreler
 export const monadTestnet = {
@@ -21,6 +22,12 @@ export const monadTestnet = {
   },
   testnet: true,
 } as const;
+
+// Public client for server-side contract reads
+export const publicClient = createPublicClient({
+  chain: monadTestnet,
+  transport: http("https://testnet-rpc.monad.xyz"),
+});
 
 export const config = createConfig({
   // Sadece Monad testnet - daha odaklı deneyim
