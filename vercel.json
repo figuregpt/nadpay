@@ -3,13 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm ci",
-  "devCommand": "npm run dev",
-  "env": {
-    "MONGODB_URI": "mongodb+srv://yiigitturk:OqfXkjIfWa3HtKhj@nadpay.oqifntt.mongodb.net/"
-  },
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  }
+  "devCommand": "npm run dev"
 } 

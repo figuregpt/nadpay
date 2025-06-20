@@ -318,12 +318,6 @@ export default function DashboardContent() {
             </div>
             <div className="flex items-center space-x-3">
               <a
-                href="/docs"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-              >
-                Documentation
-              </a>
-              <a
                 href="/app"
                 className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold"
               >

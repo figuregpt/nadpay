@@ -20,9 +20,6 @@ Create a `.env.local` file in the project root:
 # Deployment Configuration
 PRIVATE_KEY=your_private_key_here_without_0x_prefix
 
-# MongoDB (optional - for database fallback)
-MONGODB_URI=your_mongodb_connection_string
-
 # Next.js
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```

@@ -49,7 +49,6 @@ npm install
 ```bash
 # Create .env.local file
 PRIVATE_KEY=your_private_key_for_contract_deployment
-MONGODB_URI=your_mongodb_uri_optional
 ```
 
 4. Deploy smart contract (optional - for development):
