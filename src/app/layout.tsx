@@ -68,7 +68,7 @@ export default function RootLayout({
         <Web3Provider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark"
+            defaultTheme="light"
             enableSystem
             disableTransitionOnChange
           >

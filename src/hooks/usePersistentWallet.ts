@@ -18,7 +18,7 @@ export function usePersistentWallet() {
     }
   }, [isConnected, address]);
 
-  // Daha toleranslı reconnect stratejisi
+  // Sadece kullanıcı daha önce bağlanmışsa otomatik reconnect yap
   useEffect(() => {
     if (hasAttemptedReconnect) return;
     
@@ -26,7 +26,8 @@ export function usePersistentWallet() {
       const wasConnected = localStorage.getItem('nadpay_wallet_connected');
       const savedAddress = localStorage.getItem('nadpay_wallet_address');
       
-      if (wasConnected === 'true' && savedAddress && !isConnected) {
+      // Sadece önceden bağlanmış wallet varsa ve şu anda bağlı değilse reconnect dene
+      if (wasConnected === 'true' && savedAddress && !isConnected && status === 'disconnected') {
         console.log('🔄 Attempting to reconnect wallet...', savedAddress);
         
         // Sadece injected connector'ları dene (WalletConnect/Coinbase hariç)
@@ -41,7 +42,6 @@ export function usePersistentWallet() {
             console.log('✅ Wallet reconnection successful');
           } catch (error) {
             console.log('❌ Wallet reconnection failed:', error);
-            // Hata durumunda da attemptReconnect'i true yap
           }
         }
       }
@@ -50,11 +50,11 @@ export function usePersistentWallet() {
       setHasAttemptedReconnect(true);
     };
 
-    // Daha uzun bekle, sonra reconnect dene
-    const timer = setTimeout(attemptReconnect, 1000);
+    // Kısa bekle, sonra reconnect dene
+    const timer = setTimeout(attemptReconnect, 500);
     
     return () => clearTimeout(timer);
-  }, [connect, connectors, isConnected, hasAttemptedReconnect]);
+  }, [connect, connectors, isConnected, hasAttemptedReconnect, status]);
 
   // Clear state on disconnect
   useEffect(() => {

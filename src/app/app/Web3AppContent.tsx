@@ -228,7 +228,7 @@ export default function Web3AppContent() {
   }, [isConfirmed, hash, getLinkIdFromTransaction]);
 
   // Reconnection loading state - sadece kısa süre göster
-  if ((status === 'connecting' || (status === 'disconnected' && !hasAttemptedReconnect)) && hasAttemptedReconnect === false) {
+  if (status === 'connecting' && !hasAttemptedReconnect) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
