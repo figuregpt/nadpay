@@ -684,7 +684,6 @@ export type PaymentLink = {
   totalEarned: bigint;
   isActive: boolean;
   createdAt: bigint;
-  expiresAt: bigint;
 };
 
 export type Purchase = {

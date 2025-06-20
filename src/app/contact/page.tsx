@@ -106,11 +106,11 @@ export default function Contact() {
                     <div className="space-y-2 text-gray-300">
                       <p><strong>Contract Address:</strong></p>
                       <code className="text-xs bg-black/30 px-2 py-1 rounded break-all">
-                        0x7d3B3A31D84Aa66CFDa807137556a0f27097770d
+                        0xa81F9ED8cf8030424F049b385a1dB32cA504177d
                       </code>
                       <p className="mt-2">
                         <a 
-                          href="https://testnet.monadexplorer.com/address/0x7d3B3A31D84Aa66CFDa807137556a0f27097770d" 
+                          href="https://testnet.monadexplorer.com/address/0xa81F9ED8cf8030424F049b385a1dB32cA504177d" 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-[#836EF9] hover:text-[#A855F7] transition-colors"

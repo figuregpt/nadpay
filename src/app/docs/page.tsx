@@ -452,10 +452,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0x7d3B3A31D84Aa66CFDa807137556a0f27097770d
+                      0xa81F9ED8cf8030424F049b385a1dB32cA504177d
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0x7d3B3A31D84Aa66CFDa807137556a0f27097770d")}
+                      onClick={() => copyToClipboard("0xa81F9ED8cf8030424F049b385a1dB32cA504177d")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -603,6 +603,720 @@ export default function DocsPage() {
                 <li>• Keep your wallet software updated</li>
                 <li>• Never share your private keys or seed phrases</li>
               </ul>
+            </div>
+          </div>
+        );
+
+      case "advanced-options":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Advanced Payment Link Options
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Customize your payment links with advanced features.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Sales Limits
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Set maximum number of purchases for your payment link.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Sales Limit</label>
+                      <p className="text-gray-900 dark:text-white">Maximum number of total purchases allowed</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Example</label>
+                      <p className="text-gray-900 dark:text-white">Set to 100 for limited edition items</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Per-Wallet Limits
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Limit how many times each wallet can purchase.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Wallet Purchase Limit</label>
+                      <p className="text-gray-900 dark:text-white">Maximum purchases per wallet address</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Use Case</label>
+                      <p className="text-gray-900 dark:text-white">Prevent bulk purchasing by single users</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Link Deactivation
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  You can deactivate payment links at any time.
+                </p>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-yellow-800 dark:text-yellow-200">
+                    <strong>Warning:</strong> Deactivation is irreversible. Once deactivated, a payment link cannot be reactivated.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "image-upload":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Image Upload & Compression
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Add attractive cover images to your payment links.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Automatic Image Compression
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  NadPay automatically compresses uploaded images to optimize performance and reduce storage costs.
+                </p>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• <strong>Max file size:</strong> 5MB before compression</li>
+                  <li>• <strong>Supported formats:</strong> JPEG, PNG, WebP</li>
+                  <li>• <strong>Output quality:</strong> 80% (optimal balance)</li>
+                  <li>• <strong>Max dimensions:</strong> 1200x800 pixels</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Best Practices
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Recommended</h4>
+                    <ul className="space-y-1 text-green-600 dark:text-green-400">
+                      <li>• Use high-quality images (1200x800px)</li>
+                      <li>• Choose relevant product photos</li>
+                      <li>• Ensure good lighting and clarity</li>
+                      <li>• Use standard image formats</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Avoid</h4>
+                    <ul className="space-y-1 text-red-600 dark:text-red-400">
+                      <li>• Low-resolution images</li>
+                      <li>• Copyrighted content</li>
+                      <li>• Images with text overlay</li>
+                      <li>• Inappropriate content</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "functions":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Smart Contract Functions
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Detailed overview of NadPay contract functions.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  createPaymentLink()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Creates a new payment link with specified parameters.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function createPaymentLink(<br/>
+                    &nbsp;&nbsp;string memory title,<br/>
+                    &nbsp;&nbsp;string memory description,<br/>
+                    &nbsp;&nbsp;string memory imageHash,<br/>
+                    &nbsp;&nbsp;uint256 price,<br/>
+                    &nbsp;&nbsp;uint256 totalSalesLimit,<br/>
+                    &nbsp;&nbsp;uint256 walletPurchaseLimit<br/>
+                    ) external payable
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  purchaseFromLink()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Processes a purchase from a payment link.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function purchaseFromLink(string memory linkId) external payable
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  deactivateLink()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Deactivates a payment link (only by creator).
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function deactivateLink(string memory linkId) external
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  View Functions
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getPaymentLink(string linkId)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns payment link details</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getUserLinks(address user)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns all links created by a user</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getPlatformFee()</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns current platform fee percentage</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "events":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Smart Contract Events
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Events emitted by the NadPay smart contract.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  PaymentLinkCreated
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a new payment link is created.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event PaymentLinkCreated(<br />
+                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;address indexed creator,<br />
+                    &nbsp;&nbsp;uint256 price,<br />
+                    &nbsp;&nbsp;uint256 timestamp<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  PurchaseMade
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a purchase is made through a payment link.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event PurchaseMade(<br />
+                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;address indexed buyer,<br />
+                    &nbsp;&nbsp;address indexed creator,<br />
+                    &nbsp;&nbsp;uint256 amount,<br />
+                    &nbsp;&nbsp;uint256 platformFee,<br />
+                    &nbsp;&nbsp;uint256 timestamp<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  PaymentLinkDeactivated
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a payment link is deactivated.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event PaymentLinkDeactivated(<br />
+                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;address indexed creator,<br />
+                    &nbsp;&nbsp;uint256 timestamp<br />
+                    );
+                  </code>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "overview":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Dashboard Overview
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Manage your payment links and track performance.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Quick Stats
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300">Total Links</h4>
+                    <p className="text-blue-600 dark:text-blue-400">Number of payment links created</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-800 dark:text-green-300">Total Sales</h4>
+                    <p className="text-green-600 dark:text-green-400">Total MON earned from all links</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-purple-800 dark:text-purple-300">Active Links</h4>
+                    <p className="text-purple-600 dark:text-purple-400">Currently active payment links</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Recent Activity
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  View your most recent transactions and link activities in real-time.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "analytics":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Analytics & Insights
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Track performance and understand your sales data.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Sales Analytics
+                </h3>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• <strong>Revenue Tracking:</strong> Monitor total earnings per link</li>
+                  <li>• <strong>Purchase Patterns:</strong> Analyze buying behavior over time</li>
+                  <li>• <strong>Performance Metrics:</strong> Compare link performance</li>
+                  <li>• <strong>Geographic Data:</strong> See where your customers are from</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Real-time Updates
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  All analytics are updated in real-time as transactions occur on the blockchain. 
+                  No delays or manual updates needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "management":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Link Management
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Organize and manage your payment links effectively.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Link Actions
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Available Actions</h4>
+                    <ul className="space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• View link details and stats</li>
+                      <li>• Copy payment link URL</li>
+                      <li>• Generate QR code</li>
+                      <li>• Deactivate link (irreversible)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Link Status</h4>
+                    <ul className="space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• <span className="text-green-500">Active:</span> Accepting payments</li>
+                      <li>• <span className="text-red-500">Deactivated:</span> No longer accepting payments</li>
+                      <li>• <span className="text-yellow-500">Limit Reached:</span> Sales limit met</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Bulk Operations
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Select multiple links to perform batch operations like bulk deactivation or 
+                  exporting analytics data.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "customer-flow":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Customer Payment Flow
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Understanding the customer experience when making payments.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Step-by-Step Process
+                </h3>
+                <ol className="space-y-4">
+                  <li className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      1
+                    </span>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Visit Payment Link</h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Customer clicks on your shared payment link
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      2
+                    </span>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">View Product Details</h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        See title, description, price, and cover image
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      3
+                    </span>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Connect Wallet</h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Connect compatible wallet to Monad Testnet
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      4
+                    </span>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Confirm Purchase</h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Review details and confirm blockchain transaction
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      5
+                    </span>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Payment Complete</h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Receive confirmation and transaction hash
+                      </p>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "transaction-flow":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Transaction Flow
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                How transactions are processed on the blockchain.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Payment Processing
+                </h3>
+                <ol className="space-y-3">
+                  <li><strong>1. Transaction Initiation:</strong> Customer confirms payment in wallet</li>
+                  <li><strong>2. Smart Contract Validation:</strong> Contract verifies link status and limits</li>
+                  <li><strong>3. Fee Calculation:</strong> Platform fee (1%) is calculated automatically</li>
+                  <li><strong>4. Payment Distribution:</strong> Funds sent to creator, fee to platform</li>
+                  <li><strong>5. Event Emission:</strong> PurchaseMade event logged on blockchain</li>
+                  <li><strong>6. UI Update:</strong> Frontend updates with new transaction data</li>
+                </ol>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Gas Fees
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Monad's high-performance blockchain ensures minimal gas fees:
+                </p>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• <strong>Payment Transaction:</strong> ~0.0001 MON</li>
+                  <li>• <strong>Link Creation:</strong> ~0.0002 MON</li>
+                  <li>• <strong>Link Deactivation:</strong> ~0.0001 MON</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "confirmations":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Transaction Confirmations
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Understanding blockchain confirmations and finality.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Monad Network Speed
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-800 dark:text-green-300">Block Time</h4>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">0.5s</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300">Finality</h4>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">1s</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-purple-800 dark:text-purple-300">TPS</h4>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">10,000</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Confirmation States
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                    <div>
+                      <strong>Pending:</strong> Transaction submitted to mempool
+                    </div>
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                    <div>
+                      <strong>1 Confirmation:</strong> Included in latest block
+                    </div>
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                    <div>
+                      <strong>Finalized:</strong> Transaction cannot be reversed
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "best-practices":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Security Best Practices
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Follow these guidelines to ensure secure usage of NadPay.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Wallet Security
+                </h3>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• Never share your private keys or seed phrases</li>
+                  <li>• Use hardware wallets for large amounts</li>
+                  <li>• Keep wallet software updated</li>
+                  <li>• Enable wallet lock/password protection</li>
+                  <li>• Verify URLs before connecting wallet</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Transaction Safety
+                </h3>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• Always verify you're on Monad Testnet (Chain ID: 10143)</li>
+                  <li>• Double-check transaction details before confirming</li>
+                  <li>• Start with small test transactions</li>
+                  <li>• Wait for confirmations before considering payment final</li>
+                  <li>• Keep transaction receipts and hashes</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Link Creation Best Practices
+                </h3>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• Use clear, descriptive titles and descriptions</li>
+                  <li>• Set appropriate limits to prevent abuse</li>
+                  <li>• Test links before sharing with customers</li>
+                  <li>• Monitor link activity regularly</li>
+                  <li>• Deactivate unused or compromised links</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "audit":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Smart Contract Audit
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Security audit information for NadPay smart contract.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                  Audit Status
+                </h3>
+                <p className="text-yellow-700 dark:text-yellow-300">
+                  This is a testnet deployment for demonstration purposes. 
+                  A full security audit will be conducted before mainnet deployment.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Security Measures Implemented
+                </h3>
+                <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>• <strong>ReentrancyGuard:</strong> Prevents reentrancy attacks</li>
+                  <li>• <strong>Ownable:</strong> Secure ownership management</li>
+                  <li>• <strong>Input Validation:</strong> All inputs are validated</li>
+                  <li>• <strong>SafeMath:</strong> Built-in overflow protection (Solidity 0.8+)</li>
+                  <li>• <strong>Event Logging:</strong> All actions are logged for transparency</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Planned Audit Process
+                </h3>
+                <ol className="space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>1. <strong>Automated Testing:</strong> Comprehensive test suite coverage</li>
+                  <li>2. <strong>Static Analysis:</strong> Code analysis tools (Slither, MythX)</li>
+                  <li>3. <strong>Manual Review:</strong> Expert security researcher review</li>
+                  <li>4. <strong>Formal Verification:</strong> Mathematical proof of correctness</li>
+                  <li>5. <strong>Public Report:</strong> Transparent audit results publication</li>
+                </ol>
+              </div>
             </div>
           </div>
         );

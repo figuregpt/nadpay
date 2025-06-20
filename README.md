@@ -36,7 +36,7 @@ NadPay is a fully decentralized payment link platform built for the Monad blockc
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/your-username/nadpay.git
 cd nadpay
 ```
 
