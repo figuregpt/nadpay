@@ -179,7 +179,7 @@ export default function Web3AppContent() {
           address: address as `0x${string}`
         });
         
-        if (monBalance > 0n) {
+        if (monBalance > BigInt(0)) {
           const monBalanceFormatted = (Number(monBalance) / Math.pow(10, 18)).toFixed(6);
           tokens.push({
             address: '0x0000000000000000000000000000000000000000',
@@ -280,7 +280,7 @@ export default function Web3AppContent() {
                     name: transfer.tokenName || 'Unknown Token',
                     symbol: transfer.tokenSymbol || 'UNKNOWN',
                     decimals: transfer.tokenDecimals || 18,
-                    balance: 0n
+                    balance: BigInt(0)
                   });
                 }
                 
@@ -295,7 +295,7 @@ export default function Web3AppContent() {
 
             // Convert to TokenInfo format (only positive balances)
             for (const [_, tokenData] of tokenBalances) {
-              if (tokenData.balance > 0n) {
+              if (tokenData.balance > BigInt(0)) {
                 const balanceFormatted = (Number(tokenData.balance) / Math.pow(10, tokenData.decimals)).toFixed(8);
                 
                 // Generate token logo
@@ -367,7 +367,7 @@ export default function Web3AppContent() {
               args: [address as `0x${string}`]
             });
             
-            if (balance && balance > 0n) {
+            if (balance && balance > BigInt(0)) {
               const balanceFormatted = (Number(balance) / Math.pow(10, knownToken.decimals)).toFixed(8);
               tokens.push({
                 address: knownToken.address,
