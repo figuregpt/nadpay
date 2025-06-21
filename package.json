@@ -1,45 +1,32 @@
 {
-  "name": "nadpay",
+  "name": "envio-indexer",
   "version": "0.1.0",
-  "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "compile": "npx hardhat compile",
-    "generate-abi": "npm run compile && node scripts/generateABI.js",
-    "deploy:testnet": "npx hardhat run scripts/deploy.js --network monadTestnet"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.80.7",
-    "@types/qrcode": "^1.5.5",
-    "autoprefixer": "^10.4.21",
-    "connectkit": "^1.9.1",
-    "dotenv": "^16.5.0",
-    "framer-motion": "^12.18.1",
-    "ipfs-http-client": "^60.0.1",
-    "lucide-react": "^0.517.0",
-    "next": "15.3.4",
-    "next-themes": "^0.4.6",
-    "qrcode": "^1.5.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "viem": "^2.31.3",
-    "wagmi": "^2.15.6"
+    "clean": "tsc --clean",
+    "build": "tsc --build",
+    "watch": "tsc --watch",
+    "mocha": "ts-mocha test/**/*.ts",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "test": "pnpm mocha"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts": "^5.3.0",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.4",
-    "hardhat": "^2.24.3",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.14",
-    "typescript": "^5"
+    "@types/chai": "^4.3.11",    
+    "@types/mocha": "10.0.6",
+    "@types/node": "20.8.8",
+    "ts-mocha": "^10.0.0",
+    "typescript": "5.2.2",
+    "chai": "4.3.10",
+    "mocha": "10.2.0"
+  },
+  "dependencies": {
+    "envio": "2.24.0"
+  },
+  "optionalDependencies": {
+    "generated": "./generated"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

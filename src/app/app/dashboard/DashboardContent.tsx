@@ -83,7 +83,7 @@ export default function DashboardContent() {
           uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
           purchases: [], // Will be fetched separately if needed
           createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
-          expiresAt: formatted.expiresAt || BigInt(0),
+          expiresAt: (formatted as any).expiresAt || BigInt(0),
         };
     } catch (error) {
       console.error('Error formatting payment link:', error, link);
@@ -342,6 +342,12 @@ export default function DashboardContent() {
                 className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold"
               >
                 Create New Link
+              </a>
+              <a
+                href="/app"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold"
+              >
+                Create Raffle
               </a>
               <a
                 href="/app"
