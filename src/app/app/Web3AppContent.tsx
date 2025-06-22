@@ -700,6 +700,46 @@ export default function Web3AppContent() {
     handleTransactionSuccess();
   }, [isConfirmed, hash, getLinkIdFromTransaction]);
 
+  // Handle successful raffle creation
+  useEffect(() => {
+    const handleRaffleSuccess = async () => {
+      if (isRaffleConfirmed && raffleHash) {
+        try {
+          console.log('🎉 Raffle created successfully!', raffleHash);
+          
+          // Reset form
+          setRaffleFormData({
+            title: '',
+            description: '',
+            imageHash: '',
+            rewardType: 'TOKEN',
+            rewardTokenAddress: '',
+            rewardAmount: '',
+            ticketPrice: '',
+            maxTickets: 10,
+            maxTicketsPerWallet: 5,
+            expirationDateTime: '',
+            autoDistributeOnSoldOut: true
+          });
+          
+          // Show success message
+          alert('🎉 Raffle created successfully! Your raffle is now live.');
+          
+          // Refresh balances to show updated amounts
+          refreshKnownAssets();
+          
+          // Optional: Navigate to dashboard or raffle view
+          // You could add navigation here if needed
+          
+        } catch (error) {
+          console.error('Error processing raffle success:', error);
+        }
+      }
+    };
+
+    handleRaffleSuccess();
+  }, [isRaffleConfirmed, raffleHash, refreshKnownAssets]);
+
   const handleCreateRaffle = async () => {
     if (!isConnected || !address) {
       alert("Please connect your wallet first");
