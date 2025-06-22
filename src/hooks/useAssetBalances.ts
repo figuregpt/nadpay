@@ -68,7 +68,21 @@ export function useAssetBalances() {
     // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
-    // Mock random balance for demonstration
+    // For MON (native token), simulate a realistic balance
+    if (token.symbol === 'MON') {
+      const mockBalance = Math.random() * 100 + 10; // 10-110 MON
+      const balanceString = (mockBalance * Math.pow(10, token.decimals)).toString();
+      const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+
+      return {
+        ...token,
+        balance: balanceString,
+        formattedBalance,
+        isLoading: false,
+      };
+    }
+    
+    // For other tokens, mock random balance
     const mockBalance = Math.random() * 10000;
     const balanceString = (mockBalance * Math.pow(10, token.decimals)).toString();
     const formattedBalance = formatTokenBalance(balanceString, token.decimals);

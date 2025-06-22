@@ -21,12 +21,12 @@ export interface KnownNFT {
 // Known ERC-20 tokens on Monad testnet
 export const KNOWN_TOKENS: KnownToken[] = [
   {
-    address: "0x0f0bdebf0f83cd1ee3974779bcb7315f9808c714", // Example token contract
-    name: "Example Token",
-    symbol: "EXT",
+    address: "0x0000000000000000000000000000000000000000", // Native MON token
+    name: "Monad",
+    symbol: "MON",
     decimals: 18,
-    logo: "🪙",
-    description: "Example token for testing"
+    logo: "⚡",
+    description: "Native Monad token"
   }
 ];
 
