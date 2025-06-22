@@ -54,6 +54,24 @@ export function useNadRaffleContract() {
     creationFee?: string;
   }) => {
     try {
+      // Additional validation
+      if (rewardType === 'TOKEN' && !rewardTokenAddress) {
+        throw new Error('Valid token address required for TOKEN reward');
+      }
+      if (rewardType === 'NFT' && (!rewardTokenAddress || rewardTokenAddress === '0x0000000000000000000000000000000000000000')) {
+        throw new Error('Valid NFT address required for NFT reward');
+      }
+      if (!rewardAmount || parseFloat(rewardAmount) <= 0) {
+        throw new Error('Reward amount must be greater than 0');
+      }
+      
+      // Calculate total value needed for MON rewards
+      let totalValue = parseEther(creationFee); // Base creation fee
+      if (rewardType === 'TOKEN' && rewardTokenAddress === '0x0000000000000000000000000000000000000000') {
+        // For native MON rewards, add reward amount to the transaction value
+        totalValue = parseEther(creationFee) + parseEther(rewardAmount);
+      }
+      
       writeContract({
         address: NADRAFFLE_CONTRACT.address as `0x${string}`,
         abi: NADRAFFLE_CONTRACT.abi,
@@ -64,14 +82,14 @@ export function useNadRaffleContract() {
           imageHash || "",
           REWARD_TYPES[rewardType],
           rewardTokenAddress as `0x${string}`,
-          parseEther(rewardAmount || "0"),
+          parseEther(rewardAmount),
           parseEther(ticketPrice),
           BigInt(maxTickets),
           BigInt(maxTicketsPerWallet),
           BigInt(expirationTime),
           autoDistributeOnSoldOut,
         ],
-        value: parseEther(creationFee),
+        value: totalValue,
       });
     } catch (err) {
       console.error('Error creating raffle:', err);

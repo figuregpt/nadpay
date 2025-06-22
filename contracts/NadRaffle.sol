@@ -111,7 +111,11 @@ contract NadRaffle is ReentrancyGuard, Ownable {
     ) external payable nonReentrant returns (uint256) {
         _validateRaffleParams(title, description, ticketPrice, maxTickets, maxTicketsPerWallet, expirationTime);
         
-        require(msg.value >= 0.001 ether, "Insufficient fee for raffle creation");
+        uint256 requiredValue = 0.001 ether; // Base creation fee
+        if (rewardType == RewardType.TOKEN && rewardTokenAddress == address(0)) {
+            requiredValue += rewardAmount; // Add reward amount for native MON
+        }
+        require(msg.value >= requiredValue, "Insufficient fee for raffle creation");
 
         _raffleIdCounter++;
         uint256 raffleId = _raffleIdCounter;
@@ -145,7 +149,13 @@ contract NadRaffle is ReentrancyGuard, Ownable {
     function _transferReward(RewardType rewardType, address rewardTokenAddress, uint256 rewardAmount) internal {
         if (rewardType == RewardType.TOKEN) {
             require(rewardAmount > 0, "Reward amount must be greater than 0");
-            IERC20(rewardTokenAddress).transferFrom(msg.sender, address(this), rewardAmount);
+            if (rewardTokenAddress == address(0)) {
+                // Native MON token - no transfer needed, reward will be sent from contract balance
+                require(msg.value >= rewardAmount, "Insufficient MON sent for reward");
+            } else {
+                // ERC-20 token
+                IERC20(rewardTokenAddress).transferFrom(msg.sender, address(this), rewardAmount);
+            }
         } else {
             IERC721(rewardTokenAddress).transferFrom(msg.sender, address(this), rewardAmount);
         }
@@ -304,7 +314,13 @@ contract NadRaffle is ReentrancyGuard, Ownable {
         raffle.rewardClaimed = true;
 
         if (raffle.rewardType == RewardType.TOKEN) {
-            IERC20(raffle.rewardTokenAddress).transfer(msg.sender, raffle.rewardAmount);
+            if (raffle.rewardTokenAddress == address(0)) {
+                // Native MON token
+                payable(msg.sender).transfer(raffle.rewardAmount);
+            } else {
+                // ERC-20 token
+                IERC20(raffle.rewardTokenAddress).transfer(msg.sender, raffle.rewardAmount);
+            }
         } else {
             IERC721(raffle.rewardTokenAddress).transferFrom(address(this), msg.sender, raffle.rewardAmount);
         }
@@ -322,7 +338,13 @@ contract NadRaffle is ReentrancyGuard, Ownable {
 
         // Return the reward to creator
         if (raffle.rewardType == RewardType.TOKEN) {
-            IERC20(raffle.rewardTokenAddress).transfer(raffle.creator, raffle.rewardAmount);
+            if (raffle.rewardTokenAddress == address(0)) {
+                // Native MON token
+                payable(raffle.creator).transfer(raffle.rewardAmount);
+            } else {
+                // ERC-20 token
+                IERC20(raffle.rewardTokenAddress).transfer(raffle.creator, raffle.rewardAmount);
+            }
         } else {
             IERC721(raffle.rewardTokenAddress).transferFrom(address(this), raffle.creator, raffle.rewardAmount);
         }

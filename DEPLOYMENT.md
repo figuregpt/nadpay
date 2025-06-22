@@ -109,7 +109,14 @@ If contract verification fails:
 
 ## Contract Addresses
 
+### NadPay (Payment Links)
 - **Monad Testnet**: `0x17c31F99b27c10fbFF0aA241202DF687377DC24A`
+
+### NadRaffle (Raffle System) 
+- **Monad Testnet**: `0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e`
+- **Features**: Native MON token rewards, NFT rewards, auto-distribution
+- **Platform Fee**: 2% (200 basis points)
+- **Deployment Block**: 22854210
 
 ## Support
 

@@ -718,6 +718,38 @@ export default function Web3AppContent() {
         alert("Please enter a valid reward amount");
         return;
       }
+      
+      // Check if user has enough balance
+      const selectedToken = userTokens.find(token => token.address === raffleFormData.rewardTokenAddress);
+      if (!selectedToken) {
+        alert("Selected token not found in your wallet");
+        return;
+      }
+      
+      const userBalance = parseFloat(selectedToken.balance);
+      const rewardAmount = parseFloat(raffleFormData.rewardAmount);
+      const creationFee = 0.001; // Base creation fee
+      
+      if (raffleFormData.rewardTokenAddress === '0x0000000000000000000000000000000000000000') {
+        // Native MON token - check if user has enough for reward + creation fee
+        const totalRequired = rewardAmount + creationFee;
+        if (totalRequired > userBalance) {
+          alert(`Insufficient MON balance. You need ${totalRequired} MON total (${rewardAmount} for reward + ${creationFee} creation fee), but have ${userBalance} MON`);
+          return;
+        }
+        console.log(`✅ MON reward: ${rewardAmount} MON + ${creationFee} MON creation fee = ${totalRequired} MON total`);
+      } else {
+        // ERC-20 token - check token balance only (creation fee is separate)
+        if (rewardAmount > userBalance) {
+          alert(`Insufficient balance. You have ${userBalance} ${selectedToken.symbol}, but trying to reward ${rewardAmount}`);
+          return;
+        }
+        
+        // Important note about token approval
+        console.log(`⚠️ Important: You need to approve the NadRaffle contract to spend ${rewardAmount} ${selectedToken.symbol} tokens.`);
+        console.log(`Token Address: ${selectedToken.address}`);
+        console.log(`Contract Address: 0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e`);
+      }
     } else if (raffleFormData.rewardType === 'NFT') {
       if (!raffleFormData.rewardTokenAddress) {
         alert("Please select an NFT for the reward");
@@ -740,8 +772,8 @@ export default function Web3AppContent() {
         description: raffleFormData.description,
         imageHash: raffleFormData.imageHash || "", // Default to empty string
         rewardType: raffleFormData.rewardType,
-        rewardTokenAddress: raffleFormData.rewardTokenAddress || "0x0000000000000000000000000000000000000000",
-        rewardAmount: raffleFormData.rewardAmount || "0",
+        rewardTokenAddress: raffleFormData.rewardTokenAddress, // Should be validated above
+        rewardAmount: raffleFormData.rewardAmount,
         ticketPrice: raffleFormData.ticketPrice,
         maxTickets: raffleFormData.maxTickets,
         maxTicketsPerWallet: raffleFormData.maxTicketsPerWallet,
@@ -1375,11 +1407,20 @@ export default function Web3AppContent() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                             </svg>
                             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                              No tokens found in your wallet
+                              No ERC-20 tokens available
                             </div>
-                            <div className="text-gray-500 dark:text-gray-400">
-                              You need tokens to create a token-based raffle. Try switching to NFT rewards or add some tokens to your wallet.
+                            <div className="text-gray-500 dark:text-gray-400 mb-4">
+                              Token rewards require ERC-20 tokens. Native MON is not supported yet for raffle rewards.
                             </div>
+                            <div className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-4">
+                              <strong>Note:</strong> The contract currently only supports ERC-20 tokens for rewards, not native MON.
+                            </div>
+                            <button
+                              onClick={() => handleRaffleInputChange('rewardType', 'NFT')}
+                              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-opacity font-medium"
+                            >
+                              Switch to NFT Rewards
+                            </button>
                           </div>
                         </div>
                       )}

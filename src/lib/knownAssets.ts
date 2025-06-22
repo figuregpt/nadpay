@@ -26,7 +26,7 @@ export const KNOWN_TOKENS: KnownToken[] = [
     symbol: "MON",
     decimals: 18,
     logo: "/monad-logo.svg",
-    description: "Native Monad token"
+    description: "Native Monad token - supported for raffle rewards"
   }
 ];
 
