@@ -21,6 +21,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.80.7",
     "@types/qrcode": "^1.5.5",
+    "@wagmi/core": "^2.17.3",
     "autoprefixer": "^10.4.21",
     "connectkit": "^1.9.1",
     "dotenv": "^16.5.0",
