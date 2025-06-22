@@ -1303,7 +1303,7 @@ export default function Web3AppContent() {
                                   {token.name}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                  {token.symbol} • Balance: {parseFloat(token.balance).toFixed(4)}
+                                  {token.symbol} • Balance: {token.balance}
                                 </div>
                               </div>
                             </div>
