@@ -457,16 +457,35 @@ export default function Web3AppContent() {
       try {
         if (raffleFormData.rewardType === 'TOKEN') {
           // Convert tokenBalances to userTokens format
-          const tokens = tokenBalances.map(token => ({
-            address: token.address,
-            name: token.name,
-            symbol: token.symbol,
-            decimals: token.decimals,
-            balance: token.formattedBalance,
-            logo: token.logo
-          }));
+          const tokens = tokenBalances.map(token => {
+            // For MON (native token), convert from Wei to readable format
+            let readableBalance = token.formattedBalance;
+            if (token.symbol === 'MON' && token.balance !== '0') {
+              const balanceInEther = parseFloat(token.balance) / Math.pow(10, token.decimals);
+              readableBalance = balanceInEther.toFixed(4);
+            }
+            
+            return {
+              address: token.address,
+              name: token.name,
+              symbol: token.symbol,
+              decimals: token.decimals,
+              balance: readableBalance,
+              logo: token.logo
+            };
+          });
           setUserTokens(tokens);
-          console.log(`Loaded ${tokens.length} known tokens with balances`);
+          console.log(`Loaded ${tokens.length} known tokens with balances:`, tokens);
+          
+          // Debug MON balance specifically
+          const monToken = tokens.find(t => t.symbol === 'MON');
+          if (monToken) {
+            console.log('MON Token Details:', {
+              address: monToken.address,
+              balance: monToken.balance,
+              symbol: monToken.symbol
+            });
+          }
         } else {
           // Convert nftBalances to userNFTs format for collections that user owns
           const nfts: NFTInfo[] = [];

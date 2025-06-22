@@ -68,14 +68,23 @@ export function useAssetBalances() {
 
   // Mock function to simulate token balance fetching
   const fetchTokenBalance = async (token: KnownToken): Promise<TokenBalance> => {
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-    
     // For MON (native token), use real balance from wagmi
     if (token.symbol === 'MON') {
-      if (nativeBalance) {
+      console.log('Fetching MON balance...', {
+        nativeBalance: nativeBalance?.formatted,
+        nativeBalanceValue: nativeBalance?.value.toString(),
+        isNativeLoading
+      });
+      
+      if (nativeBalance && nativeBalance.value > BigInt(0)) {
         const balanceString = nativeBalance.value.toString();
         const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+
+        console.log('MON balance found:', {
+          raw: balanceString,
+          formatted: formattedBalance,
+          decimals: token.decimals
+        });
 
         return {
           ...token,
@@ -84,6 +93,7 @@ export function useAssetBalances() {
           isLoading: false,
         };
       } else {
+        console.log('No MON balance or still loading');
         return {
           ...token,
           balance: '0',
@@ -92,6 +102,9 @@ export function useAssetBalances() {
         };
       }
     }
+    
+    // Simulate loading delay for other tokens
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
     // For other tokens, mock random balance
     const mockBalance = Math.random() * 10000;
