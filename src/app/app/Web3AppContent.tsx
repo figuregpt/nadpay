@@ -636,9 +636,19 @@ export default function Web3AppContent() {
         maxPerWallet: parseInt(formData.maxPerWallet) || 0,
         expiresAt: expiresAt,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating payment link:', error);
-      alert('Failed to create payment link. Please try again.');
+      
+      // User-friendly error messages
+      if (error?.message?.includes('User rejected')) {
+        setError(new Error("Transaction was cancelled. Please try again when you're ready to proceed."));
+      } else if (error?.message?.includes('insufficient funds')) {
+        setError(new Error("Insufficient funds. Please make sure you have enough MON to create the payment link."));
+      } else if (error?.message?.includes('gas')) {
+        setError(new Error("Transaction failed due to gas issues. Please try again."));
+      } else {
+        setError(new Error("Failed to create payment link. Please check your inputs and try again."));
+      }
     }
   };
 
@@ -693,6 +703,21 @@ export default function Web3AppContent() {
       return;
     }
 
+    if (!raffleFormData.ticketPrice || parseFloat(raffleFormData.ticketPrice) <= 0) {
+      alert("Please enter a valid ticket price");
+      return;
+    }
+
+    if (raffleFormData.rewardType === 'TOKEN' && (!raffleFormData.rewardTokenAddress || !raffleFormData.rewardAmount)) {
+      alert("Please select a token and enter reward amount");
+      return;
+    }
+
+    if (raffleFormData.rewardType === 'NFT' && !raffleFormData.rewardTokenAddress) {
+      alert("Please select an NFT for the reward");
+      return;
+    }
+
     try {
       const now = new Date();
       const expirationTimestamp = raffleFormData.expirationDateTime ? 
@@ -702,17 +727,17 @@ export default function Web3AppContent() {
       await createRaffle({
         title: raffleFormData.title,
         description: raffleFormData.description,
-        imageHash: raffleFormData.imageHash,
+        imageHash: raffleFormData.imageHash || '',
         rewardType: raffleFormData.rewardType,
-        rewardTokenAddress: raffleFormData.rewardTokenAddress,
-        rewardAmount: raffleFormData.rewardAmount,
+        rewardTokenAddress: raffleFormData.rewardTokenAddress || '0x0000000000000000000000000000000000000000',
+        rewardAmount: raffleFormData.rewardAmount || '0',
         ticketPrice: raffleFormData.ticketPrice,
         maxTickets: raffleFormData.maxTickets,
         maxTicketsPerWallet: raffleFormData.maxTicketsPerWallet,
         expirationTime: expirationTimestamp,
         autoDistributeOnSoldOut: raffleFormData.autoDistributeOnSoldOut
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating raffle:', error);
     }
   };
@@ -1165,7 +1190,14 @@ export default function Web3AppContent() {
               {contractError && (
                 <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                   <p className="text-red-600 dark:text-red-400 text-sm">
-                    Error: {contractError.message}
+                    {contractError.message?.includes('User rejected') 
+                      ? "Transaction was cancelled. Please try again when you're ready to proceed."
+                      : contractError.message?.includes('insufficient funds')
+                      ? "Insufficient funds. Please make sure you have enough MON to create the payment link."
+                      : contractError.message?.includes('gas')
+                      ? "Transaction failed due to gas issues. Please try again."
+                      : "Failed to create payment link. Please check your inputs and try again."
+                    }
                   </p>
                 </div>
               )}
@@ -1591,7 +1623,14 @@ export default function Web3AppContent() {
               {raffleError && (
                 <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                   <p className="text-red-600 dark:text-red-400 text-sm">
-                    Error: {raffleError.message}
+                    {raffleError.message?.includes('User rejected') 
+                      ? "Transaction was cancelled. Please try again when you're ready to proceed."
+                      : raffleError.message?.includes('insufficient funds')
+                      ? "Insufficient funds. Please make sure you have enough MON to create the raffle."
+                      : raffleError.message?.includes('gas')
+                      ? "Transaction failed due to gas issues. Please try again."
+                      : "Failed to create raffle. Please check your inputs and try again."
+                    }
                   </p>
                 </div>
               )}
