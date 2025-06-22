@@ -25,7 +25,7 @@ export const KNOWN_TOKENS: KnownToken[] = [
     name: "Monad",
     symbol: "MON",
     decimals: 18,
-    logo: "⚡",
+    logo: "/monad-logo.svg",
     description: "Native Monad token"
   }
 ];
