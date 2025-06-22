@@ -4,7 +4,7 @@ async function main() {
   console.log("Testing NadRaffle contract...");
 
   // Get the deployed contract
-  const contractAddress = "0x5007131517440FEEf9F67291A35E4100c41f3aB5";
+  const contractAddress = "0x960F8C6AaDFA3902060A61E3c612833aA05B2837";
   const NadRaffle = await ethers.getContractFactory("NadRaffle");
   const nadRaffle = NadRaffle.attach(contractAddress);
 

@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract NadRaffle is ReentrancyGuard, Ownable {
     uint256 private _raffleIdCounter;
-    uint256 public platformFeePercentage = 250; // 2.5% (250 basis points)
+    uint256 public platformFeePercentage = 200; // 2% (200 basis points)
     uint256 public constant MAX_FEE = 500; // 5% maximum
 
     enum RewardType { TOKEN, NFT }

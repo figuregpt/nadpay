@@ -452,10 +452,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0xa81F9ED8cf8030424F049b385a1dB32cA504177d
+                                              0x17c31F99b27c10fbFF0aA241202DF687377DC24A
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xa81F9ED8cf8030424F049b385a1dB32cA504177d")}
+                                              onClick={() => copyToClipboard("0x17c31F99b27c10fbFF0aA241202DF687377DC24A")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />

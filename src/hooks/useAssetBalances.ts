@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 import { KNOWN_TOKENS, KNOWN_NFTS, KnownToken, KnownNFT } from '../lib/knownAssets';
 
 export interface TokenBalance extends KnownToken {
@@ -47,6 +47,9 @@ const ERC721_ABI = [
 
 export function useAssetBalances() {
   const { address, isConnected } = useAccount();
+  const { data: nativeBalance, isLoading: isNativeLoading } = useBalance({
+    address: address,
+  });
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [nftBalances, setNftBalances] = useState<NFTBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,18 +71,26 @@ export function useAssetBalances() {
     // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
-    // For MON (native token), simulate a realistic balance
+    // For MON (native token), use real balance from wagmi
     if (token.symbol === 'MON') {
-      const mockBalance = Math.random() * 100 + 10; // 10-110 MON
-      const balanceString = (mockBalance * Math.pow(10, token.decimals)).toString();
-      const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+      if (nativeBalance) {
+        const balanceString = nativeBalance.value.toString();
+        const formattedBalance = formatTokenBalance(balanceString, token.decimals);
 
-      return {
-        ...token,
-        balance: balanceString,
-        formattedBalance,
-        isLoading: false,
-      };
+        return {
+          ...token,
+          balance: balanceString,
+          formattedBalance,
+          isLoading: false,
+        };
+      } else {
+        return {
+          ...token,
+          balance: '0',
+          formattedBalance: '0',
+          isLoading: isNativeLoading,
+        };
+      }
     }
     
     // For other tokens, mock random balance
@@ -199,10 +210,10 @@ export function useAssetBalances() {
     }
   };
 
-  // Fetch balances when address changes
+  // Fetch balances when address changes or native balance updates
   useEffect(() => {
     fetchAllBalances();
-  }, [address, isConnected]);
+  }, [address, isConnected, nativeBalance]);
 
   // Refresh function
   const refresh = () => {

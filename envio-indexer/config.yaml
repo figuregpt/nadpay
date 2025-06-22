@@ -10,14 +10,14 @@ networks:
     start_block: 22527200
     contracts:
       - name: NadPay
-        address: "0xa81F9ED8cf8030424F049b385a1dB32cA504177d"
+        address: "0x17c31F99b27c10fbFF0aA241202DF687377DC24A"
         handler: src/EventHandlers.ts
         events:
           - event: PaymentLinkCreated(uint256 indexed linkId, address indexed creator, string title, uint256 price, uint256 totalSales, uint256 maxPerWallet, uint256 expireTimestamp)
           - event: PurchaseMade(uint256 indexed linkId, address indexed buyer, uint256 amount, uint256 totalPrice)
       
       - name: NadRaffle
-        address: "0x5007131517440FEEf9F67291A35E4100c41f3aB5"
+        address: "0x960F8C6AaDFA3902060A61E3c612833aA05B2837"
         handler: src/EventHandlers.ts
         events:
           - event: RaffleCreated(uint256 indexed raffleId, address indexed creator, string title, uint8 rewardType, address rewardTokenAddress, uint256 rewardAmount, uint256 ticketPrice, uint256 maxTickets, uint256 maxTicketsPerWallet, uint256 expirationTimestamp, bool autoDistributeOnSoldOut)

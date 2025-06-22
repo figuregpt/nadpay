@@ -2,7 +2,7 @@
 // Do not edit manually - run 'npm run generate-raffle-abi' to regenerate
 
 export const NADRAFFLE_CONTRACT = {
-  "address": "0x5007131517440FEEf9F67291A35E4100c41f3aB5",
+  "address": "0x960F8C6AaDFA3902060A61E3c612833aA05B2837",
   "abi": [
   {
     "inputs": [],

@@ -45,7 +45,7 @@ async function main() {
   
   // Save deployment info
   const fs = require('fs');
-  const     deploymentInfo = {
+  const deploymentInfo = {
     network: hre.network.name,
     contractAddress: contractAddress,
     deploymentBlock: await hre.ethers.provider.getBlockNumber(),
