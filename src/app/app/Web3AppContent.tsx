@@ -111,6 +111,7 @@ export default function Web3AppContent() {
 
   const {
     createRaffle,
+    getRaffleIdFromTransaction,
     isPending: isRaffleCreating,
     isConfirming: isRaffleConfirming,
     isConfirmed: isRaffleConfirmed,
@@ -703,9 +704,28 @@ export default function Web3AppContent() {
   // Handle successful raffle creation
   useEffect(() => {
     const handleRaffleSuccess = async () => {
-      if (isRaffleConfirmed && raffleHash) {
+      if (isRaffleConfirmed && raffleHash && !generatedLink) {
         try {
           console.log('🎉 Raffle created successfully!', raffleHash);
+          
+          // Get real raffle ID from transaction events
+          const raffleId = await getRaffleIdFromTransaction(raffleHash);
+          
+          let raffleLink: string;
+          if (raffleId !== null) {
+            // Create secure raffle link with real ID
+            raffleLink = `${window.location.origin}/raffle/${raffleId}`;
+          } else {
+            // Fallback: use timestamp
+            console.warn('Could not extract raffle ID from transaction, using fallback');
+            const fallbackId = Date.now();
+            raffleLink = `${window.location.origin}/raffle/${fallbackId}`;
+          }
+          
+          setGeneratedLink(raffleLink);
+          
+          // Generate QR code for the raffle link
+          await generateQRCode(raffleLink);
           
           // Reset form
           setRaffleFormData({
@@ -722,14 +742,8 @@ export default function Web3AppContent() {
             autoDistributeOnSoldOut: true
           });
           
-          // Show success message
-          alert('🎉 Raffle created successfully! Your raffle is now live.');
-          
           // Refresh balances to show updated amounts
           refreshKnownAssets();
-          
-          // Optional: Navigate to dashboard or raffle view
-          // You could add navigation here if needed
           
         } catch (error) {
           console.error('Error processing raffle success:', error);
@@ -738,7 +752,7 @@ export default function Web3AppContent() {
     };
 
     handleRaffleSuccess();
-  }, [isRaffleConfirmed, raffleHash, refreshKnownAssets]);
+  }, [isRaffleConfirmed, raffleHash, generatedLink, refreshKnownAssets, getRaffleIdFromTransaction]);
 
   const handleCreateRaffle = async () => {
     if (!isConnected || !address) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther } from 'viem';
+import { parseEther, createPublicClient, http, decodeEventLog } from 'viem';
 import { NADRAFFLE_CONTRACT, REWARD_TYPES, RAFFLE_STATUS, type Raffle } from '@/lib/raffle-contract';
 
 export function useNadRaffleContract() {
@@ -199,6 +199,51 @@ export function useNadRaffleContract() {
     }
   };
 
+  // Get raffle ID from transaction events
+  const getRaffleIdFromTransaction = async (txHash: string): Promise<number | null> => {
+    try {
+      const publicClient = createPublicClient({
+        chain: {
+          id: 10143,
+          name: 'Monad Testnet',
+          nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+          rpcUrls: {
+            default: { http: ['https://testnet-rpc.monad.xyz'] }
+          }
+        },
+        transport: http()
+      });
+
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: txHash as `0x${string}`
+      });
+
+      // Look for RaffleCreated event
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() === NADRAFFLE_CONTRACT.address.toLowerCase()) {
+          try {
+            const decoded = decodeEventLog({
+              abi: NADRAFFLE_CONTRACT.abi,
+              data: log.data,
+              topics: log.topics,
+            });
+            
+            if (decoded.eventName === 'RaffleCreated') {
+              return Number(decoded.args.raffleId);
+            }
+          } catch (decodeError) {
+            console.log('Could not decode log:', decodeError);
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting raffle ID from transaction:', error);
+      return null;
+    }
+  };
+
   return {
     // Contract data
     totalRaffles,
@@ -225,6 +270,7 @@ export function useNadRaffleContract() {
     formatRaffleData,
     getStatusText,
     getRewardTypeText,
+    getRaffleIdFromTransaction,
     
     // Constants
     REWARD_TYPES,
