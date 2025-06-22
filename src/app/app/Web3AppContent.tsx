@@ -1283,17 +1283,19 @@ export default function Web3AppContent() {
                         >
                                                       <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                              <div className="w-12 h-12 flex items-center justify-center">
                                 {token.logo && (token.logo.startsWith('http') || token.logo.startsWith('/')) ? (
                                   <img 
                                     src={token.logo} 
                                     alt={token.name}
-                                    className="w-8 h-8 rounded-full"
+                                    className="w-10 h-10"
                                   />
                                 ) : (
-                                  <span className="text-2xl">
-                                    {token.logo || '🪙'}
-                                  </span>
+                                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                                    <span className="text-2xl">
+                                      {token.logo || '🪙'}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                               <div>
