@@ -61,10 +61,10 @@ export function useNadRaffleContract() {
         args: [
           title,
           description,
-          imageHash,
+          imageHash || "",
           REWARD_TYPES[rewardType],
           rewardTokenAddress as `0x${string}`,
-          parseEther(rewardAmount),
+          parseEther(rewardAmount || "0"),
           parseEther(ticketPrice),
           BigInt(maxTickets),
           BigInt(maxTicketsPerWallet),
