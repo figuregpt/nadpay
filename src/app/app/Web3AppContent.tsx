@@ -9,6 +9,7 @@ import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
 import { useCreatePaymentLink } from "@/hooks/useNadPayContract";
 import { useNadRaffleContract } from "@/hooks/useNadRaffleContract";
+import { useAssetBalances } from "@/hooks/useAssetBalances";
 import { LogOut } from "lucide-react";
 import { createPublicClient, http } from "viem";
 
@@ -116,6 +117,9 @@ export default function Web3AppContent() {
     error: raffleError,
     hash: raffleHash
   } = useNadRaffleContract();
+
+  // Use hardcoded asset balances hook
+  const { tokenBalances, nftBalances, isLoading: isLoadingKnownAssets, refresh: refreshKnownAssets } = useAssetBalances();
 
   // Create secure link ID using transaction hash as seed
   const createSecureLinkId = (internalId: number, txHash: string): string => {
@@ -431,27 +435,56 @@ export default function Web3AppContent() {
       }
 
       setIsLoadingAssets(true);
-      console.log('Discovering user assets for address:', address);
+      console.log('Loading hardcoded assets with balances for address:', address);
+
+      // Wait for known assets to load if they're still loading
+      if (isLoadingKnownAssets) {
+        setIsLoadingAssets(false);
+        return;
+      }
 
       try {
         if (raffleFormData.rewardType === 'TOKEN') {
-          const tokens = await discoverUserTokens(address);
+          // Convert tokenBalances to userTokens format
+          const tokens = tokenBalances.map(token => ({
+            address: token.address,
+            name: token.name,
+            symbol: token.symbol,
+            decimals: token.decimals,
+            balance: token.formattedBalance,
+            logo: token.logo
+          }));
           setUserTokens(tokens);
-          console.log(`Discovered ${tokens.length} tokens`);
+          console.log(`Loaded ${tokens.length} known tokens with balances`);
         } else {
-          const nfts = await discoverUserNFTs(address);
+          // Convert nftBalances to userNFTs format for collections that user owns
+          const nfts: NFTInfo[] = [];
+          nftBalances.forEach(nftCollection => {
+            if (nftCollection.totalOwned > 0) {
+              // Add each owned token as a separate NFT entry
+              nftCollection.ownedTokens.forEach(tokenId => {
+                nfts.push({
+                  address: nftCollection.address,
+                  tokenId: tokenId,
+                  name: `${nftCollection.name} #${tokenId}`,
+                  collectionName: nftCollection.name,
+                  image: nftCollection.image
+                });
+              });
+            }
+          });
           setUserNFTs(nfts);
-          console.log(`Discovered ${nfts.length} NFTs`);
+          console.log(`Loaded ${nfts.length} known NFTs with ownership`);
         }
       } catch (error) {
-        console.error('Error loading user assets:', error);
+        console.error('Error loading known assets:', error);
       } finally {
         setIsLoadingAssets(false);
       }
     };
 
     loadUserAssets();
-  }, [address, isConnected, raffleFormData.rewardType]);
+  }, [address, isConnected, raffleFormData.rewardType, tokenBalances, nftBalances]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

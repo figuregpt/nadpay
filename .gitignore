@@ -35,4 +35,5 @@ logs
 *.gen.ts
 build
 .env
+.env.local
 .next/
