@@ -3,9 +3,9 @@ import { injected } from "wagmi/connectors";
 import { createStorage, noopStorage } from "wagmi";
 import { createPublicClient } from "viem";
 
-// Monad testnet konfigürasyonu (EVM-compatible) - Güncellenmiş parametreler
+// Monad testnet configuration (EVM-compatible) - Updated parameters
 export const monadTestnet = {
-  id: 10143, // Doğru Chain ID (Resmi Monad Docs'a göre)
+  id: 10143, // Correct Chain ID (According to official Monad docs)
   name: "Monad Testnet",
   network: "monad-testnet",
   nativeCurrency: {
@@ -30,7 +30,7 @@ export const publicClient = createPublicClient({
 });
 
 export const config = createConfig({
-  // Sadece Monad testnet - daha odaklı deneyim
+  // Only Monad testnet - more focused experience
   chains: [monadTestnet],
   ssr: true,
   storage: createStorage({
@@ -38,11 +38,11 @@ export const config = createConfig({
     key: 'nadpay-wagmi', // Custom key for our app
   }),
   connectors: [
-    // MetaMask - en popüler
+    // MetaMask - most popular
     injected({
       target: "metaMask",
     }),
-    // Phantom Wallet - sadece Ethereum provider'ı
+    // Phantom Wallet - Ethereum provider only
     injected({
       target: () => {
         if (typeof window === 'undefined') return undefined;
@@ -51,7 +51,7 @@ export const config = createConfig({
         return phantom;
       },
     }),
-    // OKX Wallet - popüler exchange wallet
+    // OKX Wallet - popular exchange wallet
     injected({
       target: () => {
         if (typeof window === 'undefined') return undefined;
@@ -60,7 +60,7 @@ export const config = createConfig({
         return okx;
       },
     }),
-    // HaHa Wallet - Monad ekosistemi
+    // HaHa Wallet - Monad ecosystem
     injected({
       target: () => {
         if (typeof window === 'undefined') return undefined;

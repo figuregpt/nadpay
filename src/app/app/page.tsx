@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
-// Web3 bileşenini dinamik olarak yükle (SSR'yi atla)
+// Load Web3 component dynamically (skip SSR)
 const Web3AppContent = dynamic(() => import("./Web3AppContent"), {
   ssr: false,
   loading: () => (

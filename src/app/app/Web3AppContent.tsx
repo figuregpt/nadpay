@@ -64,7 +64,7 @@ export default function Web3AppContent() {
     rewardType: 'TOKEN' as 'TOKEN' | 'NFT',
     rewardTokenAddress: '',
     rewardAmount: '',
-    ticketPrice: '0.001',
+    ticketPrice: '0.01',
     maxTickets: 100,
     maxTicketsPerWallet: 10,
     expirationDateTime: '',
@@ -153,6 +153,17 @@ export default function Web3AppContent() {
       ...prev,
       [field]: value
     }));
+  };
+
+  // Special handler for ticket price to ensure English decimal format
+  const handleTicketPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    // Replace comma with dot for English decimal format
+    value = value.replace(',', '.');
+    // Ensure only valid decimal numbers
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      handleRaffleInputChange('ticketPrice', value);
+    }
   };
 
   // ENVIO: GraphQL-based token discovery
@@ -706,7 +717,7 @@ export default function Web3AppContent() {
     }
   };
 
-  // Reconnection loading state - sadece kısa süre göster
+  // Reconnection loading state - only show briefly
   if (status === 'connecting' && !hasAttemptedReconnect) {
     return (
       <motion.div
@@ -946,25 +957,26 @@ export default function Web3AppContent() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="text-center flex-1">
-                <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Link2 className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Create Payment Link
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Fill in the details to create your NadPay link on Monad
-                </p>
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8 relative">
+            {/* Close button - absolute positioned */}
+            <button
+              onClick={() => setSelectedTemplate(null)}
+              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* Header - now perfectly centered */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Link2 className="w-8 h-8 text-white" />
               </div>
-              <button
-                onClick={() => setSelectedTemplate(null)}
-                className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Create Payment Link
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Fill in the details to create your NadPay link on Monad
+              </p>
             </div>
 
             <div className="space-y-6">
@@ -1168,25 +1180,26 @@ export default function Web3AppContent() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="text-center flex-1">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Trophy className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Create Raffle
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Set up your raffle with NFT or token rewards
-                </p>
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8 relative">
+            {/* Close button - absolute positioned */}
+            <button
+              onClick={() => setSelectedTemplate(null)}
+              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* Header - now perfectly centered */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-8 h-8 text-white" />
               </div>
-              <button
-                onClick={() => setSelectedTemplate(null)}
-                className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Create Raffle
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Set up your raffle with NFT or token rewards
+              </p>
             </div>
 
             <div className="space-y-6">
@@ -1474,12 +1487,14 @@ export default function Web3AppContent() {
                     Ticket Price (MON) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={raffleFormData.ticketPrice}
-                    onChange={(e) => handleRaffleInputChange('ticketPrice', e.target.value)}
-                    placeholder="0.001"
+                    onChange={handleTicketPriceChange}
+                    placeholder="0.01"
                     min="0"
-                    step="0.001"
+                    step="0.01"
+                    lang="en"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
                 </div>

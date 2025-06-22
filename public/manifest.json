@@ -7,6 +7,7 @@
  "background_color": "#200052",
  "theme_color": "#836EF9",
  "orientation": "portrait-primary",
+ "lang": "en",
  "icons": [
   {
    "src": "\/android-icon-36x36.png",
