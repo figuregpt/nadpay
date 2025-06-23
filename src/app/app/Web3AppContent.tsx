@@ -12,6 +12,7 @@ import { useNadRaffleContract } from "@/hooks/useNadRaffleContract";
 import { useAssetBalances } from "@/hooks/useAssetBalances";
 import { LogOut } from "lucide-react";
 import { createPublicClient, http } from "viem";
+import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 
 interface TokenInfo {
   address: string;
@@ -713,13 +714,16 @@ export default function Web3AppContent() {
           
           let raffleLink: string;
           if (raffleId !== null) {
-            // Create secure raffle link with real ID
-            raffleLink = `${window.location.origin}/raffle/${raffleId}`;
+            // Create secure raffle link with hashed ID
+            const secureRaffleId = createPredictableSecureRaffleId(raffleId);
+            raffleLink = `${window.location.origin}/raffle/${secureRaffleId}`;
+            console.log(`🔐 Secure raffle link created: Internal ID ${raffleId} -> Secure ID ${secureRaffleId}`);
           } else {
-            // Fallback: use timestamp
+            // Fallback: use timestamp with secure hash
             console.warn('Could not extract raffle ID from transaction, using fallback');
-            const fallbackId = Date.now();
-            raffleLink = `${window.location.origin}/raffle/${fallbackId}`;
+            const fallbackId = Date.now() % 10000; // Keep it reasonable for brute force decode
+            const secureRaffleId = createPredictableSecureRaffleId(fallbackId);
+            raffleLink = `${window.location.origin}/raffle/${secureRaffleId}`;
           }
           
           setGeneratedLink(raffleLink);

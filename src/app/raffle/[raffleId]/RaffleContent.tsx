@@ -10,11 +10,40 @@ import { useReadContract } from "wagmi";
 import { useTheme } from "next-themes";
 import { NADRAFFLE_CONTRACT } from "@/lib/raffle-contract";
 import { useNadRaffleContract } from "@/hooks/useNadRaffleContract";
+import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
 
 export default function RaffleContent() {
   const params = useParams();
-  const raffleId = params.raffleId as string;
+  const secureRaffleId = params.raffleId as string;
   const { theme, setTheme } = useTheme();
+  
+  // Decode secure raffle ID to get internal ID
+  const internalRaffleId = decodePredictableSecureRaffleId(secureRaffleId);
+  
+  // If we can't decode the ID, show error
+  if (internalRaffleId === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Raffle Not Found
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            The raffle link you're looking for doesn't exist or has been removed.
+          </p>
+          <a
+            href="/app"
+            className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
+  const raffleId = internalRaffleId.toString();
   
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();

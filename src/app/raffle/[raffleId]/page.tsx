@@ -5,6 +5,7 @@ import { formatEther } from "viem";
 // Import contract utilities
 import { publicClient } from "@/lib/wagmi";
 import { NADRAFFLE_CONTRACT } from "@/lib/raffle-contract";
+import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
 
 // Dynamically import the entire raffle component
 const RaffleContent = dynamic(() => import("./RaffleContent"), {
@@ -24,13 +25,23 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
-    const { raffleId } = await params;
+    const { raffleId: secureRaffleId } = await params;
     
-    // Fetch raffle data from contract
+    // Decode secure raffle ID to get internal ID
+    const internalRaffleId = decodePredictableSecureRaffleId(secureRaffleId);
+    
+    if (internalRaffleId === null) {
+      return {
+        title: "Raffle Not Found - NadPay",
+        description: "This raffle does not exist or has been removed.",
+      };
+    }
+    
+    // Fetch raffle data from contract using internal ID
     const raffleData = await publicClient.readContract({
       ...NADRAFFLE_CONTRACT,
       functionName: 'getRaffle',
-      args: [BigInt(raffleId)]
+      args: [BigInt(internalRaffleId)]
     });
 
     if (!raffleData || !raffleData.creator || raffleData.creator === '0x0000000000000000000000000000000000000000') {

@@ -47,4 +47,61 @@ export function decodeTimestampBasedId(publicId: string): { timestamp: number; h
   if (isNaN(timestamp) || hash.length !== 8) return null;
   
   return { timestamp, hash };
+}
+
+// Raffle-specific utilities
+const RAFFLE_SALT = "nadraffle_secure_salt_2024";
+
+/**
+ * Create secure raffle ID using internal ID + transaction hash
+ */
+export function createSecureRaffleId(internalId: number, txHash?: string): string {
+  const timestamp = Date.now();
+  const hashSource = txHash || timestamp.toString();
+  const data = `raffle_${internalId}_${hashSource}_${RAFFLE_SALT}`;
+  const hash = keccak256(toBytes(data));
+  return hash.slice(2, 18); // 16 character hex string
+}
+
+/**
+ * Decode secure raffle ID back to internal ID
+ * This is a brute force approach for small numbers of raffles
+ */
+export function decodeSecureRaffleId(secureId: string): number | null {
+  // Try to find matching internal ID (limited search for performance)
+  for (let i = 0; i < 10000; i++) {
+    // Try with different possible transaction hashes and timestamps
+    // This is not perfect but works for reasonable numbers of raffles
+    const possibleIds = [
+      createSecureRaffleId(i),
+      // Could add more variations if needed
+    ];
+    
+    if (possibleIds.some(id => id === secureId)) {
+      return i;
+    }
+  }
+  return null;
+}
+
+/**
+ * Alternative: Use a more predictable but still secure approach
+ * Combines internal ID with a hash but keeps it decodable
+ */
+export function createPredictableSecureRaffleId(internalId: number): string {
+  const data = `${internalId}_${RAFFLE_SALT}`;
+  const hash = keccak256(toBytes(data));
+  return hash.slice(2, 18); // 16 character hex string
+}
+
+/**
+ * Decode predictable secure raffle ID
+ */
+export function decodePredictableSecureRaffleId(secureId: string): number | null {
+  for (let i = 0; i < 10000; i++) {
+    if (createPredictableSecureRaffleId(i) === secureId) {
+      return i;
+    }
+  }
+  return null;
 } 

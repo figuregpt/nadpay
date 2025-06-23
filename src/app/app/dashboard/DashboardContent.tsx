@@ -26,6 +26,7 @@ import { ConnectKitButton } from "connectkit";
 import { useCreatorPaymentLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
 import { useCreatorRaffles, useNadRaffleContract } from "@/hooks/useNadRaffleContract";
 import { NADPAY_CONTRACT } from "@/lib/contract";
+import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 
 interface PaymentLinkData {
   linkId: string;
@@ -1231,7 +1232,7 @@ export default function DashboardContent() {
                         {/* Action Buttons */}
                         <div className="flex flex-wrap items-center gap-2">
                           <a
-                            href={`/raffle/${raffle.id}`}
+                            href={`/raffle/${createPredictableSecureRaffleId(parseInt(raffle.id))}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center px-3 py-1.5 text-sm bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/40 transition-colors"
