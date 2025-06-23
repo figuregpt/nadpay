@@ -13,6 +13,8 @@ import { useAssetBalances } from "@/hooks/useAssetBalances";
 import { LogOut } from "lucide-react";
 import { createPublicClient, http } from "viem";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
+import { AssetSelector, SelectedAsset } from "@/components/AssetSelector";
+import { KnownToken, KnownNFT } from "@/lib/knownAssets";
 
 interface TokenInfo {
   address: string;
@@ -71,6 +73,9 @@ export default function Web3AppContent() {
     expirationDateTime: '',
     autoDistributeOnSoldOut: true,
   });
+
+  // Selected asset state for new asset selector
+  const [selectedRewardAsset, setSelectedRewardAsset] = useState<SelectedAsset | null>(null);
   
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -1410,227 +1415,60 @@ export default function Web3AppContent() {
               </div>
 
               {/* Reward Configuration */}
-              {raffleFormData.rewardType === 'TOKEN' ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Token & Amount *
-                  </label>
-                  {isLoadingAssets ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Scanning your wallet...
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                        Looking for tokens and NFTs you own
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {userTokens.map((token, index) => (
-                        <div
-                          key={index}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                            raffleFormData.rewardTokenAddress === token.address
-                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                              : 'border-gray-300 dark:border-gray-600 hover:border-purple-300'
-                          }`}
-                          onClick={() => handleRaffleInputChange('rewardTokenAddress', token.address)}
-                        >
-                                                      <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 flex items-center justify-center">
-                                {token.logo && (token.logo.startsWith('http') || token.logo.startsWith('/')) ? (
-                                  <img 
-                                    src={token.logo} 
-                                    alt={token.name}
-                                    className="w-10 h-10"
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
-                                    <span className="text-2xl">
-                                      {token.logo || '🪙'}
-                                    </span>
-                                  </div>
-                                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Reward Asset *
+                </label>
+                <AssetSelector
+                  selectedAsset={selectedRewardAsset}
+                  onAssetSelect={(asset) => {
+                    setSelectedRewardAsset(asset);
+                    if (asset) {
+                      handleRaffleInputChange('rewardTokenAddress', asset.data.address);
+                      // Reset reward type based on selection
+                      handleRaffleInputChange('rewardType', asset.type === 'token' ? 'TOKEN' : 'NFT');
+                      // Reset amount when changing asset
+                      handleRaffleInputChange('rewardAmount', '');
+                    } else {
+                      handleRaffleInputChange('rewardTokenAddress', '');
+                      handleRaffleInputChange('rewardAmount', '');
+                    }
+                  }}
+                  assetType="both"
+                  placeholder="Select token or NFT to give as reward..."
+                />
+                
+                {/* Amount Input */}
+                {selectedRewardAsset && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {selectedRewardAsset.type === 'token' 
+                        ? 'Amount to give as reward *' 
+                        : 'Token ID to give as reward *'
+                      }
+                    </label>
+                    <input
+                      type={selectedRewardAsset.type === 'token' ? 'number' : 'text'}
+                      value={raffleFormData.rewardAmount}
+                      onChange={(e) => handleRaffleInputChange('rewardAmount', e.target.value)}
+                      placeholder={selectedRewardAsset.type === 'token' ? '100' : '1'}
+                      min={selectedRewardAsset.type === 'token' ? '0' : undefined}
+                      step={selectedRewardAsset.type === 'token' ? '0.001' : undefined}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+                    />
+                    {selectedRewardAsset.type === 'token' && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Selected: {(selectedRewardAsset.data as KnownToken).symbol} - {selectedRewardAsset.data.name}
+                      </p>
+                    )}
+                    {selectedRewardAsset.type === 'nft' && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Selected NFT Collection: {selectedRewardAsset.data.name}
+                      </p>
+                    )}
+                  </div>
+                )}
                               </div>
-                              <div>
-                                <div className="font-semibold text-gray-900 dark:text-white text-lg">
-                                  {token.name}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                  {token.symbol} • Balance: {token.balance}
-                                </div>
-                              </div>
-                            </div>
-                            {raffleFormData.rewardTokenAddress === token.address && (
-                              <div className="text-purple-500">
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {userTokens.length === 0 && (
-                        <div className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center">
-                          <div className="text-gray-500 dark:text-gray-400 mb-4">
-                            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                            </svg>
-                            <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                              No ERC-20 tokens available
-                            </div>
-                            <div className="text-gray-500 dark:text-gray-400 mb-4">
-                              Token rewards require ERC-20 tokens. Native MON is not supported yet for raffle rewards.
-                            </div>
-                            <div className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-4">
-                              <strong>Note:</strong> The contract currently only supports ERC-20 tokens for rewards, not native MON.
-                            </div>
-                            <button
-                              onClick={() => handleRaffleInputChange('rewardType', 'NFT')}
-                              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-opacity font-medium"
-                            >
-                              Switch to NFT Rewards
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Amount Input */}
-                  {raffleFormData.rewardTokenAddress && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Amount to give as reward *
-                      </label>
-                      <input
-                        type="number"
-                        value={raffleFormData.rewardAmount}
-                        onChange={(e) => handleRaffleInputChange('rewardAmount', e.target.value)}
-                        placeholder="100"
-                        min="0"
-                        step="0.001"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select NFT *
-                  </label>
-                  {isLoadingAssets ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Discovering your NFTs...
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                        Checking known collections for your digital assets
-                      </div>
-                    </div>
-                  ) : userNFTs.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {userNFTs.map((nft, index) => (
-                        <div
-                          key={index}
-                          className={`relative group cursor-pointer transition-all duration-300 ${
-                            raffleFormData.rewardTokenAddress === nft.address && raffleFormData.rewardAmount === nft.tokenId
-                              ? 'transform scale-105'
-                              : 'hover:transform hover:scale-102'
-                          }`}
-                          onClick={() => {
-                            handleRaffleInputChange('rewardTokenAddress', nft.address);
-                            handleRaffleInputChange('rewardAmount', nft.tokenId);
-                          }}
-                        >
-                          <div className={`border-2 rounded-2xl overflow-hidden transition-all ${
-                            raffleFormData.rewardTokenAddress === nft.address && raffleFormData.rewardAmount === nft.tokenId
-                              ? 'border-purple-500 shadow-lg shadow-purple-500/25'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:shadow-lg'
-                          }`}>
-                            <div className="aspect-square relative overflow-hidden">
-                              {nft.image ? (
-                                <img 
-                                  src={nft.image} 
-                                  alt={nft.name} 
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
-                                  <svg className="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              )}
-                              
-                              {raffleFormData.rewardTokenAddress === nft.address && raffleFormData.rewardAmount === nft.tokenId && (
-                                <div className="absolute top-2 right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="p-4">
-                              <div className="font-semibold text-gray-900 dark:text-white mb-1 truncate">
-                                {nft.name}
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 truncate">
-                                {nft.collectionName}
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                                  #{nft.tokenId}
-                                </span>
-                                <span className="text-xs text-gray-400 truncate max-w-20">
-                                  {nft.address.slice(0, 6)}...
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center">
-                      <div className="text-gray-500 dark:text-gray-400 mb-6">
-                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl flex items-center justify-center">
-                          <svg className="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <div className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                          No NFTs found in your wallet
-                        </div>
-                        <div className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                          You don't have any NFTs yet. Get some NFTs from a marketplace or mint your own collection to create NFT-based raffles.
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button
-                          onClick={() => handleRaffleInputChange('rewardType', 'TOKEN')}
-                          className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-opacity font-medium"
-                        >
-                          Switch to Token Rewards
-                        </button>
-                        <button
-                          onClick={() => window.open('https://magiceden.io/monad-testnet', '_blank')}
-                          className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                        >
-                          Browse NFTs
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Ticket Configuration */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

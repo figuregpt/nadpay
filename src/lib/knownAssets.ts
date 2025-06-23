@@ -1,5 +1,5 @@
 // Known assets configuration for Monad testnet
-// This file contains hardcoded lists of popular tokens and NFT collections
+// This file contains curated lists of tokens and NFT collections managed by admins
 
 export interface KnownToken {
   address: string;
@@ -8,6 +8,9 @@ export interface KnownToken {
   decimals: number;
   logo?: string;
   description?: string;
+  coingeckoId?: string; // For price fetching
+  website?: string;
+  verified: boolean;
 }
 
 export interface KnownNFT {
@@ -16,32 +19,104 @@ export interface KnownNFT {
   description?: string;
   image?: string;
   website?: string;
+  verified: boolean;
+  floorPrice?: string; // In MON
+  totalSupply?: number;
 }
 
-// Known ERC-20 tokens on Monad testnet
+// Native MON token (address 0x0 represents native token)
+export const NATIVE_MON: KnownToken = {
+  address: "0x0000000000000000000000000000000000000000",
+  name: "Monad",
+  symbol: "MON",
+  decimals: 18,
+  logo: "/monad-logo.svg",
+  description: "Native Monad token - gas and payment currency",
+  verified: true
+};
+
+// Known ERC-20 tokens on Monad testnet (ADMIN CONTROLLED)
 export const KNOWN_TOKENS: KnownToken[] = [
+  NATIVE_MON,
+  // Add more tokens here as they become available
   {
-    address: "0x0000000000000000000000000000000000000000", // Native MON token
-    name: "Monad",
-    symbol: "MON",
+    address: "0x1234567890123456789012345678901234567890", // Example USDC
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    logo: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
+    description: "USDC stablecoin on Monad",
+    verified: true
+  },
+  {
+    address: "0x2345678901234567890123456789012345678901", // Example WETH
+    name: "Wrapped Ethereum",
+    symbol: "WETH",
     decimals: 18,
-    logo: "/monad-logo.svg",
-    description: "Native Monad token - supported for raffle rewards"
+    logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+    description: "Wrapped ETH on Monad",
+    verified: true
+  },
+  {
+    address: "0x3456789012345678901234567890123456789012", // Example community token
+    name: "Monad Community Token",
+    symbol: "MCT",
+    decimals: 18,
+    logo: "https://via.placeholder.com/64x64/6366f1/ffffff?text=MCT",
+    description: "Community governance token",
+    verified: true
   }
 ];
 
-// Known NFT collections on Monad testnet
+// Known NFT collections on Monad testnet (ADMIN CONTROLLED)
 export const KNOWN_NFTS: KnownNFT[] = [
-  // Add real NFT contract addresses here when available
-  // Example format:
-  // {
-  //   address: "0x...",
-  //   name: "Collection Name",
-  //   description: "Collection description",
-  //   image: "🎨",
-  //   website: "https://..."
-  // }
+  {
+    address: "0x4567890123456789012345678901234567890123",
+    name: "Monad Genesis NFTs",
+    description: "First NFT collection on Monad testnet",
+    image: "https://via.placeholder.com/300x300/6366f1/ffffff?text=Genesis",
+    website: "https://genesis.monad.xyz",
+    verified: true,
+    floorPrice: "1.5",
+    totalSupply: 10000
+  },
+  {
+    address: "0x5678901234567890123456789012345678901234",
+    name: "Monad Builders",
+    description: "NFTs for early Monad builders and contributors",
+    image: "https://via.placeholder.com/300x300/10b981/ffffff?text=Builder",
+    website: "https://builders.monad.xyz",
+    verified: true,
+    floorPrice: "0.8",
+    totalSupply: 5000
+  },
+  {
+    address: "0x6789012345678901234567890123456789012345",
+    name: "Community Art Collection",
+    description: "Community-driven art NFT collection",
+    image: "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Art",
+    verified: true,
+    totalSupply: 2500
+  }
 ];
+
+// Token categories for UI organization
+export const TOKEN_CATEGORIES = {
+  STABLECOINS: ['USDC', 'USDT', 'DAI'],
+  WRAPPED: ['WETH', 'WBTC'],
+  GOVERNANCE: ['MCT'],
+  MEMECOINS: [],
+  DEFI: []
+};
+
+// NFT categories
+export const NFT_CATEGORIES = {
+  GENESIS: ['Monad Genesis NFTs'],
+  COMMUNITY: ['Monad Builders', 'Community Art Collection'],
+  GAMING: [],
+  ART: ['Community Art Collection'],
+  UTILITY: []
+};
 
 // Helper function to get token by address
 export function getKnownToken(address: string): KnownToken | undefined {
@@ -65,4 +140,54 @@ export function isKnownToken(address: string): boolean {
 // Helper function to check if an address is a known NFT
 export function isKnownNFT(address: string): boolean {
   return getKnownNFT(address) !== undefined;
+}
+
+// Get tokens by category
+export function getTokensByCategory(category: keyof typeof TOKEN_CATEGORIES): KnownToken[] {
+  const symbols = TOKEN_CATEGORIES[category];
+  return KNOWN_TOKENS.filter(token => (symbols as string[]).includes(token.symbol));
+}
+
+// Get NFTs by category
+export function getNFTsByCategory(category: keyof typeof NFT_CATEGORIES): KnownNFT[] {
+  const names = NFT_CATEGORIES[category];
+  return KNOWN_NFTS.filter(nft => (names as string[]).includes(nft.name));
+}
+
+// Get verified tokens only
+export function getVerifiedTokens(): KnownToken[] {
+  return KNOWN_TOKENS.filter(token => token.verified);
+}
+
+// Get verified NFTs only
+export function getVerifiedNFTs(): KnownNFT[] {
+  return KNOWN_NFTS.filter(nft => nft.verified);
+}
+
+// Search tokens by name or symbol
+export function searchTokens(query: string): KnownToken[] {
+  const lowercaseQuery = query.toLowerCase();
+  return KNOWN_TOKENS.filter(token => 
+    token.name.toLowerCase().includes(lowercaseQuery) ||
+    token.symbol.toLowerCase().includes(lowercaseQuery)
+  );
+}
+
+// Search NFTs by name
+export function searchNFTs(query: string): KnownNFT[] {
+  const lowercaseQuery = query.toLowerCase();
+  return KNOWN_NFTS.filter(nft => 
+    nft.name.toLowerCase().includes(lowercaseQuery) ||
+    (nft.description && nft.description.toLowerCase().includes(lowercaseQuery))
+  );
+}
+
+// Get all tokens (admin curated only)
+export function getAllTokens(): KnownToken[] {
+  return KNOWN_TOKENS;
+}
+
+// Get all NFTs (admin curated only)
+export function getAllNFTs(): KnownNFT[] {
+  return KNOWN_NFTS;
 } 

@@ -2,11 +2,6 @@
   "name": "nadpay",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
-  "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=9.0.0"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,14 +9,11 @@
     "lint": "next lint",
     "compile": "npx hardhat compile",
     "generate-abi": "npm run compile && node scripts/generateABI.js",
-    "generate-raffle-abi": "npm run compile && node scripts/generateRaffleABI.js",
-    "deploy:testnet": "npx hardhat run scripts/deploy.js --network monadTestnet",
-    "deploy-raffle:testnet": "npx hardhat run scripts/deploy-raffle.js --network monadTestnet"
+    "deploy:testnet": "npx hardhat run scripts/deploy.js --network monadTestnet"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.80.7",
     "@types/qrcode": "^1.5.5",
-    "@wagmi/core": "^2.17.3",
     "autoprefixer": "^10.4.21",
     "connectkit": "^1.9.1",
     "dotenv": "^16.5.0",
