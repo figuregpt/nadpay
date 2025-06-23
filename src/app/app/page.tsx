@@ -260,7 +260,7 @@ function RaffleCard({ raffle, raffleId, onRefresh }: RaffleCardProps) {
               {ticketsSold}/{maxTickets}
             </div>
           </div>
-          <div className="text-center">
+      <div className="text-center">
             <div className="text-gray-500 dark:text-gray-400">Time</div>
             <div className={`font-medium ${isEnding ? 'text-orange-500' : 'text-gray-900 dark:text-white'}`}>
               {timeRemaining || 'No limit'}
@@ -480,12 +480,12 @@ export default function RaffleHousePage() {
                 </Link>
                 <Link href="/app/dashboard" className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                   Dashboard
-                </Link>
+            </Link>
               </nav>
-            </div>
-
+          </div>
+          
             {/* Actions */}
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
               <Link href="/app/create">
                 <button className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-lg">
                   <Plus className="w-4 h-4" />
@@ -496,7 +496,7 @@ export default function RaffleHousePage() {
               {!isConnected ? (
                 <ConnectKitButton.Custom>
                   {({ show }) => (
-                    <button
+            <button
                       onClick={show}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-lg"
                     >
@@ -517,20 +517,26 @@ export default function RaffleHousePage() {
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Floating Orbs */}
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-pink-400/20 rounded-full blur-2xl animate-bounce" style={{ animationDuration: '3s' }}></div>
-          <div className="absolute bottom-1/4 left-1/3 w-24 h-24 bg-purple-300/15 rounded-full blur-lg animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-cyan-400/20 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-pink-400/30 rounded-full blur-2xl animate-bounce" style={{ animationDuration: '3s' }}></div>
+          <div className="absolute bottom-1/4 left-1/3 w-24 h-24 bg-purple-300/25 rounded-full blur-lg animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 right-1/3 w-40 h-40 bg-white/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }}></div>
           
           {/* Moving Gradient Waves */}
           <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-y-12 animate-pulse" style={{ animation: 'wave 8s ease-in-out infinite' }}></div>
-            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-pink-300/10 to-transparent -skew-y-12 animate-pulse" style={{ animation: 'wave 6s ease-in-out infinite reverse' }}></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent skew-y-12 animate-pulse" style={{ animation: 'wave 8s ease-in-out infinite' }}></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-pink-300/15 to-transparent -skew-y-12 animate-pulse" style={{ animation: 'wave 6s ease-in-out infinite reverse' }}></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-y-6 animate-pulse" style={{ animation: 'wave 10s ease-in-out infinite' }}></div>
           </div>
           
-          {/* Sparkle Effects */}
-          <div className="absolute top-1/3 left-1/5 w-2 h-2 bg-white rounded-full animate-ping"></div>
-          <div className="absolute top-2/3 right-1/5 w-1 h-1 bg-yellow-300 rounded-full animate-ping" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute bottom-1/3 left-2/3 w-1.5 h-1.5 bg-pink-200 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+          {/* Enhanced Sparkle Effects */}
+          <div className="absolute top-1/3 left-1/5 w-3 h-3 bg-cyan-300 rounded-full animate-ping shadow-lg shadow-cyan-300/50"></div>
+          <div className="absolute top-2/3 right-1/5 w-2 h-2 bg-pink-300 rounded-full animate-ping shadow-lg shadow-pink-300/50" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-1/3 left-2/3 w-2.5 h-2.5 bg-white rounded-full animate-ping shadow-lg shadow-white/50" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/4 right-1/2 w-1.5 h-1.5 bg-purple-300 rounded-full animate-ping shadow-lg shadow-purple-300/50" style={{ animationDelay: '3s' }}></div>
+          
+          {/* Radial Glow Behind Title */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-radial from-cyan-400/20 via-purple-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
         </div>
 
         <div className="container mx-auto px-4 text-center relative z-10">
@@ -538,17 +544,30 @@ export default function RaffleHousePage() {
             {/* Neon Animated RaffleHouse Title */}
             <h1 className="text-6xl md:text-8xl font-bold mb-6 relative">
               <span 
-                className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse"
+                className="bg-gradient-to-r from-cyan-300 via-white to-pink-300 bg-clip-text text-transparent animate-pulse font-black neon-text"
                 style={{
-                  textShadow: '0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(168, 85, 247, 0.6), 0 0 60px rgba(168, 85, 247, 0.4)',
-                  filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))'
+                  textShadow: '0 0 30px rgba(0, 255, 255, 1), 0 0 60px rgba(168, 85, 247, 1), 0 0 90px rgba(255, 20, 147, 0.8)',
+                  filter: 'drop-shadow(0 0 20px rgba(0, 255, 255, 0.9)) drop-shadow(0 0 40px rgba(168, 85, 247, 0.8))',
+                  WebkitTextStroke: '2px rgba(255, 255, 255, 0.3)'
                 }}
               >
                 RaffleHouse
               </span>
               
-              {/* Neon Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent opacity-50 blur-sm animate-pulse">
+              {/* Enhanced Neon Glow Effect */}
+              <div 
+                className="absolute inset-0 bg-gradient-to-r from-cyan-300 via-white to-pink-300 bg-clip-text text-transparent opacity-70 blur-sm animate-pulse font-black"
+                style={{
+                  WebkitTextStroke: '2px rgba(255, 255, 255, 0.3)'
+                }}
+              >
+                RaffleHouse
+              </div>
+              
+              {/* Extra Glow Layer */}
+              <div 
+                className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent opacity-40 blur-lg animate-pulse font-black"
+              >
                 RaffleHouse
               </div>
             </h1>
@@ -580,6 +599,31 @@ export default function RaffleHousePage() {
           .animate-fade-in-up {
             animation: fade-in-up 1s ease-out forwards;
             opacity: 0;
+          }
+          
+          .bg-gradient-radial {
+            background: radial-gradient(circle, var(--tw-gradient-stops));
+          }
+          
+          @keyframes neon-pulse {
+            0%, 100% {
+              text-shadow: 
+                0 0 30px rgba(0, 255, 255, 1),
+                0 0 60px rgba(168, 85, 247, 1),
+                0 0 90px rgba(255, 20, 147, 0.8),
+                0 0 120px rgba(0, 255, 255, 0.5);
+            }
+            50% {
+              text-shadow: 
+                0 0 40px rgba(0, 255, 255, 1),
+                0 0 80px rgba(168, 85, 247, 1),
+                0 0 120px rgba(255, 20, 147, 1),
+                0 0 160px rgba(0, 255, 255, 0.8);
+            }
+          }
+          
+          .neon-text {
+            animation: neon-pulse 2s ease-in-out infinite alternate;
           }
         `}</style>
       </section>
@@ -685,7 +729,7 @@ export default function RaffleHousePage() {
               ))}
             </div>
           )}
-        </div>
+      </div>
       </section>
     </div>
   );
