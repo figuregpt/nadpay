@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, usePublicClient } from 'wagmi';
 import { KNOWN_TOKENS, KNOWN_NFTS, KnownToken, KnownNFT } from '../lib/knownAssets';
 
 export interface TokenBalance extends KnownToken {
@@ -50,6 +50,7 @@ export function useAssetBalances() {
   const { data: nativeBalance, isLoading: isNativeLoading } = useBalance({
     address: address,
   });
+  const publicClient = usePublicClient();
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [nftBalances, setNftBalances] = useState<NFTBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +67,7 @@ export function useAssetBalances() {
     return `${(balanceNumber / 1000000).toFixed(1)}M`;
   };
 
-  // Mock function to simulate token balance fetching
+  // Real function to fetch token balance
   const fetchTokenBalance = async (token: KnownToken): Promise<TokenBalance> => {
     // For MON (native token), use real balance from wagmi
     if (token.symbol === 'MON') {
@@ -103,39 +104,120 @@ export function useAssetBalances() {
       }
     }
     
-    // Simulate loading delay for other tokens
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-    
-    // For other tokens, mock random balance
-    const mockBalance = Math.random() * 10000;
-    const balanceString = (mockBalance * Math.pow(10, token.decimals)).toString();
-    const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+    // For other tokens, try to fetch real balance from contract
+    if (publicClient && address && token.address !== "0x0000000000000000000000000000000000000000") {
+      try {
+        console.log(`Fetching ${token.symbol} balance from contract ${token.address}...`);
+        
+        const balance = await publicClient.readContract({
+          address: token.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`]
+        });
+        
+        const balanceString = balance.toString();
+        const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+        
+        console.log(`${token.symbol} balance:`, {
+          raw: balanceString,
+          formatted: formattedBalance
+        });
 
+        return {
+          ...token,
+          balance: balanceString,
+          formattedBalance,
+          isLoading: false,
+        };
+      } catch (error) {
+        console.warn(`Failed to fetch ${token.symbol} balance:`, error);
+        return {
+          ...token,
+          balance: '0',
+          formattedBalance: '0',
+          isLoading: false,
+          error: `Failed to fetch balance: ${error}`,
+        };
+      }
+    }
+
+    // Return zero balance if no public client or invalid address
     return {
       ...token,
-      balance: balanceString,
-      formattedBalance,
+      balance: '0',
+      formattedBalance: '0',
       isLoading: false,
     };
   };
 
-  // Mock function to simulate NFT balance fetching
+  // Real function to fetch NFT balance
   const fetchNFTBalance = async (nft: KnownNFT): Promise<NFTBalance> => {
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-    
-    // Mock random NFT ownership for demonstration
-    const totalOwned = Math.floor(Math.random() * 5); // 0-4 NFTs
-    const ownedTokens: string[] = [];
-    
-    for (let i = 0; i < totalOwned; i++) {
-      ownedTokens.push((Math.floor(Math.random() * 10000) + 1).toString());
+    // For now, return zero ownership since we don't have real NFT contracts deployed
+    // This can be implemented when real NFT contracts are available
+    if (publicClient && address && nft.address !== "0x0000000000000000000000000000000000000000") {
+      try {
+        console.log(`Fetching ${nft.name} NFT balance from contract ${nft.address}...`);
+        
+        const balance = await publicClient.readContract({
+          address: nft.address as `0x${string}`,
+          abi: ERC721_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`]
+        });
+        
+        const totalOwned = Number(balance);
+        const ownedTokens: string[] = [];
+        
+        // If user owns NFTs, try to get token IDs (this might fail for some contracts)
+        if (totalOwned > 0) {
+          try {
+            for (let i = 0; i < Math.min(totalOwned, 10); i++) { // Limit to 10 for performance
+              const tokenId = await publicClient.readContract({
+                address: nft.address as `0x${string}`,
+                abi: ERC721_ABI,
+                functionName: 'tokenOfOwnerByIndex',
+                args: [address as `0x${string}`, BigInt(i)]
+              });
+              ownedTokens.push(tokenId.toString());
+            }
+          } catch (error) {
+            console.warn(`Could not fetch token IDs for ${nft.name}:`, error);
+            // Generate placeholder token IDs
+            for (let i = 0; i < totalOwned; i++) {
+              ownedTokens.push(`${i + 1}`);
+            }
+          }
+        }
+        
+        console.log(`${nft.name} NFT balance:`, {
+          totalOwned,
+          ownedTokens
+        });
+
+        return {
+          ...nft,
+          ownedTokens,
+          totalOwned,
+          isLoading: false,
+        };
+      } catch (error) {
+        console.warn(`Failed to fetch ${nft.name} NFT balance:`, error);
+        return {
+          ...nft,
+          ownedTokens: [],
+          totalOwned: 0,
+          isLoading: false,
+          error: `Failed to fetch NFT balance: ${error}`,
+        };
+      }
     }
 
+    // Return zero ownership if no public client or invalid address
     return {
       ...nft,
-      ownedTokens,
-      totalOwned,
+      ownedTokens: [],
+      totalOwned: 0,
       isLoading: false,
     };
   };
@@ -226,7 +308,7 @@ export function useAssetBalances() {
   // Fetch balances when address changes or native balance updates
   useEffect(() => {
     fetchAllBalances();
-  }, [address, isConnected, nativeBalance]);
+  }, [address, isConnected, nativeBalance, publicClient]);
 
   // Refresh function
   const refresh = () => {
