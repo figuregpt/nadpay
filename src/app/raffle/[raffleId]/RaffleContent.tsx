@@ -19,32 +19,9 @@ export default function RaffleContent() {
   
   // Decode secure raffle ID to get internal ID
   const internalRaffleId = decodePredictableSecureRaffleId(secureRaffleId);
+  const raffleId = internalRaffleId?.toString() || "0";
   
-  // If we can't decode the ID, show error
-  if (internalRaffleId === null) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Raffle Not Found
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            The raffle link you're looking for doesn't exist or has been removed.
-          </p>
-          <a
-            href="/app"
-            className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </a>
-        </div>
-      </div>
-    );
-  }
-  
-  const raffleId = internalRaffleId.toString();
-  
+  // All hooks must be called at the top level
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const { data: balance } = useBalance({
@@ -254,6 +231,29 @@ export default function RaffleContent() {
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
   };
+
+  // If we can't decode the ID, show error
+  if (internalRaffleId === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Raffle Not Found
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            The raffle link you're looking for doesn't exist or has been removed.
+          </p>
+          <a
+            href="/app"
+            className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
