@@ -991,7 +991,7 @@ export default function Web3AppContent() {
     <div>
       {/* Wallet Status Bar */}
       <div className="mb-8 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl max-w-2xl mx-auto">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex items-center space-x-3">
             <div className="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
             <div>
@@ -1003,37 +1003,34 @@ export default function Web3AppContent() {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                         <div className="text-left sm:text-right">
               <p className="text-sm font-medium text-primary-800 dark:text-primary-200 font-inter">
-                {chain?.name || 'Monad Testnet'}
-              </p>
-              <p className="text-xs text-primary-600 dark:text-primary-300 font-inter">
-                Chain ID: {chain?.id || '10143'}
-              </p>
-              <p className="text-xs text-primary-600 dark:text-primary-300 font-semibold font-inter mb-2">
+              {chain?.name || 'Monad Testnet'}
+            </p>
+               <p className="text-xs text-primary-600 dark:text-primary-300 font-semibold font-inter">
                 Balance: {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 MON'}
-              </p>
+            </p>
+             </div>
               <div className="flex items-center space-x-2">
                 <a 
                   href="/app/dashboard" 
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all transform hover:scale-105 text-sm font-bold font-inter shadow-lg hover:shadow-xl"
+                className="inline-flex items-center px-4 lg:px-6 py-2 lg:py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all transform hover:scale-105 text-sm font-bold font-inter shadow-lg hover:shadow-xl"
                 >
                   <Link2 className="w-4 h-4 mr-2" />
                   Dashboard
                 </a>
-              </div>
-            </div>
             <button
               onClick={persistentDisconnect}
               className="flex items-center space-x-2 px-3 py-2 bg-primary-100 dark:bg-primary-800 hover:bg-primary-200 dark:hover:bg-primary-700 rounded-lg transition-colors"
               title="Disconnect Wallet"
             >
               <LogOut className="w-4 h-4 text-primary-600 dark:text-primary-300" />
-              <span className="text-xs font-medium text-primary-600 dark:text-primary-300 font-inter">
+                <span className="text-xs font-medium text-primary-600 dark:text-primary-300 font-inter hidden sm:inline">
                 Disconnect
               </span>
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1093,12 +1090,12 @@ export default function Web3AppContent() {
           </div>
         </motion.div>
       ) : selectedTemplate === 'payment' && !generatedLink ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
-        >
+      >
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8 relative">
             {/* Close button - absolute positioned */}
             <button
@@ -1202,8 +1199,8 @@ export default function Web3AppContent() {
                       className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                     >
                       <X className="w-4 h-4" />
-                    </button>
-                  </div>
+          </button>
+        </div>
                 )}
               </div>
 
@@ -1273,7 +1270,7 @@ export default function Web3AppContent() {
                     Leave empty for no expiration
                   </p>
                 </div>
-              </div>
+        </div>
 
               {/* Create Button */}
               <div className="flex space-x-4">
@@ -1283,25 +1280,25 @@ export default function Web3AppContent() {
                 >
                   Back to Templates
                 </button>
-                <button
-                  onClick={handleCreatePaymentLink}
-                  disabled={isCreating || isConfirming}
+              <button
+                onClick={handleCreatePaymentLink}
+                disabled={isCreating || isConfirming}
                   className="flex-1 px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCreating ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Creating...</span>
-                    </div>
-                  ) : isConfirming ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Confirming...</span>
-                    </div>
-                  ) : (
-                    'Create Payment Link'
-                  )}
-                </button>
+              >
+                {isCreating ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Creating...</span>
+                  </div>
+                ) : isConfirming ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Confirming...</span>
+                  </div>
+                ) : (
+                  'Create Payment Link'
+                )}
+              </button>
               </div>
               
               {contractError && (
@@ -1314,7 +1311,7 @@ export default function Web3AppContent() {
             </div>
           </div>
         </motion.div>
-      ) : selectedTemplate === 'raffle' ? (
+      ) : selectedTemplate === 'raffle' && !generatedLink ? (
         /* Raffle Form */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1620,7 +1617,7 @@ export default function Web3AppContent() {
                           Switch to Token Rewards
                         </button>
                         <button
-                          onClick={() => window.open('https://opensea.io', '_blank')}
+                          onClick={() => window.open('https://magiceden.io/monad-testnet', '_blank')}
                           className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                         >
                           Browse NFTs
@@ -1762,34 +1759,36 @@ export default function Web3AppContent() {
               <Link2 className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Payment Link Created!
+              {selectedTemplate === 'raffle' ? 'Raffle Created!' : 'Payment Link Created!'}
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Share this link with your customers
+              {selectedTemplate === 'raffle' ? 'Share this raffle link to let people participate' : 'Share this link with your customers'}
             </p>
             
             <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Your Payment Link:</p>
-              <div className="flex items-center space-x-2 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{selectedTemplate === 'raffle' ? 'Your Raffle Link:' : 'Your Payment Link:'}</p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 mb-4">
                 <input
                   type="text"
                   value={generatedLink || ''}
                   readOnly
                   className="flex-1 px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white"
                 />
+                <div className="flex space-x-2">
                 <button
                   onClick={() => navigator.clipboard.writeText(generatedLink!)}
-                  className="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 transition-colors text-sm"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 transition-colors text-sm"
                 >
                   Copy
                 </button>
                 <button
                   onClick={() => setShowQRCode(!showQRCode)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm flex items-center space-x-1"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm flex items-center justify-center space-x-1"
                 >
                   <QrCode className="w-4 h-4" />
                   <span>QR</span>
                 </button>
+                </div>
               </div>
               
               {/* QR Code Display */}
@@ -1798,14 +1797,14 @@ export default function Web3AppContent() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Scan with any QR reader:</p>
                   <img 
                     src={qrCodeUrl} 
-                    alt="Payment Link QR Code" 
+                    alt={selectedTemplate === 'raffle' ? 'Raffle Link QR Code' : 'Payment Link QR Code'} 
                     className="mx-auto mb-3 rounded-lg"
                   />
                   <button
                     onClick={() => {
                       const link = document.createElement('a');
                       link.href = qrCodeUrl;
-                      link.download = `nadpay-qr-${Date.now()}.png`;
+                      link.download = `${selectedTemplate === 'raffle' ? 'nadpay-raffle' : 'nadpay'}-qr-${Date.now()}.png`;
                       link.click();
                     }}
                     className="text-xs text-primary-500 hover:text-primary-600 underline"
@@ -1817,26 +1816,39 @@ export default function Web3AppContent() {
             </div>
 
             <div className="flex space-x-4 justify-center">
-              <button
-                onClick={() => {
-                  setGeneratedLink(null);
-                  setQrCodeUrl(null);
-                  setShowQRCode(false);
+            <button
+              onClick={() => {
+                setGeneratedLink(null);
+                setQrCodeUrl(null);
+                setShowQRCode(false);
                   setSelectedTemplate(null);
-                  setFormData({
+                setFormData({
+                  title: '',
+                  description: '',
+                  coverImage: '',
+                  totalSales: '',
+                  maxPerWallet: '',
+                  price: '',
+                  expireDate: ''
+                });
+                  setRaffleFormData({
                     title: '',
                     description: '',
-                    coverImage: '',
-                    totalSales: '',
-                    maxPerWallet: '',
-                    price: '',
-                    expireDate: ''
-                  });
-                }}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-              >
-                Create Another Link
-              </button>
+                    imageHash: '',
+                    rewardType: 'TOKEN',
+                    rewardTokenAddress: '',
+                    rewardAmount: '',
+                    ticketPrice: '',
+                    maxTickets: 100,
+                    maxTicketsPerWallet: 10,
+                    expirationDateTime: '',
+                    autoDistributeOnSoldOut: false,
+                });
+              }}
+              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+            >
+                {selectedTemplate === 'raffle' ? 'Create Another Raffle' : 'Create Another Link'}
+            </button>
               <a
                 href="/app/dashboard"
                 className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors"
@@ -1844,7 +1856,7 @@ export default function Web3AppContent() {
                 Go to Dashboard
               </a>
             </div>
-          </div>
+    </div>
         </motion.div>
       )}
     </div>

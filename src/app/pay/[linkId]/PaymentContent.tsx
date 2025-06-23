@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock } from "lucide-react";
-import { useAccount, useBalance } from "wagmi";
+import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock, Sun, Moon } from "lucide-react";
+import { useAccount, useBalance, useSwitchChain } from "wagmi";
 import { ConnectKitButton } from "connectkit";
+import { useTheme } from "next-themes";
 import { usePaymentLink, usePurchase, useUserPurchaseCount, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
 
 export default function PaymentContent() {
   const params = useParams();
   const linkId = params.linkId as string;
+  const { theme, setTheme } = useTheme();
   
   // Decode secure link ID to get internal ID
   const decodeSecureLinkId = (secureId: string): number | null => {
@@ -47,6 +49,7 @@ export default function PaymentContent() {
   const internalLinkId = decodeSecureLinkId(linkId);
   
   const { address, isConnected, chain } = useAccount();
+  const { switchChain } = useSwitchChain();
   const { data: balance } = useBalance({
     address: address,
     chainId: 10143, // Monad Testnet
@@ -174,20 +177,38 @@ export default function PaymentContent() {
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <a 
+              href="/app"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
                 <Link2 className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">NadPay</h1>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
+            </a>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="inline-flex items-center p-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </button>
               <a 
                 href="/app"
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity shadow-sm"
               >
-                Create Your Link
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">Create Your Link</span>
+                <span className="sm:hidden">Create</span>
               </a>
             </div>
           </div>
@@ -301,9 +322,15 @@ export default function PaymentContent() {
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Please switch to Monad Testnet to continue
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                     Current: {chain?.name} • Required: Monad Testnet
                   </p>
+                  <button
+                    onClick={() => switchChain({ chainId: 10143 })}
+                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                  >
+                    Switch to Monad Testnet
+                  </button>
                 </div>
               ) : !paymentLink.isActive ? (
                 /* Inactive Link */
@@ -369,14 +396,14 @@ export default function PaymentContent() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 dark:text-gray-300">Total Price:</span>
                       <span className="text-2xl font-bold text-primary-500">
-                        {(parseFloat(paymentLink.price) * quantity).toFixed(4)} MON
+                        {(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} MON
                       </span>
                     </div>
                     {balance && (
                       <div className="flex justify-between items-center mt-2 text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Your Balance:</span>
                         <span className="text-gray-900 dark:text-white">
-                          {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
+                          {parseFloat(balance.formatted).toFixed(4).replace(/\.?0+$/, '')} {balance.symbol}
                         </span>
                       </div>
                     )}
@@ -401,7 +428,7 @@ export default function PaymentContent() {
                     ) : !canPurchase() ? (
                       'Cannot Purchase'
                     ) : (
-                      `Purchase for ${(parseFloat(paymentLink.price) * quantity).toFixed(4)} MON`
+                      `Purchase for ${(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} MON`
                     )}
                   </button>
 

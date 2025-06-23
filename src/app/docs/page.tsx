@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import { 
   Link2, 
@@ -11,7 +12,8 @@ import {
   Shield, 
   Zap,
   Copy,
-
+  Sun,
+  Moon,
   ChevronRight,
   ChevronDown,
   FileText,
@@ -25,6 +27,7 @@ export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("introduction");
   const [expandedSections, setExpandedSections] = useState<string[]>(["getting-started"]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
@@ -443,20 +446,22 @@ export default function DocsPage() {
               </p>
             </div>
 
+            {/* NadPay Contract */}
             <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Contract Details
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Link2 className="w-5 h-5 mr-2 text-primary-500" />
+                NadPay Contract
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                                              0x17c31F99b27c10fbFF0aA241202DF687377DC24A
+                      0xa81F9ED8cf8030424F049b385a1dB32cA504177d
                     </code>
                     <button 
-                                              onClick={() => copyToClipboard("0x17c31F99b27c10fbFF0aA241202DF687377DC24A")}
-                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
+                      onClick={() => copyToClipboard("0xa81F9ED8cf8030424F049b385a1dB32cA504177d")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -473,6 +478,50 @@ export default function DocsPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">License</label>
                   <p className="mt-1 text-gray-900 dark:text-white">MIT</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">Payment Links & Digital Commerce</p>
+                </div>
+              </div>
+            </div>
+
+            {/* NadRaffle Contract */}
+            <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Globe className="w-5 h-5 mr-2 text-purple-500" />
+                NadRaffle Contract
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
+                  <div className="flex items-center mt-1">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
+                      0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Network</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">Monad Testnet</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compiler Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">Solidity 0.8.20</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">License</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">MIT</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">Raffles & Community Engagement</p>
                 </div>
               </div>
             </div>
@@ -744,11 +793,17 @@ export default function DocsPage() {
                 Smart Contract Functions
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Detailed overview of NadPay contract functions.
+                Detailed overview of NadPay and NadRaffle contract functions.
               </p>
             </div>
 
+            {/* NadPay Functions */}
             <div className="space-y-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <Link2 className="w-5 h-5 mr-2 text-primary-500" />
+                NadPay Contract Functions
+              </h2>
+              
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   createPaymentLink()
@@ -779,7 +834,7 @@ export default function DocsPage() {
                 </p>
                 <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                   <code className="text-sm">
-                    function purchaseFromLink(string memory linkId) external payable
+                    function purchaseFromLink(uint256 linkId, uint256 quantity) external payable
                   </code>
                 </div>
               </div>
@@ -793,18 +848,18 @@ export default function DocsPage() {
                 </p>
                 <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                   <code className="text-sm">
-                    function deactivateLink(string memory linkId) external
+                    function deactivateLink(uint256 linkId) external
                   </code>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  View Functions
+                  NadPay View Functions
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getPaymentLink(string linkId)</code>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getPaymentLink(uint256 linkId)</code>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Returns payment link details</p>
                   </div>
                   <div>
@@ -814,6 +869,107 @@ export default function DocsPage() {
                   <div>
                     <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getPlatformFee()</code>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Returns current platform fee percentage</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getUserPurchaseCount(uint256 linkId, address user)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns user's purchase count for a specific link</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* NadRaffle Functions */}
+            <div className="space-y-6 mt-12">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <Globe className="w-5 h-5 mr-2 text-purple-500" />
+                NadRaffle Contract Functions
+              </h2>
+              
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  createRaffle()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Creates a new raffle with specified parameters and reward.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function createRaffle(<br/>
+                    &nbsp;&nbsp;string memory title,<br/>
+                    &nbsp;&nbsp;string memory description,<br/>
+                    &nbsp;&nbsp;string memory imageHash,<br/>
+                    &nbsp;&nbsp;uint256 rewardAmount,<br/>
+                    &nbsp;&nbsp;uint256 ticketPrice,<br/>
+                    &nbsp;&nbsp;uint256 maxTickets,<br/>
+                    &nbsp;&nbsp;uint256 maxTicketsPerWallet,<br/>
+                    &nbsp;&nbsp;uint256 expirationTime<br/>
+                    ) external payable
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  purchaseTickets()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Purchase tickets for a specific raffle.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function purchaseTickets(uint256 raffleId, uint256 quantity) external payable
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  endRaffle()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Ends a raffle and selects a winner (only by creator or after expiration).
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function endRaffle(uint256 raffleId) external
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  cancelRaffle()
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Cancels a raffle and refunds participants (only by creator before any tickets sold).
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    function cancelRaffle(uint256 raffleId) external
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  NadRaffle View Functions
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getRaffle(uint256 raffleId)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns raffle details and current status</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getUserTickets(uint256 raffleId, address user)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns number of tickets owned by user for a raffle</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getRaffleTickets(uint256 raffleId)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns all tickets for a specific raffle</p>
+                  </div>
+                  <div>
+                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">getUserRaffles(address user)</code>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Returns all raffles created by a user</p>
                   </div>
                 </div>
               </div>
@@ -829,11 +985,17 @@ export default function DocsPage() {
                 Smart Contract Events
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Events emitted by the NadPay smart contract.
+                Events emitted by NadPay and NadRaffle smart contracts.
               </p>
             </div>
 
+            {/* NadPay Events */}
             <div className="space-y-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <Link2 className="w-5 h-5 mr-2 text-primary-500" />
+                NadPay Contract Events
+              </h2>
+              
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   PaymentLinkCreated
@@ -844,9 +1006,11 @@ export default function DocsPage() {
                 <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                   <code className="text-sm">
                     event PaymentLinkCreated(<br />
-                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;uint256 indexed linkId,<br />
                     &nbsp;&nbsp;address indexed creator,<br />
                     &nbsp;&nbsp;uint256 price,<br />
+                    &nbsp;&nbsp;uint256 totalSalesLimit,<br />
+                    &nbsp;&nbsp;uint256 walletPurchaseLimit,<br />
                     &nbsp;&nbsp;uint256 timestamp<br />
                     );
                   </code>
@@ -863,9 +1027,10 @@ export default function DocsPage() {
                 <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                   <code className="text-sm">
                     event PurchaseMade(<br />
-                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;uint256 indexed linkId,<br />
                     &nbsp;&nbsp;address indexed buyer,<br />
                     &nbsp;&nbsp;address indexed creator,<br />
+                    &nbsp;&nbsp;uint256 quantity,<br />
                     &nbsp;&nbsp;uint256 amount,<br />
                     &nbsp;&nbsp;uint256 platformFee,<br />
                     &nbsp;&nbsp;uint256 timestamp<br />
@@ -884,9 +1049,117 @@ export default function DocsPage() {
                 <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                   <code className="text-sm">
                     event PaymentLinkDeactivated(<br />
-                    &nbsp;&nbsp;string indexed linkId,<br />
+                    &nbsp;&nbsp;uint256 indexed linkId,<br />
                     &nbsp;&nbsp;address indexed creator,<br />
                     &nbsp;&nbsp;uint256 timestamp<br />
+                    );
+                  </code>
+                </div>
+              </div>
+            </div>
+
+            {/* NadRaffle Events */}
+            <div className="space-y-6 mt-12">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <Globe className="w-5 h-5 mr-2 text-purple-500" />
+                NadRaffle Contract Events
+              </h2>
+              
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  RaffleCreated
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a new raffle is created.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event RaffleCreated(<br />
+                    &nbsp;&nbsp;uint256 indexed raffleId,<br />
+                    &nbsp;&nbsp;address indexed creator,<br />
+                    &nbsp;&nbsp;string title,<br />
+                    &nbsp;&nbsp;uint8 rewardType,<br />
+                    &nbsp;&nbsp;address rewardTokenAddress,<br />
+                    &nbsp;&nbsp;uint256 rewardAmount,<br />
+                    &nbsp;&nbsp;uint256 ticketPrice,<br />
+                    &nbsp;&nbsp;uint256 maxTickets,<br />
+                    &nbsp;&nbsp;uint256 expirationTime<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  TicketsPurchased
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when tickets are purchased for a raffle.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event TicketsPurchased(<br />
+                    &nbsp;&nbsp;uint256 indexed raffleId,<br />
+                    &nbsp;&nbsp;address indexed buyer,<br />
+                    &nbsp;&nbsp;uint256 quantity,<br />
+                    &nbsp;&nbsp;uint256 totalCost,<br />
+                    &nbsp;&nbsp;uint256 startTicketNumber,<br />
+                    &nbsp;&nbsp;uint256 endTicketNumber<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  RaffleEnded
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a raffle ends and a winner is selected.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event RaffleEnded(<br />
+                    &nbsp;&nbsp;uint256 indexed raffleId,<br />
+                    &nbsp;&nbsp;address indexed winner,<br />
+                    &nbsp;&nbsp;uint256 winningTicket,<br />
+                    &nbsp;&nbsp;bytes32 randomHash<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  RaffleCancelled
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a raffle is cancelled by the creator.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event RaffleCancelled(<br />
+                    &nbsp;&nbsp;uint256 indexed raffleId,<br />
+                    &nbsp;&nbsp;address indexed creator<br />
+                    );
+                  </code>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  RewardClaimed
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Emitted when a raffle winner claims their reward.
+                </p>
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <code className="text-sm">
+                    event RewardClaimed(<br />
+                    &nbsp;&nbsp;uint256 indexed raffleId,<br />
+                    &nbsp;&nbsp;address indexed winner,<br />
+                    &nbsp;&nbsp;uint8 rewardType,<br />
+                    &nbsp;&nbsp;uint256 amount<br />
                     );
                   </code>
                 </div>
@@ -1321,6 +1594,117 @@ export default function DocsPage() {
           </div>
         );
 
+      case "raffle-management":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Raffle Management
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Manage your active raffles, monitor performance, and handle winner selection.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Dashboard Overview
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Your dashboard provides a comprehensive view of all your raffles with real-time statistics.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-purple-800 dark:text-purple-300">Active Raffles</h4>
+                    <p className="text-purple-600 dark:text-purple-400 text-sm">Currently running raffles accepting tickets</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300">Total Revenue</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">MON earned from ticket sales across all raffles</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-800 dark:text-green-300">Participants</h4>
+                    <p className="text-green-600 dark:text-green-400 text-sm">Total unique participants across all raffles</p>
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-orange-800 dark:text-orange-300">Completed</h4>
+                    <p className="text-orange-600 dark:text-orange-400 text-sm">Raffles that have ended with winners selected</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Raffle Actions
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">During Active Phase</h4>
+                    <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>• <strong>Monitor Sales:</strong> Track ticket sales in real-time</li>
+                      <li>• <strong>View Participants:</strong> See who has purchased tickets and their chances</li>
+                      <li>• <strong>Share Links:</strong> Promote your raffle across social channels</li>
+                      <li>• <strong>Export Data:</strong> Download participant lists for marketing</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Ending Raffles</h4>
+                    <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>• <strong>Manual End:</strong> End raffle early if desired</li>
+                      <li>• <strong>Automatic End:</strong> Raffles end automatically at expiration</li>
+                      <li>• <strong>Winner Selection:</strong> Smart contract randomly selects winner</li>
+                      <li>• <strong>Reward Distribution:</strong> Winners can claim rewards immediately</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Mobile Management
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  All raffle management features are fully optimized for mobile devices with responsive design.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Mobile Features</h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• Touch-optimized controls</li>
+                      <li>• Responsive participant tables</li>
+                      <li>• Mobile-friendly action buttons</li>
+                      <li>• Swipe navigation for large lists</li>
+                    </ul>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Quick Actions</h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• One-tap raffle ending</li>
+                      <li>• Instant participant viewing</li>
+                      <li>• Quick share functionality</li>
+                      <li>• Fast CSV exports</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                  Best Practices
+                </h3>
+                <ul className="text-yellow-700 dark:text-yellow-300 space-y-1">
+                  <li>• Monitor raffle performance regularly to optimize future campaigns</li>
+                  <li>• Engage with participants through social media during active phase</li>
+                  <li>• End raffles promptly when goals are met to maintain trust</li>
+                  <li>• Keep detailed records of participants for future marketing</li>
+                  <li>• Announce winners publicly to build credibility</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="text-center py-16">
@@ -1355,14 +1739,27 @@ export default function DocsPage() {
                 </p>
               </div>
             </div>
-            <a
-              href="/app"
-              className="inline-flex items-center px-3 py-2 sm:px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Back to App</span>
-              <span className="sm:hidden">Back</span>
-            </a>
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </button>
+              <a
+                href="/app"
+                className="inline-flex items-center px-3 py-2 sm:px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Back to App</span>
+                <span className="sm:hidden">Back</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

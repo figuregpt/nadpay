@@ -1,8 +1,10 @@
 'use client';
 
+import React from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, createPublicClient, http, decodeEventLog } from 'viem';
 import { NADRAFFLE_CONTRACT, REWARD_TYPES, RAFFLE_STATUS, type Raffle } from '@/lib/raffle-contract';
+import { config, publicClient } from '@/lib/wagmi';
 
 export function useNadRaffleContract() {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
@@ -115,12 +117,18 @@ export function useNadRaffleContract() {
 
   const endRaffle = async (raffleId: number) => {
     try {
+      console.log('endRaffle hook called with raffleId:', raffleId);
+      console.log('Contract address:', NADRAFFLE_CONTRACT.address);
+      console.log('writeContract function:', writeContract);
+      
       writeContract({
         address: NADRAFFLE_CONTRACT.address as `0x${string}`,
         abi: NADRAFFLE_CONTRACT.abi,
         functionName: 'endRaffle',
         args: [BigInt(raffleId)],
       });
+      
+      console.log('writeContract called successfully');
     } catch (err) {
       console.error('Error ending raffle:', err);
       throw err;
@@ -143,12 +151,17 @@ export function useNadRaffleContract() {
 
   const cancelRaffle = async (raffleId: number) => {
     try {
+      console.log('cancelRaffle hook called with raffleId:', raffleId);
+      console.log('Contract address:', NADRAFFLE_CONTRACT.address);
+      
       writeContract({
         address: NADRAFFLE_CONTRACT.address as `0x${string}`,
         abi: NADRAFFLE_CONTRACT.abi,
         functionName: 'cancelRaffle',
         args: [BigInt(raffleId)],
       });
+      
+      console.log('cancelRaffle writeContract called successfully');
     } catch (err) {
       console.error('Error cancelling raffle:', err);
       throw err;
@@ -275,5 +288,71 @@ export function useNadRaffleContract() {
     // Constants
     REWARD_TYPES,
     RAFFLE_STATUS,
+  };
+}
+
+// Hook to get creator's raffles
+export function useCreatorRaffles(creatorAddress?: string) {
+  const { data: totalRaffles } = useReadContract({
+    address: NADRAFFLE_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_CONTRACT.abi,
+    functionName: 'getTotalRaffles',
+  });
+
+  // First get the raffle IDs for this user
+  const { data: raffleIds, isLoading: loadingIds, refetch } = useReadContract({
+    address: NADRAFFLE_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_CONTRACT.abi,
+    functionName: 'getUserRaffles',
+    args: creatorAddress ? [creatorAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: !!creatorAddress,
+    },
+  });
+
+  // Use React state to store all raffle data
+  const [rafflesData, setRafflesData] = React.useState<any[]>([]);
+  const [loadingRaffles, setLoadingRaffles] = React.useState(false);
+
+  // Fetch all raffle data when we get the IDs
+  React.useEffect(() => {
+    if (!raffleIds || raffleIds.length === 0) {
+      setRafflesData([]);
+      return;
+    }
+
+    setLoadingRaffles(true);
+    
+    const fetchRaffles = async () => {
+      try {
+        const rafflePromises = raffleIds.map(async (id: bigint) => {
+          const data = await publicClient.readContract({
+            address: NADRAFFLE_CONTRACT.address as `0x${string}`,
+            abi: NADRAFFLE_CONTRACT.abi,
+            functionName: 'getRaffle',
+            args: [id],
+          });
+          return data;
+        });
+
+        const results = await Promise.all(rafflePromises);
+        setRafflesData(results);
+      } catch (error) {
+        console.error('Error fetching raffles:', error);
+        setRafflesData([]);
+      } finally {
+        setLoadingRaffles(false);
+      }
+    };
+
+    fetchRaffles();
+  }, [raffleIds]);
+
+  return {
+    data: rafflesData,
+    isLoading: loadingIds || loadingRaffles,
+    refetch,
+    totalRaffles,
+    raffleIds,
   };
 } 
