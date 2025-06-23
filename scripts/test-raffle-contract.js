@@ -3,10 +3,10 @@ const { ethers } = require("hardhat");
 async function main() {
   console.log("Testing NadRaffle contract...");
 
-  // Get the contract instance
-  const contractAddress = "0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e";
-  const NadRaffle = await ethers.getContractFactory("NadRaffle");
-  const nadRaffle = NadRaffle.attach(contractAddress);
+  // Get the V3 contract instance
+  const contractAddress = "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0";
+  const NadRaffleV3 = await ethers.getContractFactory("NadRaffleV3");
+  const nadRaffle = NadRaffleV3.attach(contractAddress);
 
   try {
     // Test basic contract functions

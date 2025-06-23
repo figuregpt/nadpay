@@ -4,8 +4,46 @@ import { formatEther } from "viem";
 
 // Import contract utilities
 import { publicClient } from "@/lib/wagmi";
-import { NADRAFFLE_CONTRACT } from "@/lib/raffle-contract";
 import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
+import { getKnownToken } from "@/lib/knownAssets";
+
+// V3 Contract configuration for metadata
+const NADRAFFLE_V3_CONTRACT = {
+  address: "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0" as `0x${string}`,
+  abi: [
+    {
+      "inputs": [{ "name": "raffleId", "type": "uint256" }],
+      "name": "getRaffle",
+      "outputs": [{
+        "type": "tuple",
+        "components": [
+          { "name": "id", "type": "uint256" },
+          { "name": "creator", "type": "address" },
+          { "name": "title", "type": "string" },
+          { "name": "description", "type": "string" },
+          { "name": "imageHash", "type": "string" },
+          { "name": "rewardType", "type": "uint8" },
+          { "name": "rewardTokenAddress", "type": "address" },
+          { "name": "rewardAmount", "type": "uint256" },
+          { "name": "ticketPaymentToken", "type": "address" },
+          { "name": "ticketPrice", "type": "uint256" },
+          { "name": "maxTickets", "type": "uint256" },
+          { "name": "maxTicketsPerWallet", "type": "uint256" },
+          { "name": "expirationTime", "type": "uint256" },
+          { "name": "autoDistributeOnSoldOut", "type": "bool" },
+          { "name": "ticketsSold", "type": "uint256" },
+          { "name": "totalEarned", "type": "uint256" },
+          { "name": "winner", "type": "address" },
+          { "name": "status", "type": "uint8" },
+          { "name": "createdAt", "type": "uint256" },
+          { "name": "rewardClaimed", "type": "bool" }
+        ]
+      }],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+} as const;
 
 // Dynamically import the entire raffle component
 const RaffleContent = dynamic(() => import("./RaffleContent"), {
@@ -39,10 +77,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     
     // Fetch raffle data from contract using internal ID
     const raffleData = await publicClient.readContract({
-      ...NADRAFFLE_CONTRACT,
+      address: NADRAFFLE_V3_CONTRACT.address,
+      abi: NADRAFFLE_V3_CONTRACT.abi,
       functionName: 'getRaffle',
       args: [BigInt(internalRaffleId)]
-    });
+    }) as any;
 
     if (!raffleData || !raffleData.creator || raffleData.creator === '0x0000000000000000000000000000000000000000') {
       return {
@@ -51,15 +90,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
 
-    const { title, description, ticketPrice, rewardAmount, rewardType } = raffleData;
-    const ticketPriceInMON = formatEther(ticketPrice);
+    const { title, description, ticketPrice, rewardAmount, rewardType, ticketPaymentToken, rewardTokenAddress } = raffleData;
+    
+    // Get payment token symbol
+    const paymentTokenSymbol = ticketPaymentToken === '0x0000000000000000000000000000000000000000' 
+      ? 'MON' 
+      : getKnownToken(ticketPaymentToken)?.symbol || 'TOKEN';
+    
+    // Get reward token symbol
+    const rewardTokenSymbol = rewardTokenAddress === '0x0000000000000000000000000000000000000000'
+      ? 'MON'
+      : getKnownToken(rewardTokenAddress)?.symbol || 'TOKEN';
+    
+    const ticketPriceFormatted = formatEther(ticketPrice);
     const rewardAmountFormatted = formatEther(rewardAmount);
     const rewardTypeText = Number(rewardType) === 0 ? 'Token' : 'NFT';
     
-    const pageTitle = `${title} - ${ticketPriceInMON} MON per ticket | NadPay Raffle`;
+    const pageTitle = `${title} - ${ticketPriceFormatted} ${paymentTokenSymbol} per ticket | NadPay Raffle`;
     const pageDescription = description 
-      ? `${description} | Ticket Price: ${ticketPriceInMON} MON | Reward: ${rewardAmountFormatted} ${rewardTypeText === 'Token' ? 'MON' : 'NFT'} | Join the raffle on Monad blockchain`
-      : `Join the raffle for ${ticketPriceInMON} MON per ticket on Monad blockchain`;
+      ? `${description} | Ticket Price: ${ticketPriceFormatted} ${paymentTokenSymbol} | Reward: ${rewardAmountFormatted} ${rewardTypeText === 'Token' ? rewardTokenSymbol : 'NFT'} | Join the raffle on Monad blockchain`
+      : `Join the raffle for ${ticketPriceFormatted} ${paymentTokenSymbol} per ticket on Monad blockchain`;
 
     return {
       title: pageTitle,

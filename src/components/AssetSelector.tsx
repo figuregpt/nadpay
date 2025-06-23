@@ -14,10 +14,63 @@ import {
   NFT_CATEGORIES
 } from '../lib/knownAssets';
 import { useAssetBalances } from '../hooks/useAssetBalances';
+import { useOwnedNFTsWithMetadata, NFTWithMetadata } from '../hooks/useNFTMetadata';
+import { useAccount } from 'wagmi';
+
+// Separate component for NFT list to avoid hook ordering issues
+interface NFTListProps {
+  filteredNFTs: any[];
+  onAssetClick: (asset: KnownToken | KnownNFT | NFTWithMetadata, type: 'token' | 'nft' | 'individual_nft') => void;
+}
+
+function NFTList({ filteredNFTs, onAssetClick }: NFTListProps) {
+  return (
+    <div className="space-y-1">
+      {/* NFT Collections */}
+      {filteredNFTs.map((collection) => (
+        <button
+          key={collection.address}
+          onClick={() => onAssetClick(collection, 'nft')}
+          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+        >
+          <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            {collection.logo ? (
+              <img
+                src={collection.logo}
+                alt={collection.name}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <Image className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            )}
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white">
+              {collection.name}
+            </div>
+            {collection.description && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                {collection.description}
+              </p>
+            )}
+          </div>
+        </button>
+      ))}
+
+      {/* No NFTs found */}
+      {filteredNFTs.length === 0 && (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <Image className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+          <p>No NFT collections found</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export interface SelectedAsset {
-  type: 'token' | 'nft';
-  data: KnownToken | KnownNFT;
+  type: 'token' | 'nft' | 'individual_nft';
+  data: KnownToken | KnownNFT | NFTWithMetadata;
 }
 
 interface AssetSelectorProps {
@@ -44,6 +97,36 @@ export function AssetSelector({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { tokenBalances, nftBalances, isLoading } = useAssetBalances();
+  const { address } = useAccount();
+
+  // Type guards
+  const isKnownToken = (data: any): data is KnownToken => {
+    return data && typeof data.symbol === 'string';
+  };
+
+  const isKnownNFT = (data: any): data is KnownNFT => {
+    return data && typeof data.name === 'string' && !data.tokenId;
+  };
+
+  const isNFTWithMetadata = (data: any): data is NFTWithMetadata => {
+    return data && typeof data.tokenId === 'string' && data.metadata;
+  };
+
+  // Helper function to get display name
+  const getDisplayName = (asset: SelectedAsset): string => {
+    if (isKnownToken(asset.data)) return asset.data.name;
+    if (isKnownNFT(asset.data)) return asset.data.name;
+    if (isNFTWithMetadata(asset.data)) return asset.data.metadata?.name || `NFT #${asset.data.tokenId}`;
+    return 'Unknown Asset';
+  };
+
+  // Helper function to get display description
+  const getDisplayDescription = (asset: SelectedAsset): string | undefined => {
+    if (isKnownToken(asset.data)) return asset.data.description;
+    if (isKnownNFT(asset.data)) return asset.data.description;
+    if (isNFTWithMetadata(asset.data)) return asset.data.metadata?.description;
+    return undefined;
+  };
 
   // Filter to only owned assets if showOnlyOwned is true
   const ownedTokens = showOnlyOwned 
@@ -86,6 +169,8 @@ export function AssetSelector({
       })
     : ownedNFTs;
 
+
+
   // Handle clicks outside dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -97,7 +182,7 @@ export function AssetSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleAssetClick = (asset: KnownToken | KnownNFT, type: 'token' | 'nft') => {
+  const handleAssetClick = (asset: KnownToken | KnownNFT | NFTWithMetadata, type: 'token' | 'nft' | 'individual_nft') => {
     onAssetSelect({ type, data: asset });
     setIsOpen(false);
   };
@@ -139,10 +224,20 @@ export function AssetSelector({
                     />
                   ) : null
                 ) : (
-                  (selectedAsset.data as KnownNFT).image ? (
+                  (selectedAsset.type === 'nft' && isKnownNFT(selectedAsset.data) && selectedAsset.data.image) ? (
                     <img
-                      src={(selectedAsset.data as KnownNFT).image}
-                      alt={selectedAsset.data.name}
+                      src={selectedAsset.data.image}
+                      alt={getDisplayName(selectedAsset)}
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : (selectedAsset.type === 'individual_nft' && isNFTWithMetadata(selectedAsset.data) && selectedAsset.data.metadata?.image) ? (
+                    <img
+                      src={selectedAsset.data.metadata.image}
+                      alt={getDisplayName(selectedAsset)}
                       className="w-6 h-6 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -165,10 +260,10 @@ export function AssetSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-medium text-gray-900 dark:text-white truncate">{selectedAsset.data.name}</span>
-                    {selectedAsset.type === 'token' && (
+                    <span className="font-medium text-gray-900 dark:text-white truncate">{getDisplayName(selectedAsset)}</span>
+                    {selectedAsset.type === 'token' && isKnownToken(selectedAsset.data) && (
                       <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
-                        ({(selectedAsset.data as KnownToken).symbol})
+                        ({selectedAsset.data.symbol})
                       </span>
                     )}
                   </div>
@@ -194,9 +289,9 @@ export function AssetSelector({
                     );
                   })()}
                 </div>
-                {selectedAsset.data.description && (
+                {getDisplayDescription(selectedAsset) && (
                   <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                    {selectedAsset.data.description}
+                    {getDisplayDescription(selectedAsset)}
                   </div>
                 )}
               </div>
@@ -332,49 +427,10 @@ export function AssetSelector({
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {filteredNFTs.map((nft) => (
-                        <button
-                          key={nft.address}
-                          onClick={() => handleAssetClick(nft, 'nft')}
-                          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center overflow-hidden">
-                            {nft.image ? (
-                              <img
-                                src={nft.image}
-                                alt={nft.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <Image className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 dark:text-white">{nft.name}</span>
-                              {nft.verified && (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              {nft.description && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{nft.description}</p>
-                              )}
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 ml-2">
-                                {nft.totalOwned} owned
-                              </span>
-                            </div>
-                            {nft.floorPrice && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Floor: {nft.floorPrice} MON</p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                                        <NFTList
+                      filteredNFTs={filteredNFTs}
+                      onAssetClick={handleAssetClick}
+                    />
                   )}
                 </div>
               )}

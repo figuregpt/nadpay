@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, Link2, Upload, X, Calendar, QrCode, Clock, Trophy, Gift } from "lucide-react";
+import { Wallet, Link2, Upload, X, Calendar, QrCode, Clock, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import QRCode from "qrcode";
-import { useAccount, useSwitchChain, useBalance, useReadContracts, useReadContract } from "wagmi";
+import { useAccount, useSwitchChain, useBalance, useReadContracts, useReadContract, usePublicClient, useWalletClient } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { usePersistentWallet } from "@/hooks/usePersistentWallet";
-import { useCreatePaymentLink } from "@/hooks/useNadPayContract";
-import { useNadRaffleContract } from "@/hooks/useNadRaffleContract";
+import { useCreatePaymentLinkV2 } from "@/hooks/useNadPayV2Contract";
+import { useNadRaffleV3Contract } from "@/hooks/useNadRaffleV3Contract";
 import { useAssetBalances } from "@/hooks/useAssetBalances";
 import { LogOut } from "lucide-react";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, parseEther } from "viem";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { AssetSelector, SelectedAsset } from "@/components/AssetSelector";
 import { KnownToken, KnownNFT } from "@/lib/knownAssets";
+import { NFTWithMetadata } from "@/hooks/useNFTMetadata";
 
 interface TokenInfo {
   address: string;
@@ -44,6 +45,8 @@ export default function Web3AppContent() {
     address: address,
     chainId: 10143, // Monad Testnet
   });
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
   
   // Template selection state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -56,6 +59,7 @@ export default function Web3AppContent() {
     totalSales: '',
     maxPerWallet: '',
     price: '',
+    paymentToken: '', // Multi-token support
     expireDate: ''
   });
 
@@ -68,19 +72,24 @@ export default function Web3AppContent() {
     rewardTokenAddress: '',
     rewardAmount: '',
     ticketPrice: '0.01',
+    ticketPaymentToken: '', // For V2 contract multi-token support
     maxTickets: 100,
     maxTicketsPerWallet: 10,
     expirationDateTime: '',
-    autoDistributeOnSoldOut: true,
+    autoDistributeOnSoldOut: true, // Always true - auto-distribute enabled by default
   });
 
   // Selected asset state for new asset selector
   const [selectedRewardAsset, setSelectedRewardAsset] = useState<SelectedAsset | null>(null);
+  const [selectedTicketPaymentAsset, setSelectedTicketPaymentAsset] = useState<SelectedAsset | null>(null);
+  const [selectedPaymentAsset, setSelectedPaymentAsset] = useState<SelectedAsset | null>(null);
+
   
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   
   // Wallet assets state
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
@@ -113,7 +122,7 @@ export default function Web3AppContent() {
     isConfirmed, 
     error: contractError,
     hash 
-  } = useCreatePaymentLink();
+  } = useCreatePaymentLinkV2();
 
   const {
     createRaffle,
@@ -123,7 +132,7 @@ export default function Web3AppContent() {
     isConfirmed: isRaffleConfirmed,
     error: raffleError,
     hash: raffleHash
-  } = useNadRaffleContract();
+  } = useNadRaffleV3Contract();
 
   // Use hardcoded asset balances hook
   const { tokenBalances, nftBalances, isLoading: isLoadingKnownAssets, refresh: refreshKnownAssets } = useAssetBalances();
@@ -645,6 +654,8 @@ export default function Web3AppContent() {
       alert("Please fill in all required fields");
       return;
     }
+
+    // V2 now supports multi-token payments - no validation needed!
     
     try {
       // Convert expire date to Unix timestamp
@@ -658,6 +669,7 @@ export default function Web3AppContent() {
         description: formData.description,
         coverImage: formData.coverImage || '',
         price: formData.price,
+        paymentToken: selectedPaymentAsset?.type === 'token' ? selectedPaymentAsset.data.address : '0x0000000000000000000000000000000000000000', // V2 feature
         totalSales: parseInt(formData.totalSales) || 0,
         maxPerWallet: parseInt(formData.maxPerWallet) || 0,
         expiresAt: expiresAt,
@@ -709,6 +721,18 @@ export default function Web3AppContent() {
 
   // Handle successful raffle creation
   useEffect(() => {
+    console.log('🔍 Raffle success useEffect triggered:', { 
+      isRaffleConfirmed, 
+      raffleHash: raffleHash ? raffleHash.slice(0, 10) + '...' : null, 
+      generatedLink: generatedLink ? 'exists' : null 
+    });
+    
+    // If we have a hash but no confirmation yet, log the full hash for debugging
+    if (raffleHash && !isRaffleConfirmed) {
+      console.log('⏳ Waiting for transaction confirmation. Full hash:', raffleHash);
+      console.log('🔗 Check transaction status at:', `https://testnet-explorer.monad.xyz/tx/${raffleHash}`);
+    }
+    
     const handleRaffleSuccess = async () => {
       if (isRaffleConfirmed && raffleHash && !generatedLink) {
         try {
@@ -745,6 +769,7 @@ export default function Web3AppContent() {
             rewardTokenAddress: '',
             rewardAmount: '',
             ticketPrice: '',
+            ticketPaymentToken: '',
             maxTickets: 10,
             maxTicketsPerWallet: 5,
             expirationDateTime: '',
@@ -790,6 +815,14 @@ export default function Web3AppContent() {
       return;
     }
 
+    // Validate expiration date is required (backend will handle time validation)
+    if (!raffleFormData.expirationDateTime) {
+      alert("Please select an expiration date and time for the raffle");
+      return;
+    }
+
+    // V2 supports multi-token payments - no restriction needed
+
     // Validate reward configuration
     if (raffleFormData.rewardType === 'TOKEN') {
       if (!raffleFormData.rewardTokenAddress) {
@@ -802,10 +835,37 @@ export default function Web3AppContent() {
       }
       
       // Check if user has enough balance
-      const selectedToken = userTokens.find(token => token.address === raffleFormData.rewardTokenAddress);
+      console.log('Looking for token:', raffleFormData.rewardTokenAddress);
+      console.log('Available userTokens:', userTokens);
+      console.log('raffleFormData.rewardType:', raffleFormData.rewardType);
+      console.log('selectedRewardAsset:', selectedRewardAsset);
+      
+            let selectedToken = userTokens.find(token => 
+        token.address.toLowerCase() === raffleFormData.rewardTokenAddress.toLowerCase()
+      );
+      
       if (!selectedToken) {
-        alert("Selected token not found in your wallet");
+        // If token not found in userTokens but selectedRewardAsset exists, use KnownAssets data
+        if (selectedRewardAsset && selectedRewardAsset.type === 'token') {
+          console.log('Token not in userTokens, but found in KnownAssets, creating token info...');
+          const knownTokenData = selectedRewardAsset.data as KnownToken;
+          selectedToken = {
+            address: knownTokenData.address,
+            name: knownTokenData.name,
+            symbol: knownTokenData.symbol,
+            decimals: knownTokenData.decimals,
+            balance: '0', // We don't know the exact balance but proceed anyway
+            logo: knownTokenData.logo
+          };
+          console.log('Created selectedToken from KnownAssets:', selectedToken);
+        } else {
+          alert("Selected token not found in your wallet. Please make sure you have selected a valid reward token.");
+          console.error('Token not found:', {
+            searchAddress: raffleFormData.rewardTokenAddress,
+            availableTokens: userTokens.map(t => ({ address: t.address, symbol: t.symbol }))
+          });
         return;
+        }
       }
       
       const userBalance = parseFloat(selectedToken.balance);
@@ -827,10 +887,120 @@ export default function Web3AppContent() {
           return;
         }
         
-        // Important note about token approval
-        console.log(`⚠️ Important: You need to approve the NadRaffle contract to spend ${rewardAmount} ${selectedToken.symbol} tokens.`);
-        console.log(`Token Address: ${selectedToken.address}`);
-        console.log(`Contract Address: 0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e`);
+        // Check and request token approval for ERC-20 rewards
+        if (!publicClient || !walletClient) {
+          alert('Wallet client not available. Please try again.');
+          return;
+        }
+        
+        try {
+          const contractAddress = "0xdDa3289655cB31d3dcA10F8E8554537c26d43161"; // V2 contract
+          const rewardAmountBigInt = parseEther(raffleFormData.rewardAmount);
+          
+          console.log('Debug approval info:', {
+            selectedToken,
+            tokenAddress: selectedToken.address,
+            rewardAmount: raffleFormData.rewardAmount,
+            rewardAmountBigInt: rewardAmountBigInt.toString(),
+            contractAddress
+          });
+          
+          // Check current allowance
+          const currentAllowance = await publicClient.readContract({
+            address: selectedToken.address as `0x${string}`,
+            abi: [
+              {
+                name: 'allowance',
+                type: 'function',
+                stateMutability: 'view',
+                inputs: [
+                  { name: 'owner', type: 'address' },
+                  { name: 'spender', type: 'address' }
+                ],
+                outputs: [{ name: '', type: 'uint256' }]
+              }
+            ],
+            functionName: 'allowance',
+            args: [address as `0x${string}`, contractAddress as `0x${string}`]
+          });
+          
+          if (currentAllowance < rewardAmountBigInt) {
+            alert(`Please approve the contract to spend ${selectedToken.symbol} tokens first. You'll see an approval transaction before the raffle creation. Note: If approval takes time, we may automatically extend the raffle duration to meet the minimum 15-minute requirement.`);
+            
+            // Request approval
+            const { request } = await publicClient.simulateContract({
+              account: address as `0x${string}`,
+              address: selectedToken.address as `0x${string}`,
+              abi: [
+                {
+                  name: 'approve',
+                  type: 'function',
+                  stateMutability: 'nonpayable',
+                  inputs: [
+                    { name: 'spender', type: 'address' },
+                    { name: 'amount', type: 'uint256' }
+                  ],
+                  outputs: [{ name: '', type: 'bool' }]
+                }
+              ],
+              functionName: 'approve',
+              args: [contractAddress as `0x${string}`, rewardAmountBigInt]
+            });
+            
+            const approvalHash = await walletClient.writeContract(request);
+            console.log('Approval transaction sent:', approvalHash);
+            
+            // Wait for approval to be confirmed
+            const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+            console.log('Token approval confirmed:', approvalReceipt);
+            
+            // Verify the allowance was actually set
+            const newAllowance = await publicClient.readContract({
+              address: selectedToken.address as `0x${string}`,
+              abi: [
+                {
+                  name: 'allowance',
+                  type: 'function',
+                  stateMutability: 'view',
+                  inputs: [
+                    { name: 'owner', type: 'address' },
+                    { name: 'spender', type: 'address' }
+                  ],
+                  outputs: [{ name: '', type: 'uint256' }]
+                }
+              ],
+              functionName: 'allowance',
+              args: [address as `0x${string}`, contractAddress as `0x${string}`]
+            });
+            
+            console.log('New allowance after approval:', newAllowance.toString());
+            
+            if (newAllowance < rewardAmountBigInt) {
+              throw new Error('Approval failed - allowance is still insufficient');
+            }
+            
+            // Check if expiration time is still valid after approval delay
+            const currentTime = Math.floor(Date.now() / 1000);
+            const selectedExpirationTime = Math.floor(new Date(raffleFormData.expirationDateTime).getTime() / 1000);
+            const minimumTime = currentTime + (15 * 60); // 15 minutes from now
+            
+            if (selectedExpirationTime < minimumTime) {
+              // Update expiration time to be 15 minutes from now
+              const newExpirationTime = new Date((currentTime + 15 * 60) * 1000);
+              const newExpirationString = newExpirationTime.toISOString().slice(0, 16);
+              setRaffleFormData(prev => ({
+                ...prev,
+                expirationDateTime: newExpirationString
+              }));
+              console.log('Updated expiration time after approval delay:', newExpirationString);
+              alert(`Approval completed! Due to the time taken for approval, we've automatically extended your raffle end time to ensure it meets the 15-minute minimum requirement.`);
+            }
+          }
+        } catch (error) {
+          console.error('Error with token approval:', error);
+          alert('Failed to approve token spending. Please try again.');
+          return;
+        }
       }
     } else if (raffleFormData.rewardType === 'NFT') {
       if (!raffleFormData.rewardTokenAddress) {
@@ -841,13 +1011,185 @@ export default function Web3AppContent() {
       if (!raffleFormData.rewardAmount) {
         raffleFormData.rewardAmount = "1";
       }
+      
+      // Check and request NFT approval
+      if (!publicClient || !walletClient) {
+        alert('Wallet client not available. Please try again.');
+        return;
     }
 
     try {
-      const now = new Date();
-      const expirationTimestamp = raffleFormData.expirationDateTime ? 
-        Math.floor(new Date(raffleFormData.expirationDateTime).getTime() / 1000) :
-        Math.floor((now.getTime() + 7 * 24 * 60 * 60 * 1000) / 1000); // Default 7 days
+        const contractAddress = "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0"; // V3 contract
+        const tokenId = BigInt(raffleFormData.rewardAmount);
+        
+        console.log('Debug NFT approval info:', {
+          nftAddress: raffleFormData.rewardTokenAddress,
+          tokenId: raffleFormData.rewardAmount,
+          tokenIdBigInt: tokenId.toString(),
+          contractAddress
+        });
+        
+        // Check if the NFT is approved for the contract
+        const isApproved = await publicClient.readContract({
+          address: raffleFormData.rewardTokenAddress as `0x${string}`,
+          abi: [
+            {
+              name: 'getApproved',
+              type: 'function',
+              stateMutability: 'view',
+              inputs: [{ name: 'tokenId', type: 'uint256' }],
+              outputs: [{ name: '', type: 'address' }]
+            }
+          ],
+          functionName: 'getApproved',
+          args: [tokenId]
+        });
+        
+        const isApprovedForAll = await publicClient.readContract({
+          address: raffleFormData.rewardTokenAddress as `0x${string}`,
+          abi: [
+            {
+              name: 'isApprovedForAll',
+              type: 'function',
+              stateMutability: 'view',
+              inputs: [
+                { name: 'owner', type: 'address' },
+                { name: 'operator', type: 'address' }
+              ],
+              outputs: [{ name: '', type: 'bool' }]
+            }
+          ],
+          functionName: 'isApprovedForAll',
+          args: [address as `0x${string}`, contractAddress as `0x${string}`]
+        });
+        
+        const needsApproval = (isApproved as string).toLowerCase() !== contractAddress.toLowerCase() && !isApprovedForAll;
+        
+        if (needsApproval) {
+          alert(`Please approve the contract to transfer your NFT first. You'll see an approval transaction before the raffle creation.`);
+          
+          // Request approval for the specific token
+          const { request } = await publicClient.simulateContract({
+            account: address as `0x${string}`,
+            address: raffleFormData.rewardTokenAddress as `0x${string}`,
+            abi: [
+              {
+                name: 'approve',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                  { name: 'to', type: 'address' },
+                  { name: 'tokenId', type: 'uint256' }
+                ],
+                outputs: []
+              }
+            ],
+            functionName: 'approve',
+            args: [contractAddress as `0x${string}`, tokenId]
+          });
+          
+          const approvalHash = await walletClient.writeContract(request);
+          console.log('NFT approval transaction sent:', approvalHash);
+          
+          // Wait for approval to be confirmed
+          const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+          console.log('NFT approval confirmed:', approvalReceipt);
+          
+          // Verify the approval was actually set
+          const newApproval = await publicClient.readContract({
+            address: raffleFormData.rewardTokenAddress as `0x${string}`,
+            abi: [
+              {
+                name: 'getApproved',
+                type: 'function',
+                stateMutability: 'view',
+                inputs: [{ name: 'tokenId', type: 'uint256' }],
+                outputs: [{ name: '', type: 'address' }]
+              }
+            ],
+            functionName: 'getApproved',
+            args: [tokenId]
+          });
+          
+          console.log('New approval after NFT approval:', newApproval);
+          
+          if ((newApproval as string).toLowerCase() !== contractAddress.toLowerCase()) {
+            throw new Error('NFT approval failed - contract is not approved for this token');
+          }
+          
+          // Check if expiration time is still valid after approval delay
+          const currentTime = Math.floor(Date.now() / 1000);
+          const selectedExpirationTime = Math.floor(new Date(raffleFormData.expirationDateTime).getTime() / 1000);
+          const minimumTime = currentTime + (15 * 60); // 15 minutes from now
+          
+          if (selectedExpirationTime < minimumTime) {
+            // Update expiration time to be 15 minutes from now
+            const newExpirationTime = new Date((currentTime + 15 * 60) * 1000);
+            const newExpirationString = newExpirationTime.toISOString().slice(0, 16);
+            setRaffleFormData(prev => ({
+              ...prev,
+              expirationDateTime: newExpirationString
+            }));
+            console.log('Updated expiration time after NFT approval delay:', newExpirationString);
+            alert(`NFT approval completed! Due to the time taken for approval, we've automatically extended your raffle end time to ensure it meets the 15-minute minimum requirement.`);
+          }
+        }
+      } catch (error) {
+        console.error('Error with NFT approval:', error);
+        alert('Failed to approve NFT transfer. Please try again.');
+        return;
+      }
+    }
+
+    try {
+      // IMPORTANT: Always use blockchain time (UTC) for validation
+      // Get current blockchain time (UTC timestamp)
+      const currentTime = Math.floor(Date.now() / 1000);
+      const minimumRequiredTime = currentTime + (15 * 60); // 15 minutes minimum (blockchain requirement)
+      const safetyBufferTime = currentTime + (17 * 60); // 17 minutes with small safety buffer
+      
+      // Parse the selected datetime as UTC to match blockchain time
+      const selectedDate = new Date(raffleFormData.expirationDateTime);
+      let expirationTimestamp = Math.floor(selectedDate.getTime() / 1000);
+      
+      // Only add buffer if the selected time is too close to minimum
+      if (expirationTimestamp < safetyBufferTime) {
+        // If user selected less than 17 minutes, add small buffer to ensure blockchain validation passes
+        expirationTimestamp = Math.max(expirationTimestamp, safetyBufferTime);
+        console.log('⚠️ Added small safety buffer to meet blockchain validation');
+        console.log('Adjusted expiration time:', new Date(expirationTimestamp * 1000).toISOString());
+      }
+
+      console.log('🕐 DETAILED TIME DEBUG:', {
+        selectedDateTime: raffleFormData.expirationDateTime,
+        parsedDate: new Date(raffleFormData.expirationDateTime),
+        parsedTimestamp: Math.floor(new Date(raffleFormData.expirationDateTime).getTime() / 1000),
+        currentTime: currentTime,
+        currentDate: new Date(currentTime * 1000),
+        minimumRequiredTime: minimumRequiredTime,
+        minimumRequiredDate: new Date(minimumRequiredTime * 1000),
+        safetyBufferTime: safetyBufferTime,
+        safetyBufferDate: new Date(safetyBufferTime * 1000),
+        finalTimestamp: expirationTimestamp,
+        finalDate: new Date(expirationTimestamp * 1000),
+        difference: expirationTimestamp - currentTime,
+        differenceMinutes: (expirationTimestamp - currentTime) / 60
+      });
+
+      console.log('Creating raffle with parameters:', {
+        title: raffleFormData.title,
+        description: raffleFormData.description,
+        rewardType: raffleFormData.rewardType,
+        rewardTokenAddress: raffleFormData.rewardTokenAddress,
+        rewardAmount: raffleFormData.rewardAmount,
+        ticketPaymentToken: raffleFormData.ticketPaymentToken,
+        ticketPrice: raffleFormData.ticketPrice,
+        maxTickets: raffleFormData.maxTickets,
+        maxTicketsPerWallet: raffleFormData.maxTicketsPerWallet,
+        expirationTime: expirationTimestamp,
+        expirationDate: new Date(expirationTimestamp * 1000),
+        autoDistributeOnSoldOut: raffleFormData.autoDistributeOnSoldOut
+      });
 
       await createRaffle({
         title: raffleFormData.title,
@@ -856,15 +1198,44 @@ export default function Web3AppContent() {
         rewardType: raffleFormData.rewardType,
         rewardTokenAddress: raffleFormData.rewardTokenAddress, // Should be validated above
         rewardAmount: raffleFormData.rewardAmount,
+        ticketPaymentToken: raffleFormData.ticketPaymentToken,
         ticketPrice: raffleFormData.ticketPrice,
         maxTickets: raffleFormData.maxTickets,
         maxTicketsPerWallet: raffleFormData.maxTicketsPerWallet,
         expirationTime: expirationTimestamp,
         autoDistributeOnSoldOut: raffleFormData.autoDistributeOnSoldOut
       });
+      
+      console.log('Raffle creation transaction sent successfully!');
     } catch (error) {
       console.error('Error creating raffle:', error);
-      alert(`Error creating raffle: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // More detailed error handling
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        
+        // Check for specific contract errors
+        if (error.message.includes('execution reverted')) {
+          console.error('Contract execution reverted - checking revert reason...');
+          
+          // Try to extract the revert reason
+          const revertMatch = error.message.match(/execution reverted: (.+)/);
+          if (revertMatch) {
+            alert(`Contract error: ${revertMatch[1]}`);
+          } else {
+            alert(`Contract execution reverted. Please check console for details.`);
+          }
+        } else {
+          alert(`Error creating raffle: ${error.message}`);
+        }
+      } else {
+        console.error('Unknown error type:', typeof error, error);
+        alert('Unknown error occurred while creating raffle');
+      }
     }
   };
 
@@ -1245,11 +1616,29 @@ export default function Web3AppContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Price */}
+              {/* Payment Configuration */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Payment Asset *
+                  </label>
+                  <AssetSelector
+                    selectedAsset={selectedPaymentAsset}
+                    onAssetSelect={(asset) => {
+                      setSelectedPaymentAsset(asset);
+                      setFormData(prev => ({
+                        ...prev,
+                        paymentToken: asset?.data.address || ''
+                      }));
+                    }}
+                    assetType="token"
+                    showOnlyOwned={false}
+                    placeholder="Select payment token"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Price (MON) *
+                    Price ({selectedPaymentAsset?.type === 'token' ? (selectedPaymentAsset.data as KnownToken).symbol : 'MON'}) *
                   </label>
                   <input
                     type="number"
@@ -1260,6 +1649,7 @@ export default function Web3AppContent() {
                     step="0.001"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                   />
+                </div>
                 </div>
 
                 {/* Expire Date */}
@@ -1278,7 +1668,6 @@ export default function Web3AppContent() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Leave empty for no expiration
                   </p>
-                </div>
         </div>
 
               {/* Create Button */}
@@ -1379,69 +1768,107 @@ export default function Web3AppContent() {
                 />
               </div>
 
-
-
               {/* Reward Configuration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Reward Asset *
-                </label>
+                  </label>
                 <AssetSelector
                   selectedAsset={selectedRewardAsset}
                   onAssetSelect={(asset) => {
                     setSelectedRewardAsset(asset);
                     if (asset) {
-                      handleRaffleInputChange('rewardTokenAddress', asset.data.address);
-                      // Reset reward type based on selection
-                      handleRaffleInputChange('rewardType', asset.type === 'token' ? 'TOKEN' : 'NFT');
-                      // Reset amount when changing asset
-                      handleRaffleInputChange('rewardAmount', '');
+                      if (asset.type === 'individual_nft') {
+                        const nftData = asset.data as NFTWithMetadata;
+                        handleRaffleInputChange('rewardTokenAddress', nftData.address);
+                        handleRaffleInputChange('rewardType', 'NFT');
+                        handleRaffleInputChange('rewardAmount', nftData.tokenId);
+                      } else {
+                        handleRaffleInputChange('rewardTokenAddress', asset.data.address);
+                        handleRaffleInputChange('rewardType', asset.type === 'token' ? 'TOKEN' : 'NFT');
+                        handleRaffleInputChange('rewardAmount', '');
+                      }
                     } else {
                       handleRaffleInputChange('rewardTokenAddress', '');
                       handleRaffleInputChange('rewardAmount', '');
                     }
                   }}
                   assetType="both"
+                  showOnlyOwned={true}
                   placeholder="Select token or NFT to give as reward..."
                 />
-                
-                {/* Amount Input */}
+                  
+                  {/* Amount Input */}
                 {selectedRewardAsset && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {selectedRewardAsset.type === 'token' 
                         ? 'Amount to give as reward *' 
+                        : selectedRewardAsset.type === 'individual_nft'
+                        ? 'NFT Token ID (auto-filled) *'
                         : 'Token ID to give as reward *'
                       }
-                    </label>
-                    <input
+                      </label>
+                      <input
                       type={selectedRewardAsset.type === 'token' ? 'number' : 'text'}
-                      value={raffleFormData.rewardAmount}
-                      onChange={(e) => handleRaffleInputChange('rewardAmount', e.target.value)}
+                        value={raffleFormData.rewardAmount}
+                        onChange={(e) => handleRaffleInputChange('rewardAmount', e.target.value)}
                       placeholder={selectedRewardAsset.type === 'token' ? '100' : '1'}
                       min={selectedRewardAsset.type === 'token' ? '0' : undefined}
                       step={selectedRewardAsset.type === 'token' ? '0.001' : undefined}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
-                    />
+                        disabled={selectedRewardAsset.type === 'individual_nft'}
+                        className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white ${
+                          selectedRewardAsset.type === 'individual_nft' ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
+                      />
                     {selectedRewardAsset.type === 'token' && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Selected: {(selectedRewardAsset.data as KnownToken).symbol} - {selectedRewardAsset.data.name}
+                        Selected: {(selectedRewardAsset.data as KnownToken).symbol} - {(selectedRewardAsset.data as KnownToken).name}
                       </p>
-                    )}
+                              )}
                     {selectedRewardAsset.type === 'nft' && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Selected NFT Collection: {selectedRewardAsset.data.name}
+                        Selected NFT Collection: {(selectedRewardAsset.data as KnownNFT).name}
                       </p>
                     )}
-                  </div>
-                )}
-                              </div>
+                    {selectedRewardAsset.type === 'individual_nft' && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Selected NFT: {(selectedRewardAsset.data as NFTWithMetadata).metadata?.name || `NFT #${(selectedRewardAsset.data as NFTWithMetadata).tokenId}`}
+                      </p>
+                  )}
+                </div>
+              )}
+                </div>
 
               {/* Ticket Configuration */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ticket Payment Asset *
+                  </label>
+                  <AssetSelector
+                    selectedAsset={selectedTicketPaymentAsset}
+                    onAssetSelect={(asset) => {
+                      setSelectedTicketPaymentAsset(asset);
+                      // V1 contract only supports MON, so we store for future V2 compatibility
+                      setRaffleFormData(prev => ({
+                        ...prev,
+                        ticketPaymentToken: asset?.data.address || ''
+                      }));
+                    }}
+                    assetType="token"
+                    showOnlyOwned={false}
+                    placeholder="Select payment token for tickets"
+                  />
+
+                                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Ticket Price (MON) *
+                    Ticket Price {selectedTicketPaymentAsset && selectedTicketPaymentAsset.type === 'token' && (
+                      <span className="text-purple-600 dark:text-purple-400 font-medium">
+                        ({(selectedTicketPaymentAsset.data as any).symbol})
+                      </span>
+                    )} *
                   </label>
                   <input
                     type="text"
@@ -1485,36 +1912,70 @@ export default function Web3AppContent() {
 
               {/* Expiration Settings */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   <Calendar className="w-4 h-4 inline mr-1" />
                   Expiration Date & Time *
                 </label>
+                
+                {/* Quick Duration Buttons */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+                  {[
+                    { label: '15M', minutes: 15 },
+                    { label: '30M', minutes: 30 },
+                    { label: '1H', minutes: 60 },
+                    { label: '4H', minutes: 240 },
+                    { label: '24H', minutes: 1440 },
+                    { label: 'Custom', minutes: 0 }
+                  ].map((duration) => (
+                    <button
+                      key={duration.label}
+                      type="button"
+                      onClick={() => {
+                        if (duration.minutes > 0) {
+                          // Use UTC time to match blockchain time
+                          // Set exactly the duration shown, backend will add buffer if needed
+                          const now = new Date();
+                          const endTime = new Date(now.getTime() + duration.minutes * 60 * 1000);
+                          const formattedTime = endTime.toISOString().slice(0, 16);
+                          handleRaffleInputChange('expirationDateTime', formattedTime);
+                          console.log(`⏰ Set expiration to ${duration.label}:`, endTime.toISOString());
+                        }
+                      }}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        duration.label === 'Custom'
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50'
+                      }`}
+                    >
+                      {duration.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* DateTime Input */}
                 <input
                   type="datetime-local"
                   value={raffleFormData.expirationDateTime}
-                  onChange={(e) => handleRaffleInputChange('expirationDateTime', e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) => {
+                    // Just update the value, let the backend handle the validation
+                    // Frontend validation is only for UX, not security
+                    handleRaffleInputChange('expirationDateTime', e.target.value);
+                  }}
+                  min={(() => {
+                    // Set minimum time to 15 minutes from now (UTC) to match blockchain validation
+                    const now = new Date();
+                    const minimumTime = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes from now
+                    return minimumTime.toISOString().slice(0, 16);
+                  })()}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Raffle will automatically end at this date and time
+                  Raffle will automatically end at this date and time (minimum 15 minutes from now)
                 </p>
               </div>
 
-              {/* Auto Distribution Option */}
-              <div className="flex items-center space-x-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="autoDistribute"
-                  checked={raffleFormData.autoDistributeOnSoldOut}
-                  onChange={(e) => handleRaffleInputChange('autoDistributeOnSoldOut', e.target.checked)}
-                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <label htmlFor="autoDistribute" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Gift className="w-4 h-4 inline mr-1" />
-                  Auto-distribute reward when all tickets are sold
-                </label>
-              </div>
+
 
               {/* Create Button */}
               <div className="flex space-x-4">
@@ -1585,10 +2046,40 @@ export default function Web3AppContent() {
                 />
                 <div className="flex space-x-2">
                 <button
-                  onClick={() => navigator.clipboard.writeText(generatedLink!)}
-                    className="flex-1 sm:flex-none px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 transition-colors text-sm"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(generatedLink!);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000); // Hide after 2 seconds
+                    } catch (error) {
+                      console.error('Failed to copy:', error);
+                      // Fallback for older browsers
+                      const textArea = document.createElement('textarea');
+                      textArea.value = generatedLink!;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    }
+                  }}
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded transition-colors text-sm flex items-center justify-center space-x-1 ${
+                      copySuccess 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-primary-500 text-white hover:bg-primary-600'
+                    }`}
                 >
-                  Copy
+                  {copySuccess ? (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <span>Copy</span>
+                  )}
                 </button>
                 <button
                   onClick={() => setShowQRCode(!showQRCode)}
@@ -1630,6 +2121,7 @@ export default function Web3AppContent() {
                 setGeneratedLink(null);
                 setQrCodeUrl(null);
                 setShowQRCode(false);
+                setCopySuccess(false);
                   setSelectedTemplate(null);
                 setFormData({
                   title: '',
@@ -1638,6 +2130,7 @@ export default function Web3AppContent() {
                   totalSales: '',
                   maxPerWallet: '',
                   price: '',
+                  paymentToken: '',
                   expireDate: ''
                 });
                   setRaffleFormData({
@@ -1648,11 +2141,16 @@ export default function Web3AppContent() {
                     rewardTokenAddress: '',
                     rewardAmount: '',
                     ticketPrice: '',
+                  ticketPaymentToken: '',
                     maxTickets: 100,
                     maxTicketsPerWallet: 10,
                     expirationDateTime: '',
-                    autoDistributeOnSoldOut: false,
+                  autoDistributeOnSoldOut: true, // Always true
                 });
+                // Reset selected assets
+                setSelectedPaymentAsset(null);
+                setSelectedRewardAsset(null);
+                setSelectedTicketPaymentAsset(null);
               }}
               className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
             >

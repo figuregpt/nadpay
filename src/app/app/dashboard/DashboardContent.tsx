@@ -23,10 +23,56 @@ import {
 } from "lucide-react";
 import { useAccount, usePublicClient } from "wagmi";
 import { ConnectKitButton } from "connectkit";
-import { useCreatorPaymentLinks, useDeactivatePaymentLink, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
-import { useCreatorRaffles, useNadRaffleContract } from "@/hooks/useNadRaffleContract";
+import { useCreatorLinksV2, useDeactivatePaymentLinkV2, formatPaymentLinkV2, formatPriceV2, useTotalLinksV2 } from "@/hooks/useNadPayV2Contract";
+
+// V2 ABI - sadece gerekli fonksiyonlar
+const NADPAY_V2_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "linkId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPurchases",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct NadPayV2.Purchase[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+import { useCreatorRafflesV3, formatRaffleV3, formatPriceV3Raffle } from "@/hooks/useNadRaffleV3Contract";
 import { NADPAY_CONTRACT } from "@/lib/contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
+import { getKnownToken } from "@/lib/knownAssets";
 
 interface PaymentLinkData {
   linkId: string;
@@ -36,6 +82,8 @@ interface PaymentLinkData {
   description: string;
   coverImage: string;
   price: string;
+  paymentToken: string; // New field for V2
+  paymentTokenSymbol?: string; // Helper field
   totalSales: bigint;
   maxPerWallet: bigint;
   salesCount: bigint;
@@ -70,9 +118,8 @@ export default function DashboardContent() {
   const publicClient = usePublicClient();
   const { theme, setTheme } = useTheme();
   
-  // Contract constants
-  const CONTRACT_ADDRESS = NADPAY_CONTRACT.address as `0x${string}`;
-  const CONTRACT_ABI = NADPAY_CONTRACT.abi;
+  // Contract constants - V2
+  const CONTRACT_ADDRESS = "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`;
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles'>('payment-links');
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
@@ -82,6 +129,11 @@ export default function DashboardContent() {
   const [participantsPerPage] = useState(20);
   const [allParticipants, setAllParticipants] = useState<any[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  
+  // Pagination states
+  const [paymentLinksPage, setPaymentLinksPage] = useState(1);
+  const [rafflesPage, setRafflesPage] = useState(1);
+  const itemsPerPage = 5;
   
   // Create secure link ID using internal ID + creator address as seed
   const createSecureLinkId = (internalId: number, creatorAddress: string): string => {
@@ -98,37 +150,72 @@ export default function DashboardContent() {
   };
   
   // Contract hooks
-  const { data: creatorLinksData, isLoading: loadingLinks, refetch } = useCreatorPaymentLinks(address);
-  const { data: creatorRafflesData, isLoading: loadingRaffles, refetch: refetchRaffles, raffleIds } = useCreatorRaffles(address);
+  const { data: creatorLinksData, isLoading: loadingLinks, refetch, error: linksError } = useCreatorLinksV2(address);
+  const { data: totalLinks, error: totalLinksError } = useTotalLinksV2();
+  
+  // Debug logging
+  console.log('🔍 Dashboard Debug:', {
+    address,
+    isConnected,
+    creatorLinksData,
+    loadingLinks,
+    linksError: linksError?.message,
+    totalLinks: totalLinks?.toString(),
+    totalLinksError: totalLinksError?.message,
+    contractAddress: "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905"
+  });
+  // V3 contract - raffle hooks (re-enabled with fixed ABI)
+  const {
+    raffles: creatorRafflesData,
+    isLoading: loadingRaffles,
+    error: rafflesError,
+    refetch: refetchRaffles,
+  } = useCreatorRafflesV3(address);
+  
+  // Debug logging for raffles
+  console.log('🎫 Raffle Debug: V2 hooks enabled with fixed ABI', {
+    creatorRafflesData,
+    loadingRaffles,
+    rafflesError
+  });
   const { 
     deactivatePaymentLink, 
     isConfirmed: deactivationConfirmed 
-  } = useDeactivatePaymentLink();
+  } = useDeactivatePaymentLinkV2();
   
-  // Raffle contract hook
-  const { 
-    endRaffle, 
-    cancelRaffle,
-    isPending: isEndingRaffle, 
-    isConfirmed: isRaffleEnded 
-  } = useNadRaffleContract();
+  // Raffle contract hook - endRaffle and cancelRaffle functionality temporarily disabled
+  // These functions would need to be implemented in the V2 hook
+  const endRaffle = (_raffleId: any) => {
+    console.log('endRaffle not implemented for V2 yet');
+  };
+  const cancelRaffle = (_raffleId: any) => {
+    console.log('cancelRaffle not implemented for V2 yet');
+  };
+  const isEndingRaffle = false;
+  const isRaffleEnded = false;
 
     // Convert contract data to display format and sort by newest first
   const paymentLinks: PaymentLinkData[] = creatorLinksData ? creatorLinksData
     .map((link: unknown) => {
       try {
-        const formatted = formatPaymentLink(link);
+        const formatted = formatPaymentLinkV2(link);
         console.log('Raw link data:', link);
         console.log('Formatted link data:', formatted);
         console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
+        
+        const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
+          ? "MON" 
+          : getKnownToken(formatted.paymentToken)?.symbol || "TOKEN";
         
         return {
           ...formatted,
           linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
           _id: (link as { linkId: { toString(): string } }).linkId.toString(),
           creatorAddress: formatted.creator,
-          price: formatPrice(formatted.price),
-          totalEarned: formatPrice(formatted.totalEarned),
+          price: formatPriceV2(formatted.price),
+          totalEarned: formatPriceV2(formatted.totalEarned),
+          paymentToken: formatted.paymentToken,
+          paymentTokenSymbol: tokenSymbol,
           uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
           purchases: [], // Will be fetched separately if needed
           createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
@@ -145,6 +232,8 @@ export default function DashboardContent() {
         description: 'This link could not be loaded',
         coverImage: '',
         price: '0',
+        paymentToken: '0x0000000000000000000000000000000000000000',
+        paymentTokenSymbol: 'MON',
         totalSales: BigInt(0),
         maxPerWallet: BigInt(0),
         salesCount: BigInt(0),
@@ -166,27 +255,27 @@ export default function DashboardContent() {
   console.log('creatorRafflesData:', creatorRafflesData);
   console.log('loadingRaffles:', loadingRaffles);
   console.log('address:', address);
-  console.log('raffleIds from hook:', raffleIds);
   
   const raffles: RaffleData[] = creatorRafflesData ? creatorRafflesData
     .map((raffle: any, index: number) => {
       try {
         console.log('Processing raffle:', raffle);
+        const formatted = formatRaffleV3(raffle);
         return {
-          id: raffle.id?.toString() || index.toString(),
-          creator: raffle.creator || '',
-          title: raffle.title || 'Untitled Raffle',
-          description: raffle.description || '',
-          rewardType: Number(raffle.rewardType) || 0,
-          rewardAmount: raffle.rewardAmount ? (Number(raffle.rewardAmount) / 1e18).toFixed(4) : '0',
-          ticketPrice: raffle.ticketPrice ? (Number(raffle.ticketPrice) / 1e18).toFixed(4) : '0',
-          maxTickets: raffle.maxTickets || BigInt(0),
-          ticketsSold: raffle.ticketsSold || BigInt(0),
-          totalEarned: raffle.totalEarned ? (Number(raffle.totalEarned) / 1e18).toFixed(4) : '0',
-          status: Number(raffle.status) || 0,
-          createdAt: raffle.createdAt ? new Date(Number(raffle.createdAt) * 1000).toISOString() : new Date().toISOString(),
-          expirationTime: raffle.expirationTime || BigInt(0),
-          winner: raffle.winner || undefined,
+          id: formatted.id ? formatted.id.toString() : index.toString(),
+          creator: formatted.creator || '',
+          title: formatted.title || 'Untitled Raffle',
+          description: formatted.description || '',
+          rewardType: Number(formatted.rewardType) || 0,
+          rewardAmount: formatPriceV3Raffle(formatted.rewardAmount),
+          ticketPrice: formatPriceV3Raffle(formatted.ticketPrice),
+          maxTickets: formatted.maxTickets || BigInt(0),
+          ticketsSold: formatted.ticketsSold || BigInt(0),
+          totalEarned: formatPriceV3Raffle(formatted.totalEarned),
+          status: Number(formatted.status) || 0,
+          createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
+          expirationTime: formatted.expirationTime || BigInt(0),
+          winner: formatted.winner !== '0x0000000000000000000000000000000000000000' ? formatted.winner : undefined,
         };
       } catch (error) {
         console.error('Error formatting raffle data:', error, raffle);
@@ -212,11 +301,21 @@ export default function DashboardContent() {
     }) : [];
 
   // Refetch when deactivation is confirmed
+  const [hasRefetchedAfterDeactivation, setHasRefetchedAfterDeactivation] = useState(false);
+  
   useEffect(() => {
-    if (deactivationConfirmed) {
-      refetch();
+    if (deactivationConfirmed && !hasRefetchedAfterDeactivation) {
+      console.log('🔄 Refetching after deactivation...');
+      // Force refresh to bypass rate limiting
+      refetch(true);
+      setHasRefetchedAfterDeactivation(true);
+      
+      // Reset the flag after a delay to allow for future deactivations
+      setTimeout(() => {
+        setHasRefetchedAfterDeactivation(false);
+      }, 5000);
     }
-  }, [deactivationConfirmed, refetch]);
+  }, [deactivationConfirmed, refetch, hasRefetchedAfterDeactivation]);
   
   // Refetch when raffle is ended
   useEffect(() => {
@@ -224,6 +323,12 @@ export default function DashboardContent() {
       refetchRaffles();
     }
   }, [isRaffleEnded, refetchRaffles]);
+
+  // Reset to page 1 when switching tabs or searching
+  useEffect(() => {
+    setPaymentLinksPage(1);
+    setRafflesPage(1);
+  }, [activeTab, searchQuery]);
 
   const copyLink = (linkId: string) => {
     if (!address) return;
@@ -239,8 +344,17 @@ export default function DashboardContent() {
   };
 
   const getLinkStatus = (link: PaymentLinkData) => {
-    if (!link.isActive) return 'Inactive';
+    if (!link.isActive) {
+      // Check if it was deactivated due to sold out
+      if (Number(link.totalSales) > 0 && Number(link.salesCount) >= Number(link.totalSales)) {
+        return 'Sold Out';
+      }
+      return 'Inactive';
+    }
     if (isExpired(link)) return 'Expired';
+    if (Number(link.totalSales) > 0 && Number(link.salesCount) >= Number(link.totalSales)) {
+      return 'Sold Out';
+    }
     return 'Active';
   };
 
@@ -342,7 +456,7 @@ export default function DashboardContent() {
     const csvData = filteredPaymentLinks.map((link: PaymentLinkData) => [
       link.creatorAddress || address || '',
       `${link.salesCount}/${link.totalSales > 0 ? link.totalSales : '∞'}`,
-      `${link.price} MON`,
+              `${link.price} ${link.paymentTokenSymbol || 'MON'}`,
       `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
       `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
       getLinkStatus(link),
@@ -352,7 +466,7 @@ export default function DashboardContent() {
         : 'Never',
       link.salesCount.toString(),
       (link.uniqueBuyersCount || 0).toString(),
-      `${parseFloat(link.totalEarned).toFixed(4)} MON`
+              `${parseFloat(link.totalEarned).toFixed(4)} ${link.paymentTokenSymbol || 'MON'}`
     ]);
 
     // Combine headers and data
@@ -416,7 +530,7 @@ export default function DashboardContent() {
       // Get purchases for this payment link
       const purchases = await publicClient.readContract({
         address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
+        abi: NADPAY_V2_ABI,
         functionName: 'getPurchases',
         args: [BigInt(linkId)]
       });
@@ -473,7 +587,7 @@ export default function DashboardContent() {
     }
 
     const csvContent = [
-      ['Rank', 'Wallet Address', 'Purchase Count', 'Total Spent (MON)', 'Total Spent (USD)', 'Transaction ID'].join(','),
+      ['Rank', 'Wallet Address', 'Purchase Count', 'Total Spent (Token)', 'Total Spent (USD)', 'Transaction ID'].join(','),
       ...participants.map((p: any) => [
         p.rank,
         p.address,
@@ -522,6 +636,100 @@ export default function DashboardContent() {
       raffle.ticketPrice.toString().includes(query)
     );
   });
+
+  // Pagination calculations
+  const totalPaymentLinksPages = Math.ceil(filteredPaymentLinks.length / itemsPerPage);
+  const paginatedPaymentLinks = filteredPaymentLinks.slice(
+    (paymentLinksPage - 1) * itemsPerPage,
+    paymentLinksPage * itemsPerPage
+  );
+
+  const totalRafflesPages = Math.ceil(filteredRaffles.length / itemsPerPage);
+  const paginatedRaffles = filteredRaffles.slice(
+    (rafflesPage - 1) * itemsPerPage,
+    rafflesPage * itemsPerPage
+  );
+
+  // Pagination component
+  const PaginationControls = ({ currentPage, totalPages, onPageChange }: { 
+    currentPage: number; 
+    totalPages: number; 
+    onPageChange: (page: number) => void; 
+  }) => {
+    if (totalPages <= 1) return null;
+
+    const getPageNumbers = () => {
+      const pages = [];
+      const maxVisiblePages = 5;
+      
+      if (totalPages <= maxVisiblePages) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (currentPage <= 3) {
+          for (let i = 1; i <= 4; i++) {
+            pages.push(i);
+          }
+          pages.push('...');
+          pages.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+          pages.push(1);
+          pages.push('...');
+          for (let i = totalPages - 3; i <= totalPages; i++) {
+            pages.push(i);
+          }
+        } else {
+          pages.push(1);
+          pages.push('...');
+          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+            pages.push(i);
+          }
+          pages.push('...');
+          pages.push(totalPages);
+        }
+      }
+      
+      return pages;
+    };
+
+    return (
+      <div className="flex items-center justify-center space-x-2 mt-6">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        
+        {getPageNumbers().map((page, index) => (
+          <button
+            key={index}
+            onClick={() => typeof page === 'number' && onPageChange(page)}
+            disabled={page === '...'}
+            className={`px-3 py-2 rounded-lg transition-colors ${
+              page === currentPage
+                ? 'bg-primary-500 text-white'
+                : page === '...'
+                ? 'text-gray-400 cursor-default'
+                : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+        
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
 
   const getTotalStats = () => {
     // NadPay Stats
@@ -651,7 +859,7 @@ export default function DashboardContent() {
               </a>
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                className="inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {theme === 'dark' ? (
@@ -659,9 +867,6 @@ export default function DashboardContent() {
                 ) : (
                   <Moon className="w-4 h-4" />
                 )}
-                <span className="hidden lg:inline ml-2">
-                  {theme === 'dark' ? 'Light' : 'Dark'}
-                </span>
               </button>
               <a
                 href="/app"
@@ -694,7 +899,7 @@ export default function DashboardContent() {
               <div className="ml-3 sm:ml-4 min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Earned</p>
                 <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {stats.totalEarned.toFixed(4)} MON
+                                          {stats.totalEarned.toFixed(4)} (Multi-Token)
                 </p>
               </div>
             </div>
@@ -776,7 +981,7 @@ export default function DashboardContent() {
                 <div className="ml-3 sm:ml-4 min-w-0">
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Raffle Earned</p>
                   <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {stats.raffleEarned.toFixed(4)} MON
+                                            {stats.raffleEarned.toFixed(4)} (Multi-Token)
                   </p>
                 </div>
               </div>
@@ -958,7 +1163,7 @@ export default function DashboardContent() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredPaymentLinks.map((link: PaymentLinkData, index: number) => (
+              {paginatedPaymentLinks.map((link: PaymentLinkData, index: number) => (
                 <motion.div
                   key={link._id}
                   initial={{ opacity: 0, x: -20 }}
@@ -975,6 +1180,8 @@ export default function DashboardContent() {
                         <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
                           getLinkStatus(link) === 'Active'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : getLinkStatus(link) === 'Sold Out'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                             : getLinkStatus(link) === 'Expired'
                             ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
                             : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
@@ -991,7 +1198,7 @@ export default function DashboardContent() {
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {link.price} MON
+                            {link.price} {link.paymentTokenSymbol || 'MON'}
                           </p>
                         </div>
                         <div>
@@ -1009,7 +1216,7 @@ export default function DashboardContent() {
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Earned</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {parseFloat(link.totalEarned).toFixed(4)} MON
+                            {parseFloat(link.totalEarned).toFixed(4)} {link.paymentTokenSymbol || 'MON'}
                           </p>
                         </div>
                         <div>
@@ -1073,6 +1280,13 @@ export default function DashboardContent() {
               ))}
             </div>
           )}
+          
+          {/* Payment Links Pagination */}
+          <PaginationControls
+            currentPage={paymentLinksPage}
+            totalPages={totalPaymentLinksPages}
+            onPageChange={setPaymentLinksPage}
+          />
         </motion.div>
         )}
 
@@ -1156,7 +1370,7 @@ export default function DashboardContent() {
               </div>
             ) : (
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredRaffles.map((raffle: RaffleData, index: number) => (
+                {paginatedRaffles.map((raffle: RaffleData, index: number) => (
                   <motion.div
                     key={raffle.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -1262,6 +1476,13 @@ export default function DashboardContent() {
                 ))}
               </div>
             )}
+            
+            {/* Raffles Pagination */}
+            <PaginationControls
+              currentPage={rafflesPage}
+              totalPages={totalRafflesPages}
+              onPageChange={setRafflesPage}
+            />
           </motion.div>
         )}
       </div>
@@ -1509,7 +1730,7 @@ export default function DashboardContent() {
                                 </td>
                                 <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                   <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                    {participant.totalSpent} MON
+                                    {participant.totalSpent} {selectedLink?.paymentTokenSymbol || 'MON'}
                                   </div>
                                   <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                                     ${(parseFloat(participant.totalSpent) * 0.1).toFixed(2)}
@@ -1633,7 +1854,7 @@ export default function DashboardContent() {
                 <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
                   <span>Total: <strong className="text-gray-900 dark:text-white">{selectedLink.uniqueBuyersCount || 0}</strong></span>
                   <span className="hidden sm:inline">•</span>
-                  <span>Revenue: <strong className="text-green-600 dark:text-green-400">{selectedLink.totalEarned} MON</strong></span>
+                  <span>Revenue: <strong className="text-green-600 dark:text-green-400">{selectedLink.totalEarned} {selectedLink.paymentTokenSymbol || 'MON'}</strong></span>
                   <span className="hidden sm:inline">•</span>
                   <span className="hidden sm:inline">Updated: <strong>Just now</strong></span>
                 </div>

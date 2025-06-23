@@ -4,13 +4,15 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Wallet, Trophy, ArrowLeft, Ticket, Users, Clock, Gift, Star, Search, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
-import { useAccount, useBalance, useSwitchChain } from "wagmi";
+import { useAccount, useBalance, useSwitchChain, usePublicClient, useWalletClient } from "wagmi";
 import { ConnectKitButton } from "connectkit";
-import { useReadContract } from "wagmi";
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useTheme } from "next-themes";
-import { NADRAFFLE_CONTRACT } from "@/lib/raffle-contract";
-import { useNadRaffleContract } from "@/hooks/useNadRaffleContract";
+import { useRaffleV3, formatRaffleV3, NADRAFFLE_V3_CONTRACT } from "@/hooks/useNadRaffleV3Contract";
 import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
+import { formatEther, parseEther } from "viem";
+import { getKnownToken } from "@/lib/knownAssets";
+import { useNFTMetadata } from "@/hooks/useNFTMetadata";
 
 export default function RaffleContent() {
   const params = useParams();
@@ -19,7 +21,13 @@ export default function RaffleContent() {
   
   // Decode secure raffle ID to get internal ID
   const internalRaffleId = decodePredictableSecureRaffleId(secureRaffleId);
-  const raffleId = internalRaffleId?.toString() || "0";
+  const raffleId = internalRaffleId !== null ? internalRaffleId : 0;
+  
+  console.log('🎫 RaffleContent Debug:', {
+    secureRaffleId,
+    internalRaffleId,
+    raffleId
+  });
   
   // All hooks must be called at the top level
   const { address, isConnected, chain } = useAccount();
@@ -28,36 +36,62 @@ export default function RaffleContent() {
     address: address,
     chainId: 10143, // Monad Testnet
   });
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
   
-  // Contract hooks
-  const { data: raffleData, isLoading: loadingRaffle, error: raffleError } = useReadContract({
-    address: NADRAFFLE_CONTRACT.address as `0x${string}`,
-    abi: NADRAFFLE_CONTRACT.abi,
-    functionName: 'getRaffle',
-    args: [BigInt(raffleId)],
-  });
+  // Use V3 hook for raffle data
+  const { data: raffleData, isLoading: loadingRaffle, error: raffleError } = useRaffleV3(raffleId);
 
+  // Get user tickets
   const { data: userTickets } = useReadContract({
-    address: NADRAFFLE_CONTRACT.address as `0x${string}`,
-    abi: NADRAFFLE_CONTRACT.abi,
+    address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V3_CONTRACT.abi,
     functionName: 'getUserTickets',
     args: address ? [BigInt(raffleId), address as `0x${string}`] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && raffleId > 0,
     },
   });
 
   // Get all raffle tickets to show participants
   const { data: allTickets } = useReadContract({
-    address: NADRAFFLE_CONTRACT.address as `0x${string}`,
-    abi: NADRAFFLE_CONTRACT.abi,
+    address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V3_CONTRACT.abi,
     functionName: 'getRaffleTickets',
     args: [BigInt(raffleId)],
+    query: {
+      enabled: raffleId > 0,
+    },
   });
 
-  const { purchaseTickets, isPending: purchasing, isConfirming, isConfirmed, error: purchaseError } = useNadRaffleContract();
+  // Purchase tickets functionality using writeContract
+  const { writeContract, data: purchaseHash, isPending: purchasing, error: purchaseError } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: purchaseHash,
+  });
+
+  // Claim reward functionality
+  const { writeContract: claimRewardWrite, data: claimHash, isPending: claiming, error: claimError } = useWriteContract();
+  const { isLoading: isClaimConfirming, isSuccess: isClaimConfirmed } = useWaitForTransactionReceipt({
+    hash: claimHash,
+  });
   
   const [quantity, setQuantity] = useState(1);
+  
+  const purchaseTickets = async (raffleId: number, ticketQuantity: number, ticketPriceInEther: string) => {
+    if (!raffle) throw new Error('Raffle not loaded');
+    
+    const totalPrice = parseEther((parseFloat(ticketPriceInEther) * ticketQuantity).toString());
+    const isNativePayment = raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000';
+    
+    return writeContract({
+      address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
+      abi: NADRAFFLE_V3_CONTRACT.abi,
+      functionName: 'purchaseTickets',
+      args: [BigInt(raffleId), BigInt(ticketQuantity)],
+      value: isNativePayment ? totalPrice : BigInt(0), // Only send MON if native payment
+    });
+  };
   
   // Participants UI state
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,30 +99,25 @@ export default function RaffleContent() {
   const [participantsPerPage] = useState(10);
 
   // Convert contract data to display format
-  const raffle = raffleData ? {
-    id: raffleId,
-    creator: raffleData.creator,
-    title: raffleData.title,
-    description: raffleData.description,
-    imageHash: raffleData.imageHash,
-    rewardType: Number(raffleData.rewardType),
-    rewardTokenAddress: raffleData.rewardTokenAddress,
-    rewardAmount: raffleData.rewardAmount,
-    ticketPrice: raffleData.ticketPrice,
-    maxTickets: raffleData.maxTickets,
-    maxTicketsPerWallet: raffleData.maxTicketsPerWallet,
-    expirationTime: raffleData.expirationTime,
-    autoDistributeOnSoldOut: raffleData.autoDistributeOnSoldOut,
-    ticketsSold: raffleData.ticketsSold,
-    totalEarned: raffleData.totalEarned,
-    winner: raffleData.winner,
-    status: Number(raffleData.status),
-    createdAt: raffleData.createdAt,
-    rewardClaimed: raffleData.rewardClaimed,
-  } : null;
+  const raffle = raffleData ? formatRaffleV3(raffleData) : null;
+
+  // Fetch NFT metadata if reward is NFT
+  const shouldFetchNFT = raffle?.rewardType === 1;
+  const { metadata: nftMetadata, isLoading: nftLoading } = useNFTMetadata(
+    shouldFetchNFT ? raffle.rewardTokenAddress : '',
+    shouldFetchNFT ? raffle.rewardAmount.toString() : ''
+  );
 
   const loading = loadingRaffle;
-  const error = raffleError?.message || null;
+
+  console.log('🎫 Raffle Data Debug:', {
+    raffleData,
+    raffle,
+    loading,
+    raffleError,
+    userTickets: userTickets?.toString(),
+    allTickets: Array.isArray(allTickets) ? allTickets.length : 0
+  });
 
   // Handle successful purchase
   useEffect(() => {
@@ -96,6 +125,21 @@ export default function RaffleContent() {
       alert('Tickets purchased successfully!');
     }
   }, [isConfirmed]);
+
+  const handleClaimReward = async () => {
+    if (!raffle || !address) return;
+    
+    try {
+      await claimRewardWrite({
+        address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
+        abi: NADRAFFLE_V3_CONTRACT.abi,
+        functionName: 'claimReward',
+        args: [BigInt(raffleId)],
+      });
+    } catch (error) {
+      console.error('Error claiming reward:', error);
+    }
+  };
 
   const handlePurchaseTickets = async () => {
     if (!isConnected || !raffle || !address) {
@@ -109,8 +153,8 @@ export default function RaffleContent() {
     }
 
     try {
-      const ticketPriceInEther = Number(raffle.ticketPrice) / 1e18;
-      const totalPrice = ticketPriceInEther * quantity;
+      const ticketPriceInEther = formatEther(raffle.ticketPrice);
+      const totalPrice = parseFloat(ticketPriceInEther) * quantity;
       
       // Check user's balance
       if (balance && parseFloat(balance.formatted) < totalPrice) {
@@ -118,7 +162,7 @@ export default function RaffleContent() {
         return;
       }
 
-      await purchaseTickets(parseInt(raffleId), quantity, ticketPriceInEther.toString());
+      await purchaseTickets(raffleId, quantity, ticketPriceInEther);
     } catch (error) {
       console.error('Purchase failed:', error);
       alert('Purchase failed. Please try again.');
@@ -136,13 +180,13 @@ export default function RaffleContent() {
     // Group tickets by buyer address
     const participantMap = new Map<string, number>();
     
-    allTickets.forEach((ticket: any) => {
+    (allTickets as any[]).forEach((ticket: any) => {
       const buyer = ticket.buyer;
       participantMap.set(buyer, (participantMap.get(buyer) || 0) + 1);
     });
     
     // Convert to array with possibility calculation
-    const totalTickets = Number(raffle.ticketsSold);
+    const totalTickets = Number(raffle.ticketsSold || 0);
     
     return Array.from(participantMap.entries()).map(([address, ticketCount]) => ({
       address,
@@ -175,19 +219,17 @@ export default function RaffleContent() {
     if (raffle.status !== 0) return false; // 0 = ACTIVE
     
     // Check if expired
-    if (Number(raffle.expirationTime) > 0 && Date.now() > Number(raffle.expirationTime) * 1000) {
-      return false;
-    }
+    if (isExpired()) return false;
     
     // Check ticket availability
-    if (Number(raffle.ticketsSold) >= Number(raffle.maxTickets)) {
+    if (Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0)) {
       return false;
     }
     
     // Check wallet limit
-    if (Number(raffle.maxTicketsPerWallet) > 0) {
+    if (Number(raffle.maxTicketsPerWallet || 0) > 0) {
       const userCount = getUserTicketCount();
-      return userCount + quantity <= Number(raffle.maxTicketsPerWallet);
+      return userCount + quantity <= Number(raffle.maxTicketsPerWallet || 0);
     }
     
     return true;
@@ -210,12 +252,12 @@ export default function RaffleContent() {
   };
 
   const isExpired = () => {
-    if (!raffle || Number(raffle.expirationTime) === 0) return false;
+    if (!raffle || Number(raffle.expirationTime || 0) === 0) return false;
     return Date.now() > Number(raffle.expirationTime) * 1000;
   };
 
   const getTimeRemaining = () => {
-    if (!raffle || Number(raffle.expirationTime) === 0) return null;
+    if (!raffle || Number(raffle.expirationTime || 0) === 0) return null;
     
     const now = Date.now();
     const expiration = Number(raffle.expirationTime) * 1000;
@@ -232,7 +274,29 @@ export default function RaffleContent() {
     return `${minutes}m`;
   };
 
-  // If we can't decode the ID, show error
+  const getPaymentTokenSymbol = () => {
+    if (!raffle) return 'MON';
+    
+    if (raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000') {
+      return 'MON';
+    }
+    
+    const knownToken = getKnownToken(raffle.ticketPaymentToken);
+    return knownToken?.symbol || 'TOKEN';
+  };
+
+  const getRewardTokenSymbol = () => {
+    if (!raffle) return 'MON';
+    
+    if (raffle.rewardTokenAddress === '0x0000000000000000000000000000000000000000') {
+      return 'MON';
+    }
+    
+    const knownToken = getKnownToken(raffle.rewardTokenAddress);
+    return knownToken?.symbol || 'TOKEN';
+  };
+
+  // Early return if raffle ID is invalid
   if (internalRaffleId === null) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
@@ -266,7 +330,7 @@ export default function RaffleContent() {
     );
   }
 
-  if (error || !raffle) {
+  if (raffleError || !raffle) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
@@ -277,7 +341,7 @@ export default function RaffleContent() {
             Raffle Not Found
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {error || 'This raffle does not exist or has been removed.'}
+            {raffleError?.message || 'This raffle does not exist or has been removed.'}
           </p>
           <a 
             href="/app"
@@ -374,6 +438,83 @@ export default function RaffleContent() {
               </div>
             </div>
 
+            {/* NFT Showcase - Only for NFT rewards */}
+            {raffle.rewardType === 1 && (
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
+                  <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                    {/* NFT Image */}
+                    <div className="flex-shrink-0">
+                      {nftLoading ? (
+                        <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : nftMetadata?.image ? (
+                        <img
+                          src={nftMetadata.image}
+                          alt={nftMetadata.name || 'NFT'}
+                          className="w-24 h-24 rounded-xl object-cover border-2 border-white dark:border-gray-700 shadow-lg"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                                  </svg>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                          <Gift className="w-8 h-8 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* NFT Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                            {nftMetadata?.name || `NFT #${raffle.rewardAmount.toString()}`}
+                          </h3>
+                          <p className="text-sm text-purple-600 dark:text-purple-400 mb-2">
+                            Token ID: {raffle.rewardAmount.toString()}
+                          </p>
+                          {nftMetadata?.description && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3" style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}>
+                              {nftMetadata.description}
+                            </p>
+                          )}
+                          <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Contract: {raffle.rewardTokenAddress.slice(0, 6)}...{raffle.rewardTokenAddress.slice(-4)}</span>
+                            <span>•</span>
+                            <span>ERC-721</span>
+                          </div>
+                        </div>
+                        
+                        {/* Prize Badge */}
+                        <div className="flex-shrink-0">
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                            🏆 Prize NFT
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Raffle Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
               <div className="text-center">
@@ -381,9 +522,22 @@ export default function RaffleContent() {
                   <Gift className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Reward</p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {(Number(raffle.rewardAmount) / 1e18).toFixed(4).replace(/\.?0+$/, '')} {getRewardTypeText() === 'Token' ? 'MON' : 'NFT'}
-                </p>
+                {raffle.rewardType === 1 ? (
+                  // NFT Reward
+                  <div className="space-y-1">
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {nftMetadata?.name || `NFT #${raffle.rewardAmount.toString()}`}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Token ID: {raffle.rewardAmount.toString()}
+                    </p>
+                  </div>
+                ) : (
+                  // Token Reward
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {formatEther(raffle.rewardAmount || BigInt(0))} {getRewardTokenSymbol()}
+                  </p>
+                )}
               </div>
               
               <div className="text-center">
@@ -392,7 +546,7 @@ export default function RaffleContent() {
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Ticket Price</p>
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {(Number(raffle.ticketPrice) / 1e18).toFixed(4).replace(/\.?0+$/, '')} MON
+                  {formatEther(raffle.ticketPrice || BigInt(0))} {getPaymentTokenSymbol()}
                 </p>
               </div>
               
@@ -402,7 +556,7 @@ export default function RaffleContent() {
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tickets Sold</p>
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {raffle.ticketsSold.toString()}/{raffle.maxTickets.toString()}
+                  {raffle.ticketsSold?.toString() || '0'}/{raffle.maxTickets?.toString() || '0'}
                 </p>
               </div>
               
@@ -426,6 +580,50 @@ export default function RaffleContent() {
                     You own {getUserTicketCount()} ticket{getUserTicketCount() !== 1 ? 's' : ''} in this raffle
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Winner Section */}
+            {raffle.status === 1 && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">
+                      Winner Announced!
+                    </h3>
+                    <p className="text-green-700 dark:text-green-300">
+                      {raffle.winner.slice(0, 6)}...{raffle.winner.slice(-4)}
+                    </p>
+                  </div>
+                </div>
+                
+                {address?.toLowerCase() === raffle.winner.toLowerCase() && !raffle.rewardClaimed && (
+                  <button
+                    onClick={handleClaimReward}
+                    disabled={claiming || isClaimConfirming}
+                    className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    {claiming || isClaimConfirming ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>{claiming ? 'Claiming...' : 'Confirming...'}</span>
+                      </div>
+                    ) : (
+                      'Claim Your Reward'
+                    )}
+                  </button>
+                )}
+
+                {address?.toLowerCase() === raffle.winner.toLowerCase() && raffle.rewardClaimed && (
+                  <div className="text-center">
+                    <p className="text-green-700 dark:text-green-300 font-medium">
+                      🎉 Reward claimed successfully!
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -472,7 +670,7 @@ export default function RaffleContent() {
                   <p className="text-gray-600 dark:text-gray-400">
                     {raffle.status !== 0 ? 'This raffle has ended' :
                      isExpired() ? 'This raffle has expired' :
-                     Number(raffle.ticketsSold) >= Number(raffle.maxTickets) ? 'All tickets have been sold' :
+                     Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0) ? 'All tickets have been sold' :
                      'You have reached the maximum tickets per wallet'}
                   </p>
                 </div>
@@ -495,8 +693,8 @@ export default function RaffleContent() {
                       type="number"
                       min="1"
                       max={Math.min(
-                        Number(raffle.maxTicketsPerWallet) - getUserTicketCount(),
-                        Number(raffle.maxTickets) - Number(raffle.ticketsSold)
+                        Number(raffle.maxTicketsPerWallet || 0) - getUserTicketCount(),
+                        Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)
                       )}
                       value={quantity}
                       onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
@@ -504,8 +702,8 @@ export default function RaffleContent() {
                     />
                     <button
                       onClick={() => setQuantity(Math.min(
-                        Number(raffle.maxTicketsPerWallet) - getUserTicketCount(),
-                        Number(raffle.maxTickets) - Number(raffle.ticketsSold),
+                        Number(raffle.maxTicketsPerWallet || 0) - getUserTicketCount(),
+                        Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0),
                         quantity + 1
                       ))}
                       className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -514,7 +712,7 @@ export default function RaffleContent() {
                     </button>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    Total: {((Number(raffle.ticketPrice) / 1e18) * quantity).toFixed(4).replace(/\.?0+$/, '')} MON
+                    Total: {(parseFloat(formatEther(raffle.ticketPrice || BigInt(0))) * quantity).toFixed(4).replace(/\.?0+$/, '')} {getPaymentTokenSymbol()}
                   </p>
                 </div>
 
@@ -593,7 +791,7 @@ export default function RaffleContent() {
                     </div>
                   )}
                   
-                                     <div className="bg-gray-50 dark:bg-dark-700 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
+                  <div className="bg-gray-50 dark:bg-dark-700 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
                     {/* Participants List */}
                     <div className="divide-y divide-gray-200 dark:divide-gray-600">
                       {currentParticipants.map((participant, index) => {
@@ -657,7 +855,7 @@ export default function RaffleContent() {
                     )}
                   </div>
                   
-                                     {/* Summary Stats */}
+                  {/* Summary Stats */}
                    <div className="mt-4 grid grid-cols-1 gap-3">
                     <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-center">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Total Participants</p>

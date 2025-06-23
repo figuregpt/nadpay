@@ -4,10 +4,19 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Wallet, Link2, ArrowLeft, ShoppingCart, Users, Clock, Sun, Moon } from "lucide-react";
-import { useAccount, useBalance, useSwitchChain } from "wagmi";
+import { useAccount, useBalance, useSwitchChain, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { parseEther } from "viem";
 import { ConnectKitButton } from "connectkit";
 import { useTheme } from "next-themes";
-import { usePaymentLink, usePurchase, useUserPurchaseCount, formatPaymentLink, formatPrice } from "@/hooks/useNadPayContract";
+import { 
+  usePaymentLinkV2, 
+  usePurchaseV2, 
+  useUserPurchaseCountV2, 
+  formatPaymentLinkV2, 
+  formatPriceV2,
+  PaymentLinkV2 
+} from "@/hooks/useNadPayV2Contract";
+import { getKnownToken } from "@/lib/knownAssets";
 
 export default function PaymentContent() {
   const params = useParams();
@@ -27,8 +36,8 @@ export default function PaymentContent() {
       const seed = parseInt(parts[0]);
       const targetHash = parts[1];
       
-      // Check recent internal IDs (last 1000 should be enough)
-      for (let i = 0; i < 1000; i++) {
+      // Check recent internal IDs (last 10000 should be enough)
+      for (let i = 0; i < 10000; i++) {
         const combined = `${i}_${seed}_nadpay`;
         let hash = 0;
         for (let j = 0; j < combined.length; j++) {
@@ -48,28 +57,84 @@ export default function PaymentContent() {
   
   const internalLinkId = decodeSecureLinkId(linkId);
   
+  console.log('🔍 PaymentContent Debug:', {
+    linkId,
+    internalLinkId,
+    decodedSuccessfully: internalLinkId !== null
+  });
+  
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
-  const { data: balance } = useBalance({
+  const { data: balance, refetch: refetchBalance } = useBalance({
     address: address,
     chainId: 10143, // Monad Testnet
   });
   
   // Contract hooks
-  const { data: contractLink, isLoading: loadingLink, error: contractError } = usePaymentLink(internalLinkId || -1);
-  const { data: userPurchaseCount } = useUserPurchaseCount(internalLinkId || -1, address);
-  const { purchase, isPending: purchasing, isConfirming, isConfirmed, error: purchaseError } = usePurchase();
+  const { data: contractLink, isLoading: loadingLink, error: contractError, refetch: refetchLink } = usePaymentLinkV2(internalLinkId || -1);
+  const { data: userPurchaseCount, refetch: refetchUserCount } = useUserPurchaseCountV2(internalLinkId || -1, address);
+  const { purchase, isPending: purchasing, isConfirming, isConfirmed, error: purchaseError } = usePurchaseV2();
+  
+  // Get token balance if payment is not native MON
+  const { data: tokenBalance, refetch: refetchTokenBalance } = useBalance({
+    address: address,
+    token: contractLink?.paymentToken !== "0x0000000000000000000000000000000000000000" ? contractLink?.paymentToken as `0x${string}` : undefined,
+    chainId: 10143,
+    query: {
+      enabled: !!contractLink?.paymentToken && contractLink.paymentToken !== "0x0000000000000000000000000000000000000000"
+    }
+  });
+
+  console.log('📊 Contract Data:', {
+    internalLinkId,
+    contractLink: contractLink ? 'loaded' : 'null',
+    loadingLink,
+    contractError: contractError?.message || 'none'
+  });
   
   const [quantity, setQuantity] = useState(1);
+  const [isApproving, setIsApproving] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+
+  // ERC20 approval hooks
+  const { writeContract: approveToken, data: approvalHash, isPending: isApprovalPending } = useWriteContract();
+  const { isLoading: isApprovalConfirming, isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({
+    hash: approvalHash,
+  });
+
+  // Check current allowance
+  const { data: currentAllowance } = useReadContract({
+    address: contractLink?.paymentToken as `0x${string}`,
+    abi: [
+      {
+        inputs: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" }
+        ],
+        name: "allowance",
+        outputs: [{ name: "", type: "uint256" }],
+        stateMutability: "view",
+        type: "function"
+      }
+    ],
+    functionName: 'allowance',
+    args: address && contractLink?.paymentToken !== "0x0000000000000000000000000000000000000000" 
+              ? [address, "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`] 
+      : undefined,
+    query: {
+      enabled: !!address && !!contractLink?.paymentToken && contractLink.paymentToken !== "0x0000000000000000000000000000000000000000"
+    }
+  });
 
   // Convert contract data to display format
   const paymentLink = contractLink ? {
-    ...formatPaymentLink(contractLink),
+    ...formatPaymentLinkV2(contractLink),
     linkId: linkId,
     _id: linkId,
     creatorAddress: contractLink.creator,
-    price: formatPrice(contractLink.price),
-    totalEarned: formatPrice(contractLink.totalEarned),
+    price: formatPriceV2(contractLink.price),
+    totalEarned: formatPriceV2(contractLink.totalEarned),
+    paymentTokenSymbol: contractLink.paymentToken === "0x0000000000000000000000000000000000000000" ? "MON" : getKnownToken(contractLink.paymentToken)?.symbol || "TOKEN",
     purchases: [],
     createdAt: contractLink.createdAt ? new Date(Number(contractLink.createdAt) * 1000).toISOString() : new Date().toISOString(),
   } : null;
@@ -80,12 +145,171 @@ export default function PaymentContent() {
   // Handle successful purchase
   useEffect(() => {
     if (isConfirmed) {
-      alert('Purchase successful!');
+      setPurchaseSuccess(true);
+      // Refetch data to update UI
+      refetchLink();
+      refetchUserCount();
+      refetchBalance();
+      refetchTokenBalance();
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        setPurchaseSuccess(false);
+      }, 5000);
     }
-  }, [isConfirmed]);
+  }, [isConfirmed, refetchLink, refetchUserCount, refetchBalance, refetchTokenBalance]);
+
+  // Handle successful approval - automatically proceed to purchase
+  useEffect(() => {
+    if (isApprovalConfirmed && isApproving) {
+      setIsApproving(false);
+      // Automatically proceed to purchase after approval
+      setTimeout(() => {
+        handlePurchaseAfterApproval();
+      }, 1000);
+    }
+  }, [isApprovalConfirmed, isApproving]);
+
+  const handleApproval = async () => {
+    if (!contractLink || !address) return;
+
+    try {
+      setIsApproving(true);
+      const totalPrice = parseFloat(paymentLink?.price || "0") * quantity;
+      const amountToApprove = parseEther(totalPrice.toString());
+
+      await approveToken({
+        address: contractLink.paymentToken as `0x${string}`,
+        abi: [
+          {
+            inputs: [
+              { name: "spender", type: "address" },
+              { name: "amount", type: "uint256" }
+            ],
+            name: "approve",
+            outputs: [{ name: "", type: "bool" }],
+            stateMutability: "nonpayable",
+            type: "function"
+          }
+        ],
+        functionName: 'approve',
+        args: ["0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`, amountToApprove],
+      });
+    } catch (error) {
+      console.error('Approval failed:', error);
+      alert('Token approval failed. Please try again.');
+      setIsApproving(false);
+    }
+  };
+
+  const needsApproval = () => {
+    if (!contractLink || !paymentLink || contractLink.paymentToken === "0x0000000000000000000000000000000000000000") {
+      return false; // Native token doesn't need approval
+    }
+    
+    if (!currentAllowance) return true;
+    
+    const totalPrice = parseFloat(paymentLink.price) * quantity;
+    const requiredAmount = parseEther(totalPrice.toString());
+    
+    return BigInt(currentAllowance.toString()) < requiredAmount;
+  };
+
+  const handlePurchaseAfterApproval = async () => {
+    if (!isConnected || !paymentLink || !address || !contractLink) {
+      return;
+    }
+
+    if (chain?.id !== 10143) {
+      return;
+    }
+
+    try {
+      const totalPrice = parseFloat(paymentLink.price) * quantity;
+      const isNativePayment = contractLink.paymentToken === "0x0000000000000000000000000000000000000000";
+      
+      // Check user's balance
+      if (isNativePayment) {
+        // Check MON balance
+        if (balance && parseFloat(balance.formatted) < totalPrice) {
+          return;
+        }
+      } else {
+        // Check token balance
+        if (tokenBalance && parseFloat(tokenBalance.formatted) < totalPrice) {
+          return;
+        }
+      }
+
+      await purchase(internalLinkId || 0, quantity, totalPrice.toString(), isNativePayment);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+    }
+  };
+
+  const handleSmartPurchase = async () => {
+    if (!isConnected || !paymentLink || !address || !contractLink) {
+      alert('Please connect your wallet');
+      return;
+    }
+
+    if (chain?.id !== 10143) {
+      alert('Please switch to Monad Testnet');
+      return;
+    }
+
+    const totalPrice = parseFloat(paymentLink.price) * quantity;
+    const isNativePayment = contractLink.paymentToken === "0x0000000000000000000000000000000000000000";
+    
+    // Check user's balance first
+    if (isNativePayment) {
+      if (balance && parseFloat(balance.formatted) < totalPrice) {
+        alert('Insufficient MON balance');
+        return;
+      }
+    } else {
+      if (tokenBalance && parseFloat(tokenBalance.formatted) < totalPrice) {
+        alert(`Insufficient ${paymentLink.paymentTokenSymbol} balance`);
+        return;
+      }
+    }
+
+    try {
+      // If approval is needed, do approval first
+      if (needsApproval()) {
+        setIsApproving(true);
+        const amountToApprove = parseEther(totalPrice.toString());
+
+        await approveToken({
+          address: contractLink.paymentToken as `0x${string}`,
+          abi: [
+            {
+              inputs: [
+                { name: "spender", type: "address" },
+                { name: "amount", type: "uint256" }
+              ],
+              name: "approve",
+              outputs: [{ name: "", type: "bool" }],
+              stateMutability: "nonpayable",
+              type: "function"
+            }
+          ],
+          functionName: 'approve',
+          args: ["0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`, amountToApprove],
+        });
+        // Purchase will happen automatically after approval in useEffect
+      } else {
+        // Direct purchase if no approval needed
+        await purchase(internalLinkId || 0, quantity, totalPrice.toString(), isNativePayment);
+      }
+    } catch (error) {
+      console.error('Smart purchase failed:', error);
+      alert('Transaction failed. Please try again.');
+      setIsApproving(false);
+    }
+  };
 
   const handlePurchase = async () => {
-    if (!isConnected || !paymentLink || !address) {
+    if (!isConnected || !paymentLink || !address || !contractLink) {
       alert('Please connect your wallet');
       return;
     }
@@ -97,14 +321,24 @@ export default function PaymentContent() {
 
     try {
       const totalPrice = parseFloat(paymentLink.price) * quantity;
+      const isNativePayment = contractLink.paymentToken === "0x0000000000000000000000000000000000000000";
       
       // Check user's balance
-      if (balance && parseFloat(balance.formatted) < totalPrice) {
-        alert('Insufficient balance');
-        return;
+      if (isNativePayment) {
+        // Check MON balance
+        if (balance && parseFloat(balance.formatted) < totalPrice) {
+          alert('Insufficient MON balance');
+          return;
+        }
+      } else {
+        // Check token balance
+        if (tokenBalance && parseFloat(tokenBalance.formatted) < totalPrice) {
+          alert(`Insufficient ${paymentLink.paymentTokenSymbol} balance`);
+          return;
+        }
       }
 
-      await purchase(internalLinkId || 0, quantity, totalPrice.toString());
+      await purchase(internalLinkId || 0, quantity, totalPrice.toString(), isNativePayment);
     } catch (error) {
       console.error('Purchase failed:', error);
       alert('Purchase failed. Please try again.');
@@ -283,7 +517,7 @@ export default function PaymentContent() {
               <div className="mb-6">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Price per item</p>
                 <p className="text-3xl font-bold text-primary-500">
-                  {paymentLink.price} MON
+                  {paymentLink.price} {paymentLink.paymentTokenSymbol}
                 </p>
               </div>
 
@@ -333,17 +567,34 @@ export default function PaymentContent() {
                   </button>
                 </div>
               ) : !paymentLink.isActive ? (
-                /* Inactive Link */
+                /* Inactive Link - Check if sold out or deactivated */
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Link2 className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Payment Link Inactive
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    This payment link has been deactivated by the creator
-                  </p>
+                  {/* Check if sold out */}
+                  {Number(paymentLink.totalSales) > 0 && Number(paymentLink.salesCount) >= Number(paymentLink.totalSales) ? (
+                    <>
+                      <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ShoppingCart className="w-8 h-8 text-yellow-500" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        Sold Out
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        All items have been sold ({paymentLink.salesCount}/{paymentLink.totalSales})
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Link2 className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        Payment Link Inactive
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        This payment link has been deactivated by the creator
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
                 /* Purchase Form */
@@ -396,29 +647,48 @@ export default function PaymentContent() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 dark:text-gray-300">Total Price:</span>
                       <span className="text-2xl font-bold text-primary-500">
-                        {(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} MON
+                        {(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} {paymentLink.paymentTokenSymbol}
                       </span>
                     </div>
-                    {balance && (
-                      <div className="flex justify-between items-center mt-2 text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Your Balance:</span>
-                        <span className="text-gray-900 dark:text-white">
-                          {parseFloat(balance.formatted).toFixed(4).replace(/\.?0+$/, '')} {balance.symbol}
-                        </span>
-                      </div>
+                    {/* Show relevant balance based on payment token */}
+                    {contractLink?.paymentToken === "0x0000000000000000000000000000000000000000" ? (
+                      // Show MON balance for native payments
+                      balance && (
+                        <div className="flex justify-between items-center mt-2 text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Your Balance:</span>
+                          <span className="text-gray-900 dark:text-white">
+                            {parseFloat(balance.formatted).toFixed(4).replace(/\.?0+$/, '')} {balance.symbol}
+                          </span>
+                        </div>
+                      )
+                    ) : (
+                      // Show token balance for token payments
+                      tokenBalance && (
+                        <div className="flex justify-between items-center mt-2 text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Your Balance:</span>
+                          <span className="text-gray-900 dark:text-white">
+                            {parseFloat(tokenBalance.formatted).toFixed(4).replace(/\.?0+$/, '')} {tokenBalance.symbol}
+                          </span>
+                        </div>
+                      )
                     )}
                   </div>
 
-                  {/* Purchase Button */}
+                  {/* Smart Purchase Button */}
                   <button
-                    onClick={handlePurchase}
-                    disabled={!canPurchase() || purchasing || isConfirming}
+                    onClick={handleSmartPurchase}
+                    disabled={!canPurchase() || purchasing || isConfirming || isApprovalPending || isApprovalConfirming || isApproving}
                     className="w-full px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {purchasing ? (
+                    {isApprovalPending || isApprovalConfirming || isApproving ? (
                       <div className="flex items-center justify-center space-x-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Processing...</span>
+                        <span>Approving {paymentLink.paymentTokenSymbol}...</span>
+                      </div>
+                    ) : purchasing ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing Purchase...</span>
                       </div>
                     ) : isConfirming ? (
                       <div className="flex items-center justify-center space-x-2">
@@ -428,9 +698,25 @@ export default function PaymentContent() {
                     ) : !canPurchase() ? (
                       'Cannot Purchase'
                     ) : (
-                      `Purchase for ${(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} MON`
+                      `Purchase for ${(parseFloat(paymentLink.price) * quantity).toFixed(4).replace(/\.?0+$/, '')} ${paymentLink.paymentTokenSymbol}`
                     )}
                   </button>
+
+                  {/* Success Message */}
+                  {purchaseSuccess && (
+                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <p className="text-green-700 dark:text-green-300 font-medium">
+                          🎉 Payment Successful! Your purchase has been confirmed.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {purchaseError && (
                     <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">

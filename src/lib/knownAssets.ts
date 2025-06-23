@@ -40,33 +40,6 @@ export const KNOWN_TOKENS: KnownToken[] = [
   NATIVE_MON,
   // Add more tokens here as they become available
   {
-    address: "0x1234567890123456789012345678901234567890", // Example USDC
-    name: "USD Coin",
-    symbol: "USDC",
-    decimals: 6,
-    logo: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
-    description: "USDC stablecoin on Monad",
-    verified: true
-  },
-  {
-    address: "0x2345678901234567890123456789012345678901", // Example WETH
-    name: "Wrapped Ethereum",
-    symbol: "WETH",
-    decimals: 18,
-    logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-    description: "Wrapped ETH on Monad",
-    verified: true
-  },
-  {
-    address: "0x3456789012345678901234567890123456789012", // Example community token
-    name: "Monad Community Token",
-    symbol: "MCT",
-    decimals: 18,
-    logo: "https://via.placeholder.com/64x64/6366f1/ffffff?text=MCT",
-    description: "Community governance token",
-    verified: true
-  },
-  {
     address: "0xe0590015a873bf326bd645c3e1266d4db41c4e6b", // Example community token
     name: "Chog",
     symbol: "CHOG",
@@ -100,6 +73,15 @@ export const KNOWN_NFTS: KnownNFT[] = [
     verified: true,
     floorPrice: "1.5",
     totalSupply: 10000
+  },
+  {
+    address: "0x3019BF1dfB84E5b46Ca9D0eEC37dE08a59A41308",
+    name: "Nad Name Service",
+    description: "",
+    image: "https://api.nad.domains/nft-metadata/10143/image/ZXJkaW5j",
+    website: "",
+    verified: true,
+    totalSupply: 4869316
   },
   {
     address: "0x5678901234567890123456789012345678901234",

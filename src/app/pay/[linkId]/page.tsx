@@ -4,7 +4,7 @@ import { formatEther } from "viem";
 
 // Import contract utilities
 import { publicClient } from "@/lib/wagmi";
-import { NADPAY_CONTRACT } from "@/lib/contract";
+import { getKnownToken } from "@/lib/knownAssets";
 
 // Dynamically import the entire payment component
 const PaymentContent = dynamic(() => import("./PaymentContent"), {
@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         const targetHash = parts[1];
         
         // Check recent internal IDs (last 1000 should be enough)
+        // This uses the same algorithm as createSecureLinkId in Web3AppContent
         for (let i = 0; i < 1000; i++) {
           const combined = `${i}_${seed}_nadpay`;
           let hash = 0;
@@ -67,9 +68,102 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
     
-    // Fetch payment link data from contract
+    // V2 Contract configuration
+    const NADPAY_V2_CONTRACT = {
+      address: "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`,
+      abi: [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "linkId",
+              "type": "uint256"
+            }
+          ],
+          "name": "getPaymentLink",
+          "outputs": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "title",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "coverImage",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "price",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "totalSales",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maxPerWallet",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "salesCount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "totalEarned",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isActive",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "createdAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "expiresAt",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct NadPayV2.PaymentLink",
+              "name": "",
+              "type": "tuple"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ] as const
+    };
+
+    // Fetch payment link data from V2 contract
     const paymentLinkData = await publicClient.readContract({
-      ...NADPAY_CONTRACT,
+      ...NADPAY_V2_CONTRACT,
       functionName: 'getPaymentLink',
       args: [BigInt(internalLinkId)]
     });
@@ -81,13 +175,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
 
-    const { title, description, coverImage, price } = paymentLinkData;
-    const priceInMON = formatEther(price);
+    const { title, description, coverImage, price, paymentToken } = paymentLinkData;
+    const priceInToken = formatEther(price);
+    const tokenSymbol = paymentToken === "0x0000000000000000000000000000000000000000" ? "MON" : getKnownToken(paymentToken)?.symbol || "TOKEN";
     
-    const pageTitle = `${title} - ${priceInMON} MON | NadPay`;
+    const pageTitle = `${title} - ${priceInToken} ${tokenSymbol} | NadPay`;
     const pageDescription = description 
-      ? `${description} | Price: ${priceInMON} MON | Pay securely on Monad blockchain`
-      : `Pay ${priceInMON} MON securely on Monad blockchain`;
+      ? `${description} | Price: ${priceInToken} ${tokenSymbol} | Pay securely on Monad blockchain`
+      : `Pay ${priceInToken} ${tokenSymbol} securely on Monad blockchain`;
 
     return {
       title: pageTitle,

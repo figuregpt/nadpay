@@ -2,7 +2,7 @@
 // Do not edit manually - run 'npm run generate-abi' to regenerate
 
 export const NADPAY_CONTRACT = {
-  "address": "0x17c31F99b27c10fbFF0aA241202DF687377DC24A",
+  "address": "0x0000000000000000000000000000000000000000",
   "abi": [
     {
       "inputs": [],
@@ -684,7 +684,6 @@ export type PaymentLink = {
   totalEarned: bigint;
   isActive: boolean;
   createdAt: bigint;
-  expiresAt: bigint;
 };
 
 export type Purchase = {

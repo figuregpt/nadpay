@@ -313,7 +313,7 @@ export function formatPaymentLink(rawLink: unknown): PaymentLink & { linkId: num
     totalEarned: link?.totalEarned || BigInt(0),
     isActive: link?.isActive || false,
     createdAt: link?.createdAt || BigInt(0),
-    expiresAt: link?.expiresAt || BigInt(0),
+
     uniqueBuyersCount: link?.uniqueBuyersCount || 0, // Preserve uniqueBuyersCount
   };
 }
