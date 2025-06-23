@@ -1379,40 +1379,7 @@ export default function Web3AppContent() {
                 />
               </div>
 
-              {/* Reward Type Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Reward Type *
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => handleRaffleInputChange('rewardType', 'TOKEN')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      raffleFormData.rewardType === 'TOKEN'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-purple-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-2">🪙</div>
-                    <div className="font-medium text-gray-900 dark:text-white">Token</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">MON or custom token</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRaffleInputChange('rewardType', 'NFT')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      raffleFormData.rewardType === 'NFT'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-purple-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-2">🎨</div>
-                    <div className="font-medium text-gray-900 dark:text-white">NFT</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Digital collectible</div>
-                  </button>
-                </div>
-              </div>
+
 
               {/* Reward Configuration */}
               <div>

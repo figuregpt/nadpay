@@ -162,17 +162,40 @@ export function AssetSelector({
                   }`} />
                 )}
               </div>
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {selectedAsset.data.name}
-                  {selectedAsset.type === 'token' && (
-                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                      ({(selectedAsset.data as KnownToken).symbol})
-                    </span>
-                  )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium text-gray-900 dark:text-white truncate">{selectedAsset.data.name}</span>
+                    {selectedAsset.type === 'token' && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+                        ({(selectedAsset.data as KnownToken).symbol})
+                      </span>
+                    )}
+                  </div>
+                  {/* Show balance for selected asset */}
+                  {selectedAsset.type === 'token' && (() => {
+                    const tokenBalance = tokenBalances.find(t => 
+                      t.address.toLowerCase() === selectedAsset.data.address.toLowerCase()
+                    );
+                    return tokenBalance && (
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex-shrink-0 ml-2">
+                        {tokenBalance.formattedBalance} {tokenBalance.symbol}
+                      </span>
+                    );
+                  })()}
+                  {selectedAsset.type === 'nft' && (() => {
+                    const nftBalance = nftBalances.find(n => 
+                      n.address.toLowerCase() === selectedAsset.data.address.toLowerCase()
+                    );
+                    return nftBalance && (
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex-shrink-0 ml-2">
+                        {nftBalance.totalOwned} owned
+                      </span>
+                    );
+                  })()}
                 </div>
                 {selectedAsset.data.description && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
                     {selectedAsset.data.description}
                   </div>
                 )}
@@ -276,22 +299,22 @@ export function AssetSelector({
                               <Coins className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                             )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 dark:text-white">{token.name}</span>
-                              <span className="text-sm text-gray-500 dark:text-gray-400">({token.symbol})</span>
-                              {token.verified && (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                              )}
-                            </div>
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              {token.description && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{token.description}</p>
-                              )}
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 ml-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-medium text-gray-900 dark:text-white truncate">{token.name}</span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">({token.symbol})</span>
+                                {token.verified && (
+                                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex-shrink-0 ml-2">
                                 {token.formattedBalance} {token.symbol}
                               </span>
                             </div>
+                            {token.description && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{token.description}</p>
+                            )}
                           </div>
                         </button>
                       ))}
