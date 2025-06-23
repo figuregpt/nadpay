@@ -120,11 +120,48 @@ export function AssetSelector({
         <div className="flex items-center gap-3">
           {selectedAsset ? (
             <>
-              {selectedAsset.type === 'token' ? (
-                <Coins className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              ) : (
-                <Image className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              )}
+              {/* Asset Logo/Icon */}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                selectedAsset.type === 'token' 
+                  ? 'bg-indigo-100 dark:bg-indigo-900/30' 
+                  : 'bg-purple-100 dark:bg-purple-900/30'
+              }`}>
+                {selectedAsset.type === 'token' ? (
+                  (selectedAsset.data as KnownToken).logo ? (
+                    <img
+                      src={(selectedAsset.data as KnownToken).logo}
+                      alt={(selectedAsset.data as KnownToken).symbol}
+                      className="w-6 h-6 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null
+                ) : (
+                  (selectedAsset.data as KnownNFT).image ? (
+                    <img
+                      src={(selectedAsset.data as KnownNFT).image}
+                      alt={selectedAsset.data.name}
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null
+                )}
+                {/* Fallback Icon */}
+                {selectedAsset.type === 'token' ? (
+                  <Coins className={`w-4 h-4 text-indigo-600 dark:text-indigo-400 ${
+                    (selectedAsset.data as KnownToken).logo ? 'hidden' : ''
+                  }`} />
+                ) : (
+                  <Image className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${
+                    (selectedAsset.data as KnownNFT).image ? 'hidden' : ''
+                  }`} />
+                )}
+              </div>
               <div>
                 <div className="font-medium text-gray-900 dark:text-white">
                   {selectedAsset.data.name}

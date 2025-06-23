@@ -65,7 +65,28 @@ export const KNOWN_TOKENS: KnownToken[] = [
     logo: "https://via.placeholder.com/64x64/6366f1/ffffff?text=MCT",
     description: "Community governance token",
     verified: true
-  }
+  },
+  {
+    address: "0xe0590015a873bf326bd645c3e1266d4db41c4e6b", // Example community token
+    name: "Chog",
+    symbol: "CHOG",
+    decimals: 18,
+    logo: "https://imagedelivery.net/tWwhAahBw7afBzFUrX5mYQ/5d1206c2-042c-4edc-9f8b-dcef2e9e8f00/public",
+    description: "",
+    verified: true
+  }  // 
+  // ✅ NEW TOKEN EXAMPLE - Copy this format:
+  // {
+  //   address: "0xe0590015a873bf326bd645c3e1266d4db41c4e6b",        // ← Real deployed contract address
+  //   name: "Chog",                     // ← From contract name() function
+  //   symbol: "CHOG",                              // ← From contract symbol() function  
+  //   decimals: 18,                               // ← From contract decimals() function
+  //   logo: "https://your-cdn.com/logo.png",      // ← Optional: Logo URL
+  //   description: "Your token description",       // ← Optional: Brief description
+  //   coingeckoId: "your-token-coingecko-id",     // ← Optional: For price feeds
+  //   website: "https://yourtoken.com",           // ← Optional: Project website
+  //   verified: true                              // ← Always true for admin-added tokens
+  // },
 ];
 
 // Known NFT collections on Monad testnet (ADMIN CONTROLLED)
