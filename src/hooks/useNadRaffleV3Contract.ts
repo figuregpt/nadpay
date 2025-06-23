@@ -1,7 +1,8 @@
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
+import { parseEther, formatEther, parseUnits } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useState, useEffect } from 'react';
+import { getKnownToken } from '../lib/knownAssets';
 
 // V3 contract address
 const RAFFLE_V3_CONTRACT_ADDRESS = "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0" as `0x${string}`;
@@ -79,8 +80,10 @@ export function useNadRaffleV3Contract() {
     // Convert reward amount based on type
     let rewardAmountBigInt: bigint;
     if (params.rewardType === 'TOKEN') {
-      // For tokens, parse as ether (18 decimals) - might need adjustment based on token decimals
-      rewardAmountBigInt = parseEther(params.rewardAmount);
+      // For tokens, use correct decimals based on token
+      const tokenInfo = getKnownToken(params.rewardTokenAddress);
+      const decimals = tokenInfo?.decimals || 18; // Default to 18 if unknown
+      rewardAmountBigInt = parseUnits(params.rewardAmount, decimals);
     } else {
       // For NFTs, use token ID as is
       rewardAmountBigInt = BigInt(params.rewardAmount);
@@ -155,8 +158,40 @@ export function useNadRaffleV3Contract() {
     }
   };
 
+  const purchaseTickets = async (params: {
+    raffleId: number;
+    quantity: number;
+    paymentTokenAddress: string;
+    totalPrice: bigint;
+  }) => {
+    console.log('useNadRaffleV3Contract: purchaseTickets called with:', {
+      ...params,
+      totalPrice: params.totalPrice.toString(),
+      contractAddress: RAFFLE_V3_CONTRACT_ADDRESS
+    });
+
+    // Calculate msg.value for native token payments
+    let msgValue = BigInt(0);
+    if (params.paymentTokenAddress === '0x0000000000000000000000000000000000000000') {
+      // Native MON payment
+      msgValue = params.totalPrice;
+    }
+    
+    return writeContract({
+      address: RAFFLE_V3_CONTRACT_ADDRESS,
+      abi: RAFFLE_V3_ABI,
+      functionName: 'purchaseTickets',
+      args: [
+        BigInt(params.raffleId),
+        BigInt(params.quantity),
+      ],
+      value: msgValue,
+    });
+  };
+
   return {
     createRaffle,
+    purchaseTickets,
     getRaffleIdFromTransaction,
     isPending,
     isConfirming,
@@ -292,4 +327,53 @@ export function formatRaffleV3(rawRaffle: unknown): RaffleV3 {
 export function formatPriceV3Raffle(priceInWei: bigint | undefined | null): string {
   if (!priceInWei) return '0';
   return formatEther(priceInWei);
+}
+
+// Hook for buying tickets
+export function useBuyTicketsV3() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const buyTickets = async (params: {
+    raffleId: number;
+    ticketCount: number;
+    paymentTokenAddress: string;
+    totalPrice: bigint;
+  }) => {
+    console.log('useBuyTicketsV3: buyTickets called with:', {
+      ...params,
+      totalPrice: params.totalPrice.toString(),
+      contractAddress: RAFFLE_V3_CONTRACT_ADDRESS
+    });
+
+    // Calculate msg.value for native token payments
+    let msgValue = BigInt(0);
+    if (params.paymentTokenAddress === '0x0000000000000000000000000000000000000000') {
+      // Native MON payment
+      msgValue = params.totalPrice;
+    }
+    
+    return writeContract({
+      address: RAFFLE_V3_CONTRACT_ADDRESS,
+      abi: RAFFLE_V3_ABI,
+      functionName: 'purchaseTickets',
+      args: [
+        BigInt(params.raffleId),
+        BigInt(params.ticketCount),
+      ],
+      value: msgValue,
+    });
+  };
+
+  return {
+    buyTickets,
+    isBuyLoading: isPending,
+    isBuyConfirming: isConfirming,
+    isBuyConfirmed: isConfirmed,
+    buyError: error,
+    buyHash: hash,
+  };
 } 

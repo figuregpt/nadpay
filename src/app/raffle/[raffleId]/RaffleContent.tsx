@@ -119,10 +119,14 @@ export default function RaffleContent() {
     allTickets: Array.isArray(allTickets) ? allTickets.length : 0
   });
 
-  // Handle successful purchase
+  // Handle successful purchase and auto refresh
   useEffect(() => {
     if (isConfirmed) {
       alert('Tickets purchased successfully!');
+      // Force page refresh to update data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   }, [isConfirmed]);
 
@@ -221,8 +225,15 @@ export default function RaffleContent() {
     // Check if expired
     if (isExpired()) return false;
     
-    // Check ticket availability
-    if (Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0)) {
+    // Check if sold out
+    const ticketsSold = Number(raffle.ticketsSold || 0);
+    const maxTickets = Number(raffle.maxTickets || 0);
+    if (ticketsSold >= maxTickets) {
+      return false;
+    }
+    
+    // Check if quantity exceeds available tickets
+    if (quantity > (maxTickets - ticketsSold)) {
       return false;
     }
     
@@ -237,6 +248,29 @@ export default function RaffleContent() {
 
   const getRaffleStatus = () => {
     if (!raffle) return 'Unknown';
+    
+    // Check if sold out
+    const ticketsSold = Number(raffle.ticketsSold || 0);
+    const maxTickets = Number(raffle.maxTickets || 0);
+    const isSoldOut = ticketsSold >= maxTickets;
+    
+    // Check if expired
+    const isRaffleExpired = isExpired();
+    
+    // Check if there's a winner
+    const winner = raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' ? raffle.winner : null;
+    
+    if (winner) {
+      return 'Winner Found';
+    }
+    
+    if (isSoldOut || isRaffleExpired || raffle.status === 1) {
+      return 'Ended';
+    }
+    
+    if (isSoldOut) {
+      return 'Sold Out';
+    }
     
     switch (raffle.status) {
       case 0: return 'Active';
@@ -670,7 +704,8 @@ export default function RaffleContent() {
                   <p className="text-gray-600 dark:text-gray-400">
                     {raffle.status !== 0 ? 'This raffle has ended' :
                      isExpired() ? 'This raffle has expired' :
-                     Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0) ? 'All tickets have been sold' :
+                     Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0) ? 'Sold Out - All tickets have been sold' :
+                     quantity > (Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)) ? `Only ${Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)} tickets remaining` :
                      'You have reached the maximum tickets per wallet'}
                   </p>
                 </div>

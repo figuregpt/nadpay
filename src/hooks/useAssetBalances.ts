@@ -77,9 +77,9 @@ export function useAssetBalances() {
         isNativeLoading
       });
       
-      if (nativeBalance && nativeBalance.value > BigInt(0)) {
+      if (nativeBalance) {
         const balanceString = nativeBalance.value.toString();
-        const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+        const formattedBalance = nativeBalance.formatted;
 
         console.log('MON balance found:', {
           raw: balanceString,
@@ -90,7 +90,7 @@ export function useAssetBalances() {
         return {
           ...token,
           balance: balanceString,
-          formattedBalance,
+          formattedBalance: parseFloat(formattedBalance).toFixed(4),
           isLoading: false,
         };
       } else {
@@ -98,7 +98,7 @@ export function useAssetBalances() {
         return {
           ...token,
           balance: '0',
-          formattedBalance: '0',
+          formattedBalance: '0.0000',
           isLoading: isNativeLoading,
         };
       }

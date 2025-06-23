@@ -16,6 +16,7 @@ import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { AssetSelector, SelectedAsset } from "@/components/AssetSelector";
 import { KnownToken, KnownNFT } from "@/lib/knownAssets";
 import { NFTWithMetadata } from "@/hooks/useNFTMetadata";
+import { usePathname } from "next/navigation";
 
 interface TokenInfo {
   address: string;
@@ -35,6 +36,7 @@ interface NFTInfo {
 }
 
 export default function Web3AppContent() {
+  const pathname = usePathname();
   const { address, isConnected, chain, status } = useAccount();
   const { 
     hasAttemptedReconnect,
@@ -48,8 +50,13 @@ export default function Web3AppContent() {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
-  // Template selection state
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  // Determine page type based on pathname
+  const pageType = pathname.includes('/create') ? 'raffle' : 
+                   pathname.includes('/payments') ? 'payment' : 
+                   'raffle'; // Default to raffle for main /app page
+  
+  // Template selection state - auto-select based on page
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(pageType);
   
   // Payment link form state
   const [formData, setFormData] = useState({
@@ -925,7 +932,7 @@ export default function Web3AppContent() {
           });
           
           if (currentAllowance < rewardAmountBigInt) {
-            alert(`Please approve the contract to spend ${selectedToken.symbol} tokens first. You'll see an approval transaction before the raffle creation. Note: If approval takes time, we may automatically extend the raffle duration to meet the minimum 15-minute requirement.`);
+            console.log(`Approval needed for ${selectedToken.symbol} tokens. Current allowance: ${currentAllowance.toString()}, Required: ${rewardAmountBigInt.toString()}`);
             
             // Request approval
             const { request } = await publicClient.simulateContract({
@@ -1066,7 +1073,7 @@ export default function Web3AppContent() {
         const needsApproval = (isApproved as string).toLowerCase() !== contractAddress.toLowerCase() && !isApprovedForAll;
         
         if (needsApproval) {
-          alert(`Please approve the contract to transfer your NFT first. You'll see an approval transaction before the raffle creation.`);
+          console.log(`NFT approval needed for token ID ${tokenId.toString()}`);
           
           // Request approval for the specific token
           const { request } = await publicClient.simulateContract({
@@ -1195,7 +1202,7 @@ export default function Web3AppContent() {
         title: raffleFormData.title,
         description: raffleFormData.description,
         imageHash: raffleFormData.imageHash || "", // Default to empty string
-        rewardType: raffleFormData.rewardType,
+        rewardType: raffleFormData.rewardType, // Hook handles the conversion
         rewardTokenAddress: raffleFormData.rewardTokenAddress, // Should be validated above
         rewardAmount: raffleFormData.rewardAmount,
         ticketPaymentToken: raffleFormData.ticketPaymentToken,
@@ -1302,17 +1309,7 @@ export default function Web3AppContent() {
             </div>
           </div>
           <div className="flex justify-center">
-            <ConnectKitButton.Custom>
-              {({ show }) => (
-                <button
-                  onClick={show}
-                  className="px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold text-lg flex items-center space-x-3"
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span>Connect Wallet</span>
-                </button>
-              )}
-            </ConnectKitButton.Custom>
+            <ConnectKitButton />
           </div>
           <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             <p className="mb-2">✅ HaHa Wallet • MetaMask • Phantom • OKX Wallet</p>
@@ -1351,16 +1348,7 @@ export default function Web3AppContent() {
             >
               Switch to Monad Testnet
             </button>
-            <ConnectKitButton.Custom>
-              {({ show }) => (
-                <button
-                  onClick={show}
-                  className="px-8 py-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-800 transition-colors font-semibold"
-                >
-                  Switch Wallet
-                </button>
-              )}
-            </ConnectKitButton.Custom>
+            <ConnectKitButton />
           </div>
         </div>
       </motion.div>
@@ -1415,75 +1403,15 @@ export default function Web3AppContent() {
         </div>
       </div>
 
-      {/* Template Selection or Selected Template Form */}
-      {!selectedTemplate ? (
-        /* Template Selection */
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Choose a Service Type
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              Select what you want to create
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <motion.button
-              onClick={() => setSelectedTemplate('payment')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-8 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl hover:border-primary-500 transition-all group"
-            >
-              <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">
-                💳
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Payment Link
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                Create a simple payment collection link
-              </p>
-            </motion.button>
-
-            <motion.button
-              onClick={() => setSelectedTemplate('raffle')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-8 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl hover:border-purple-500 transition-all group"
-            >
-              <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">
-                🎫
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Raffle
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                Create raffle with NFT/Token rewards
-              </p>
-            </motion.button>
-          </div>
-        </motion.div>
-      ) : selectedTemplate === 'payment' && !generatedLink ? (
+      {/* Template Form Based on Page */}
+      {selectedTemplate === 'payment' && !generatedLink ? (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
       >
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8 relative">
-            {/* Close button - absolute positioned */}
-            <button
-              onClick={() => setSelectedTemplate(null)}
-              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8">
             
             {/* Header - now perfectly centered */}
             <div className="text-center mb-8">
@@ -1672,12 +1600,6 @@ export default function Web3AppContent() {
 
               {/* Create Button */}
               <div className="flex space-x-4">
-                <button
-                  onClick={() => setSelectedTemplate(null)}
-                  className="flex-1 px-6 py-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors font-semibold"
-                >
-                  Back to Templates
-                </button>
               <button
                 onClick={handleCreatePaymentLink}
                 disabled={isCreating || isConfirming}
@@ -1717,14 +1639,7 @@ export default function Web3AppContent() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8 relative">
-            {/* Close button - absolute positioned */}
-            <button
-              onClick={() => setSelectedTemplate(null)}
-              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-8">
             
             {/* Header - now perfectly centered */}
             <div className="text-center mb-8">
@@ -1794,7 +1709,7 @@ export default function Web3AppContent() {
                     }
                   }}
                   assetType="both"
-                  showOnlyOwned={true}
+                  showOnlyOwned={false}
                   placeholder="Select token or NFT to give as reward..."
                 />
                   
@@ -1979,12 +1894,6 @@ export default function Web3AppContent() {
 
               {/* Create Button */}
               <div className="flex space-x-4">
-                <button
-                  onClick={() => setSelectedTemplate(null)}
-                  className="flex-1 px-6 py-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors font-semibold"
-                >
-                  Back to Templates
-                </button>
                 <button
                   onClick={handleCreateRaffle}
                   disabled={isRaffleCreating || isRaffleConfirming}
