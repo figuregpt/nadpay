@@ -11,14 +11,28 @@ async function getMongoClient() {
   return client;
 }
 
+// Get base URL from environment or request
+function getBaseUrl(request: NextRequest): string {
+  // Check environment variable first
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  
+  // Fallback to request headers
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'https';
+  return `${protocol}://${host}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const baseUrl = getBaseUrl(request);
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
 
     if (!code || !state) {
-      return NextResponse.redirect('http://localhost:3000/app/dashboard?error=auth_failed');
+      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=auth_failed`);
     }
 
     // Decode state to get wallet address
@@ -34,7 +48,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: process.env.X_CALLBACK_URI || 'http://localhost:3000/api/auth/twitter/callback',
+        redirect_uri: process.env.X_CALLBACK_URI || `${baseUrl}/api/auth/twitter/callback`,
         code_verifier: 'challenge'
       })
     });
@@ -42,7 +56,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      return NextResponse.redirect('http://localhost:3000/app/dashboard?error=token_failed');
+      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=token_failed`);
     }
 
     // Get user info from Twitter
@@ -55,7 +69,7 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
 
     if (!userData.data) {
-      return NextResponse.redirect('http://localhost:3000/app/dashboard?error=user_failed');
+      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=user_failed`);
     }
 
     // Save to MongoDB
@@ -81,9 +95,10 @@ export async function GET(request: NextRequest) {
       { upsert: true }
     );
 
-    return NextResponse.redirect('http://localhost:3000/app/dashboard?success=twitter_connected');
+    return NextResponse.redirect(`${baseUrl}/app/dashboard?success=twitter_connected`);
   } catch (error) {
     console.error('Twitter callback error:', error);
-    return NextResponse.redirect('http://localhost:3000/app/dashboard?error=callback_failed');
+    const baseUrl = getBaseUrl(request);
+    return NextResponse.redirect(`${baseUrl}/app/dashboard?error=callback_failed`);
   }
 } 

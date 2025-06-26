@@ -962,7 +962,7 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
                   <p className="mt-1 text-gray-900 dark:text-white">Escrow-Based Asset Trading</p>
                 </div>
-              </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -985,14 +985,14 @@ export default function DocsPage() {
       case "contract-addresses":
         return (
           <div className="space-y-8">
-            <div>
+                <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 Contract Addresses
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
                 All deployed contract addresses on Monad Testnet.
               </p>
-            </div>
+                </div>
 
             <div className="space-y-6">
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
@@ -1016,8 +1016,8 @@ export default function DocsPage() {
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
                     Payment links with multi-token support and advanced analytics
                   </p>
-                </div>
               </div>
+            </div>
 
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
                 <div className="bg-purple-50 dark:bg-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
@@ -1105,10 +1105,10 @@ export default function DocsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   🔒 Core Security Features
-                </h3>
+              </h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <Shield className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
