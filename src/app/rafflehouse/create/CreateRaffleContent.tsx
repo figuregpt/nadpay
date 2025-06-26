@@ -489,7 +489,36 @@ export default function CreateRaffleContent() {
                 
                 {/* Custom Wallet Button */}
                 <div className="relative">
-                  <ConnectKitButton />
+                  {isConnected ? (
+                    <ConnectKitButton.Custom>
+                      {({ show, truncatedAddress, ensName }) => (
+                        <button
+                          onClick={show}
+                          className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                        >
+                          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold">
+                              {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium hidden sm:inline">
+                            {ensName || truncatedAddress}
+                          </span>
+                        </button>
+                      )}
+                    </ConnectKitButton.Custom>
+                  ) : (
+                    <ConnectKitButton.Custom>
+                      {({ show }) => (
+                        <button
+                          onClick={show}
+                          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
+                        >
+                          Connect Wallet
+                        </button>
+                      )}
+                    </ConnectKitButton.Custom>
+                  )}
                 </div>
               </div>
             </div>
@@ -614,7 +643,36 @@ export default function CreateRaffleContent() {
               
               {/* Custom Wallet Button */}
               <div className="relative">
-                <ConnectKitButton />
+                {isConnected ? (
+                  <ConnectKitButton.Custom>
+                    {({ show, truncatedAddress, ensName }) => (
+                      <button
+                        onClick={show}
+                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                      >
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold">
+                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium hidden sm:inline">
+                          {ensName || truncatedAddress}
+                        </span>
+                      </button>
+                    )}
+                  </ConnectKitButton.Custom>
+                ) : (
+                  <ConnectKitButton.Custom>
+                    {({ show }) => (
+                      <button
+                        onClick={show}
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
+                      >
+                        Connect Wallet
+                      </button>
+                    )}
+                  </ConnectKitButton.Custom>
+                )}
               </div>
             </div>
           </div>
@@ -656,7 +714,16 @@ export default function CreateRaffleContent() {
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                   Connect your wallet to create a raffle
                 </p>
-                <ConnectKitButton />
+                <ConnectKitButton.Custom>
+                  {({ show }) => (
+                    <button
+                      onClick={show}
+                      className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                    >
+                      Connect Wallet
+                    </button>
+                  )}
+                </ConnectKitButton.Custom>
               </div>
             ) : chain?.id !== 10143 ? (
               <div className="text-center py-8">

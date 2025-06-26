@@ -78,7 +78,16 @@ export default function CreateRafflePage() {
                   )}
                 </ConnectKitButton.Custom>
               ) : (
-                <ConnectKitButton />
+                <ConnectKitButton.Custom>
+                  {({ show }) => (
+                    <button
+                      onClick={show}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    >
+                      Connect Wallet
+                    </button>
+                  )}
+                </ConnectKitButton.Custom>
               )}
             </div>
           </div>
