@@ -43,3 +43,8 @@ pnpm-lock.yaml
 
 # Railway
 .railway/
+
+# Envio example files
+envio-example-handlers.ts
+envio-example-config.yaml
+envio-example-schema.graphql

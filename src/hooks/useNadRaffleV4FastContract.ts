@@ -178,15 +178,50 @@ export function useRaffleV3(raffleId: number) {
 export function useCreatorRafflesV3(creatorAddress?: string) {
   const [raffles, setRaffles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const publicClient = usePublicClient();
   
   const refetch = async () => {
-    if (!creatorAddress) return;
+    if (!creatorAddress || !publicClient) return;
     
     setLoading(true);
     try {
-      // This would need to be implemented based on contract capabilities
-      // For now, return empty array
-      setRaffles([]);
+      // Get total raffles to know how many to check
+      const totalRaffles = await publicClient.readContract({
+        address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
+        abi: FastABI,
+        functionName: 'getTotalRaffles',
+      }) as bigint;
+
+      const creatorRaffles: any[] = [];
+      
+      // Check each raffle to see if creator matches
+      for (let i = 0; i < Number(totalRaffles); i++) {
+        try {
+          const raffle = await publicClient.readContract({
+            address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
+            abi: FastABI,
+            functionName: 'getRaffle',
+            args: [BigInt(i)],
+          });
+          
+          // Format the raffle data
+          const formattedRaffle = formatRaffleV3(raffle);
+          
+          // Check if this raffle belongs to the creator
+          if (formattedRaffle.creator.toLowerCase() === creatorAddress.toLowerCase()) {
+            creatorRaffles.push({
+              ...formattedRaffle,
+              id: i.toString(), // Add string ID for compatibility
+              internalId: i, // Keep numeric ID for contract calls
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching raffle ${i}:`, error);
+          // Continue with next raffle
+        }
+      }
+      
+      setRaffles(creatorRaffles);
     } catch (error) {
       console.error('Error fetching creator raffles:', error);
       setRaffles([]);
@@ -197,7 +232,7 @@ export function useCreatorRafflesV3(creatorAddress?: string) {
 
   useEffect(() => {
     refetch();
-  }, [creatorAddress]);
+  }, [creatorAddress, publicClient]);
 
   return {
     data: raffles,

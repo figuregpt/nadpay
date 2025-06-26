@@ -120,8 +120,8 @@ export default function DashboardContent() {
   const publicClient = usePublicClient();
   const { theme, setTheme } = useTheme();
   
-  // Contract constants - V2
-  const CONTRACT_ADDRESS = "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`;
+  // Contract constants - V2 Ultra-Secure
+  const CONTRACT_ADDRESS = "0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25" as `0x${string}`;
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles' | 'my-tickets'>('payment-links');
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
@@ -165,7 +165,7 @@ export default function DashboardContent() {
     linksError: linksError?.message,
     totalLinks: totalLinks?.toString(),
     totalLinksError: totalLinksError?.message,
-    contractAddress: "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905"
+    contractAddress: CONTRACT_ADDRESS
   });
   // V4 Fast contract - raffle hooks
   const {
