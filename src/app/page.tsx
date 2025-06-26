@@ -1,7 +1,7 @@
 "use client";
 
-
-import { Moon, Sun, ArrowRight, Link2, Zap, Shield, Globe, Users, CheckCircle, Sparkles, Wallet } from "lucide-react";
+import { useState } from "react";
+import { Moon, Sun, ArrowRight, Link2, Zap, Shield, Globe, Users, CheckCircle, Sparkles, Wallet, Trophy, ChevronDown, ArrowLeftRight, CreditCard } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 
@@ -20,6 +20,7 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function HomePage() {
   const { theme, setTheme } = useTheme();
+  const [isNadToolsOpen, setIsNadToolsOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white dark:bg-dark-950">
@@ -63,13 +64,59 @@ export default function HomePage() {
                 <Moon className="w-4 h-4" />
               )}
             </button>
+            
+            {/* RaffleHouse Link */}
             <a
-              href="/app"
-              className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm sm:text-base"
+              href="/rafflehouse"
+              className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm sm:text-base flex items-center"
             >
-              <span className="hidden sm:inline">Launch App</span>
-              <span className="sm:hidden">Launch</span>
+              <Trophy className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">RaffleHouse</span>
+              <span className="sm:hidden">Raffle</span>
             </a>
+            
+            {/* NadTools Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsNadToolsOpen(!isNadToolsOpen)}
+                onBlur={() => setTimeout(() => setIsNadToolsOpen(false), 150)}
+                className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm sm:text-base flex items-center"
+            >
+                <span className="hidden sm:inline">NadTools</span>
+                <span className="sm:hidden">Tools</span>
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isNadToolsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isNadToolsOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-700 py-2 z-50">
+                  <a
+                    href="/nadswap"
+                    className="flex items-start px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                      <ArrowLeftRight className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm">NadSwap</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Trade NFTs directly with other users</p>
+                    </div>
+                  </a>
+                  
+                  <a
+                    href="/nadpay"
+                    className="flex items-start px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                      <CreditCard className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm">NadPay</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Create payment links and subscriptions</p>
+                    </div>
+            </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -83,29 +130,37 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-display-xl md:text-display-2xl font-inter text-gray-900 dark:text-white mb-6">
-              Payment Solutions
+              Complete DeFi Suite
               <br />
               <span className="bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
                 on Monad
               </span>
             </h1>
-            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Create payment links, subscriptions, and more on the fastest EVM-compatible blockchain. 
-              Simple, secure, and lightning-fast transactions.
+            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+              Experience the future of decentralized finance with our comprehensive suite of tools. 
+              Trade NFTs, create payment links, run raffles, and more on the fastest EVM-compatible blockchain.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="/app"
-                className="px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
+                href="/rafflehouse"
+                className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
               >
-                Launch App
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <Trophy className="w-5 h-5 mr-2" />
+                RaffleHouse
               </a>
               <a
-                href="/docs"
-                className="px-8 py-4 border border-gray-200 dark:border-dark-700 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors text-body-lg font-inter font-semibold flex items-center justify-center"
+                href="/nadswap"
+                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
               >
-                Documentation
+                <ArrowLeftRight className="w-5 h-5 mr-2" />
+                NadSwap
+              </a>
+              <a
+                href="/nadpay"
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                NadPay
               </a>
             </div>
           </motion.div>
@@ -123,272 +178,138 @@ export default function HomePage() {
             className="text-center mb-20"
           >
             <h2 className="text-display-lg font-inter text-gray-900 dark:text-white mb-4">
-              How it Works
+              Our Services
             </h2>
-            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Get started with NadPay in just 3 simple steps
+            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Discover the complete suite of DeFi tools built on Monad blockchain
             </p>
           </motion.div>
 
-          <div className="max-w-5xl mx-auto">
-            {/* Step 1 */}
+          {/* Services Grid */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* RaffleHouse */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
-              className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 mb-16 lg:mb-20"
+              className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-dark-700 relative overflow-hidden group hover:shadow-xl transition-all duration-300"
             >
-              <div className="lg:w-1/2 order-1 lg:order-1">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                    <span className="text-lg lg:text-xl font-bold text-white">1</span>
-                  </div>
-                  <div className="h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 flex-1 hidden lg:block"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <Trophy className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-4">Connect Your Wallet</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-base lg:text-lg leading-relaxed mb-6">
-                  Simply connect your Web3 wallet to Monad Testnet. We support MetaMask, Phantom, HaHa Wallet and more.
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">RaffleHouse</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+                  Create and participate in NFT raffles. Fair, transparent, and automated prize distribution with instant payouts.
                 </p>
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center space-x-2 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 rounded-lg">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-orange-700 dark:text-orange-300">Lightning Fast</span>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-green-100 dark:bg-green-900/20 px-3 py-2 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-green-700 dark:text-green-300">Secure</span>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:w-1/2 order-2 lg:order-2">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-dark-700 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <Wallet className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Connect Wallet</h4>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">Choose your preferred wallet</p>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-200 dark:border-dark-600">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-sm"></div>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-white">MetaMask</span>
-                        </div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-200 dark:border-dark-600">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-white">Phantom</span>
-                        </div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-200 dark:border-dark-600">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-lg"></div>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-white">HaHa Wallet</span>
-                        </div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <span className="inline-flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span>Monad Testnet Ready</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                    NFT & Token Raffles
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                    Automated Finalization
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                    Instant Prize Distribution
+                  </li>
+                </ul>
+                <a
+                  href="/rafflehouse"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                >
+                  Launch RaffleHouse
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </a>
               </div>
             </motion.div>
 
-            {/* Step 2 */}
+            {/* NadSwap */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
-              className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 mb-16 lg:mb-20"
+              className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-dark-700 relative overflow-hidden group hover:shadow-xl transition-all duration-300"
             >
-              <div className="lg:w-1/2 order-1 lg:order-2">
-                <div className="flex items-center mb-6 lg:flex-row-reverse">
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center ml-4 lg:ml-0 lg:mr-4 shadow-lg">
-                    <span className="text-lg lg:text-xl font-bold text-white">2</span>
-                  </div>
-                  <div className="h-0.5 bg-gradient-to-r from-green-500 to-emerald-500 flex-1 hidden lg:block"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <ArrowLeftRight className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-4">Create Payment Link</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-base lg:text-lg leading-relaxed mb-6">
-                  Set your payment amount, add a description, and configure limits. Our intuitive dashboard makes it super easy.
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">NadSwap</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+                  Trade NFTs and tokens directly with other users. Secure escrow system with automated expiration handling.
                 </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <Sparkles className="w-6 h-6 text-blue-500 mb-2" />
-                    <p className="text-sm text-blue-700 dark:text-blue-300">Custom Amounts</p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <Shield className="w-6 h-6 text-purple-500 mb-2" />
-                    <p className="text-sm text-purple-700 dark:text-purple-300">Usage Limits</p>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:w-1/2 order-2 lg:order-1">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-dark-700 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
-                  
-                  <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <Link2 className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Create Payment Link</h4>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm">Configure your payment details</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Amount (MON)</label>
-                      <div className="mt-1 bg-gray-50 dark:bg-dark-700 rounded-lg p-3 border border-gray-200 dark:border-dark-600">
-                        <span className="text-lg font-semibold text-gray-900 dark:text-white">10.00</span>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Description</label>
-                      <div className="mt-1 bg-gray-50 dark:bg-dark-700 rounded-lg p-3 border border-gray-200 dark:border-dark-600">
-                        <span className="text-gray-700 dark:text-gray-300">Coffee payment</span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Max Uses</label>
-                        <div className="mt-1 bg-gray-50 dark:bg-dark-700 rounded-lg p-3 border border-gray-200 dark:border-dark-600 text-center">
-                          <span className="text-gray-700 dark:text-gray-300 font-medium">100</span>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Expires</label>
-                        <div className="mt-1 bg-gray-50 dark:bg-dark-700 rounded-lg p-3 border border-gray-200 dark:border-dark-600 text-center">
-                          <span className="text-gray-700 dark:text-gray-300 font-medium">30 days</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-3 text-center font-medium opacity-75">
-                        Generate Link
-                      </div>
-                      <div className="text-xs text-gray-500 text-center mt-2">
-                        Preview mode - not functional
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    Direct P2P Trading
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    Secure Escrow System
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    Multi-Asset Support
+                  </li>
+                </ul>
+                <a
+                  href="/nadswap"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                >
+                  Launch NadSwap
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </a>
               </div>
             </motion.div>
 
-            {/* Step 3 */}
+            {/* NadPay */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
               viewport={{ once: true }}
-              className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12"
+              className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-dark-700 relative overflow-hidden group hover:shadow-xl transition-all duration-300"
             >
-              <div className="lg:w-1/2 order-1 lg:order-1">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                    <span className="text-lg lg:text-xl font-bold text-white">3</span>
-                  </div>
-                  <div className="h-0.5 bg-gradient-to-r from-orange-500 to-red-500 flex-1 hidden lg:block"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-teal-500"></div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <CreditCard className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-4">Share & Get Paid</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-base lg:text-lg leading-relaxed mb-6">
-                  Copy your payment link and share it anywhere - social media, email, QR codes. Get paid instantly when someone uses it.
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">NadPay</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+                  Create payment links and manage subscriptions. Perfect for merchants, creators, and service providers.
                 </p>
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 px-4 py-2 rounded-full border border-orange-200 dark:border-orange-800">
-                    <Globe className="w-4 h-4 text-orange-600" />
-                    <span className="text-sm text-orange-700 dark:text-orange-300">Global</span>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 px-4 py-2 rounded-full border border-green-200 dark:border-green-800">
-                    <Zap className="w-4 h-4 text-green-600" />
-                    <span className="text-sm text-green-700 dark:text-green-300">Instant</span>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 px-4 py-2 rounded-full border border-purple-200 dark:border-purple-800">
-                    <CheckCircle className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm text-purple-700 dark:text-purple-300">Secure</span>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:w-1/2 order-2 lg:order-2">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-dark-700 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
-                  
-                  <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <ArrowRight className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Share & Get Paid</h4>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm">Your payment link is ready</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2 block">Your Payment Link</label>
-                      <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 border border-gray-200 dark:border-dark-600 relative">
-                        <div className="flex items-center space-x-2">
-                          <Link2 className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600 dark:text-gray-300 font-mono break-all">
-                            https://nadpay.xyz/pay/abc123...
-                          </span>
-                        </div>
-                        <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center opacity-75">
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Copy Link</span>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-center opacity-75">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">QR Code</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-green-700 dark:text-green-300">Payment Received!</p>
-                          <p className="text-xs text-green-600 dark:text-green-400">10.00 MON from 0x1234...5678</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-gray-500 text-center">
-                      Demo notification - not functional
-                    </div>
-                  </div>
-                </div>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    Payment Links
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    Subscription Management
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    Usage Analytics
+                  </li>
+                </ul>
+                <a
+                  href="/nadpay"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                >
+                  Launch NadPay
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </a>
               </div>
             </motion.div>
           </div>
-
         </div>
       </section>
 
@@ -403,10 +324,10 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <h2 className="text-display-lg font-inter text-gray-900 dark:text-white mb-4">
-              Why Choose NadPay?
+              Why Choose Our Platform?
             </h2>
-            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Built for the future of payments on Monad blockchain
+            <p className="text-body-xl font-inter text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Experience the power of decentralized finance with our comprehensive suite built on Monad blockchain
             </p>
           </motion.div>
 
@@ -428,10 +349,10 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
                     <Zap className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4">Lightning Fast Payments</h3>
+                  <h3 className="text-2xl font-bold mb-4">Lightning Fast DeFi</h3>
                   <p className="text-white/90 text-lg leading-relaxed">
                     Experience the speed of Monad - the fastest EVM blockchain with sub-second finality. 
-                    No more waiting for confirmations.
+                    Trade, pay, and participate in raffles without waiting for confirmations.
                   </p>
                 </div>
               </motion.div>
@@ -452,7 +373,7 @@ export default function HomePage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">100% Decentralized</h3>
                       <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        Direct wallet-to-wallet payments with no intermediaries or chargebacks.
+                        Direct peer-to-peer transactions with no intermediaries. Your assets, your control.
                       </p>
                     </div>
                   </div>
@@ -470,9 +391,9 @@ export default function HomePage() {
                       <Globe className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Global Reach</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Global Access</h3>
                       <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        Accept payments from anywhere in the world, instantly and without restrictions.
+                        Trade, pay, and participate from anywhere in the world, instantly and without restrictions.
                       </p>
                     </div>
                   </div>
@@ -490,9 +411,9 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-4">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">All-In-One Platform</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Complete DeFi Suite</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Payment links, subscriptions, and analytics in one powerful dashboard.
+                  Trading, payments, and raffles all in one powerful ecosystem with unified experience.
                 </p>
               </motion.div>
 
@@ -508,7 +429,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Zero Friction</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  No sign-ups required. Customers pay with just one click using their preferred wallet.
+                  No complex sign-ups. Just connect your wallet and start using all services immediately.
                 </p>
               </motion.div>
 
@@ -522,9 +443,9 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Customer Rewards</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Community Driven</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Build loyalty with exclusive perks for repeat customers.
+                  Built by the community, for the community. Fair, transparent, and always improving.
                 </p>
               </motion.div>
 

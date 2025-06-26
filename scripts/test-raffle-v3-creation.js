@@ -1,13 +1,13 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  console.log("🧪 Testing Raffle V3 Creation...");
+  console.log("🎫 Testing Raffle V3 Creation with Native MON Reward...");
   
   const [deployer] = await ethers.getSigners();
   console.log("Deployer address:", deployer.address);
   
   // V3 Contract address
-  const RAFFLE_V3_ADDRESS = "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0";
+  const RAFFLE_V3_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Updated V3 with 13-minute minimum
   
   // Get contract instance
   const NadRaffleV3 = await ethers.getContractAt("NadRaffleV3", RAFFLE_V3_ADDRESS);

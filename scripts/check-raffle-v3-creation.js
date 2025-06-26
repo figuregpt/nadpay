@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat');
 
 async function main() {
-  const contractAddress = "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0";
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Updated V3 with 13-minute minimum
   
   // Connect to the contract
   const RaffleV3 = await ethers.getContractAt("NadRaffleV3", contractAddress);

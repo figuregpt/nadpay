@@ -412,7 +412,7 @@ export default function PaymentContent() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <a 
-              href="/app"
+              href="/"
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
             >
               <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
@@ -423,6 +423,22 @@ export default function PaymentContent() {
               </div>
             </a>
             <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center space-x-2">
+                <a 
+                  href="/nadswap"
+                  className="px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+                >
+                  NadSwap
+                </a>
+                <a 
+                  href="/rafflehouse"
+                  className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+                >
+                  RaffleHouse
+                </a>
+              </div>
+              
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="inline-flex items-center p-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
@@ -435,7 +451,7 @@ export default function PaymentContent() {
                 )}
               </button>
               <a 
-                href="/app"
+                href="/nadpay"
                 className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity shadow-sm"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -457,16 +473,8 @@ export default function PaymentContent() {
             transition={{ duration: 0.6 }}
             className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 overflow-hidden"
           >
-            {/* Cover Image */}
-            {paymentLink.coverImage && (
-              <div className="aspect-video w-full bg-gray-100 dark:bg-dark-700">
-                <img
-                  src={paymentLink.coverImage}
-                  alt={paymentLink.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+            {/* Cover Image - Removed in ultra-secure contract */}
+            {/* No cover image available in ultra-secure version */}
 
             <div className="p-8">
               {/* Header */}
@@ -474,8 +482,9 @@ export default function PaymentContent() {
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   {paymentLink.title}
                 </h1>
+                {/* Description removed in ultra-secure contract */}
                 <p className="text-gray-600 dark:text-gray-400 text-lg">
-                  {paymentLink.description}
+                  Payment Link #{paymentLink.linkId}
                 </p>
               </div>
 

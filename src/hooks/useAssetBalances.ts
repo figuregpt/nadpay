@@ -16,6 +16,14 @@ export interface NFTBalance extends KnownNFT {
   error?: string;
 }
 
+// Rate limiting and caching
+const RATE_LIMIT_DELAY = 100; // 100ms between calls
+const CACHE_DURATION = 30000; // 30 seconds cache
+const balanceCache = new Map<string, { data: any; timestamp: number }>();
+
+// Helper to add delay between calls
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // ERC-20 ABI for balance checking
 const ERC20_ABI = [
   {
@@ -57,58 +65,127 @@ export function useAssetBalances() {
 
   // Format token balance with proper decimals
   const formatTokenBalance = (balance: string, decimals: number): string => {
-    const balanceNumber = parseFloat(balance) / Math.pow(10, decimals);
-    
-    if (balanceNumber === 0) return '0';
-    if (balanceNumber < 0.0001) return '< 0.0001';
-    if (balanceNumber < 1) return balanceNumber.toFixed(4);
-    if (balanceNumber < 1000) return balanceNumber.toFixed(2);
-    if (balanceNumber < 1000000) return `${(balanceNumber / 1000).toFixed(1)}K`;
-    return `${(balanceNumber / 1000000).toFixed(1)}M`;
+    try {
+      const balanceNumber = parseFloat(balance) / Math.pow(10, decimals);
+      
+      if (balanceNumber === 0) return '0';
+      if (balanceNumber < 0.0001) return '< 0.0001';
+      if (balanceNumber < 1) return balanceNumber.toFixed(4);
+      if (balanceNumber < 1000) return balanceNumber.toFixed(2);
+      if (balanceNumber < 1000000) return `${(balanceNumber / 1000).toFixed(1)}K`;
+      return `${(balanceNumber / 1000000).toFixed(1)}M`;
+    } catch (error) {
+      console.error('Error formatting balance:', error, 'balance:', balance, 'decimals:', decimals);
+      return '0';
+    }
   };
 
-  // Real function to fetch token balance
-  const fetchTokenBalance = async (token: KnownToken): Promise<TokenBalance> => {
-    // For MON (native token), use real balance from wagmi
-    if (token.symbol === 'MON') {
-      console.log('Fetching MON balance...', {
-        nativeBalance: nativeBalance?.formatted,
-        nativeBalanceValue: nativeBalance?.value.toString(),
-        isNativeLoading
-      });
-      
-      if (nativeBalance) {
-        const balanceString = nativeBalance.value.toString();
-        const formattedBalance = nativeBalance.formatted;
+  // Check cache first
+  const getCachedBalance = (cacheKey: string) => {
+    const cached = balanceCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data;
+    }
+    return null;
+  };
 
-        console.log('MON balance found:', {
-          raw: balanceString,
-          formatted: formattedBalance,
-          decimals: token.decimals
-        });
+  // Cache balance result
+  const setCachedBalance = (cacheKey: string, data: any) => {
+    balanceCache.set(cacheKey, { data, timestamp: Date.now() });
+  };
+
+  // Real function to fetch token balance with rate limiting and caching
+  const fetchTokenBalance = async (token: KnownToken, delayMs: number = 0): Promise<TokenBalance> => {
+    // Add delay for rate limiting
+    if (delayMs > 0) {
+      await delay(delayMs);
+    }
+    
+    // For MON (native token), use wagmi native balance if available, otherwise use consistent approach
+    if (token.symbol === 'MON' || token.address === "0x0000000000000000000000000000000000000000") {
+      // Try to use wagmi native balance first (faster when available)
+      if (nativeBalance && nativeBalance.value !== undefined && !isNativeLoading) {
+        const balanceString = nativeBalance.value.toString();
+        const formattedBalance = formatTokenBalance(balanceString, token.decimals);
 
         return {
           ...token,
           balance: balanceString,
-          formattedBalance: parseFloat(formattedBalance).toFixed(4),
+          formattedBalance,
           isLoading: false,
         };
-      } else {
-        console.log('No MON balance or still loading');
+      }
+      
+      // Fallback: Treat MON like other tokens for consistency
+      // Check cache first
+      const cacheKey = `native-${address}`;
+      const cachedResult = getCachedBalance(cacheKey);
+      if (cachedResult) {
         return {
           ...token,
-          balance: '0',
-          formattedBalance: '0.0000',
-          isLoading: isNativeLoading,
+          ...cachedResult,
+          isLoading: false,
         };
       }
+      
+      // Use publicClient to get native balance if wagmi fails
+      if (publicClient && address) {
+        try {
+          const balance = await publicClient.getBalance({
+            address: address as `0x${string}`
+          });
+          
+          const balanceString = balance.toString();
+          const formattedBalance = formatTokenBalance(balanceString, token.decimals);
+
+          const result = {
+            balance: balanceString,
+            formattedBalance,
+          };
+
+          // Cache the result
+          setCachedBalance(cacheKey, result);
+
+          return {
+            ...token,
+            ...result,
+            isLoading: false,
+          };
+        } catch (error) {
+          // For MON, always show it even if balance fetch fails
+          return {
+            ...token,
+            balance: '0',
+            formattedBalance: 'Rate Limited',
+            isLoading: false,
+            error: `Failed to fetch MON balance`,
+          };
+        }
+      }
+      
+      // Final fallback for MON
+      return {
+        ...token,
+        balance: '0',
+        formattedBalance: '0',
+        isLoading: isNativeLoading,
+      };
+    }
+    
+    // Check cache first for other tokens
+    const cacheKey = `${token.address}-${address}`;
+    const cachedResult = getCachedBalance(cacheKey);
+    if (cachedResult) {
+      return {
+        ...token,
+        ...cachedResult,
+        isLoading: false,
+      };
     }
     
     // For other tokens, try to fetch real balance from contract
     if (publicClient && address && token.address !== "0x0000000000000000000000000000000000000000") {
       try {
-        console.log(`Fetching ${token.symbol} balance from contract ${token.address}...`);
-        
         const balance = await publicClient.readContract({
           address: token.address as `0x${string}`,
           abi: ERC20_ABI,
@@ -118,20 +195,34 @@ export function useAssetBalances() {
         
         const balanceString = balance.toString();
         const formattedBalance = formatTokenBalance(balanceString, token.decimals);
-        
-        console.log(`${token.symbol} balance:`, {
-          raw: balanceString,
-          formatted: formattedBalance
-        });
+
+        const result = {
+          balance: balanceString,
+          formattedBalance,
+        };
+
+        // Cache the result
+        setCachedBalance(cacheKey, result);
 
         return {
           ...token,
-          balance: balanceString,
-          formattedBalance,
+          ...result,
           isLoading: false,
         };
       } catch (error) {
-        console.warn(`Failed to fetch ${token.symbol} balance:`, error);
+        // Silently handle rate limiting for non-critical tokens
+        
+        // For important tokens like CHOG, return with error but still show in UI
+        if (token.symbol === 'CHOG' || token.symbol === 'MON') {
+          return {
+            ...token,
+            balance: '0',
+            formattedBalance: 'Rate Limited',
+            isLoading: false,
+            error: `Rate limited or network error`,
+          };
+        }
+        
         return {
           ...token,
           balance: '0',
@@ -142,6 +233,7 @@ export function useAssetBalances() {
       }
     }
 
+    // No public client or invalid address
     // Return zero balance if no public client or invalid address
     return {
       ...token,
@@ -153,12 +245,8 @@ export function useAssetBalances() {
 
   // Real function to fetch NFT balance
   const fetchNFTBalance = async (nft: KnownNFT): Promise<NFTBalance> => {
-    // For now, return zero ownership since we don't have real NFT contracts deployed
-    // This can be implemented when real NFT contracts are available
     if (publicClient && address && nft.address !== "0x0000000000000000000000000000000000000000") {
       try {
-        console.log(`Fetching ${nft.name} NFT balance from contract ${nft.address}...`);
-        
         const balance = await publicClient.readContract({
           address: nft.address as `0x${string}`,
           abi: ERC721_ABI,
@@ -168,6 +256,12 @@ export function useAssetBalances() {
         
         const totalOwned = Number(balance);
         const ownedTokens: string[] = [];
+        
+        console.log(`🔍 NFT Balance Debug for ${nft.name}:`, {
+          contract: nft.address,
+          user: address,
+          totalOwned
+        });
         
         // If user owns NFTs, try to get token IDs (this might fail for some contracts)
         if (totalOwned > 0) {
@@ -179,6 +273,8 @@ export function useAssetBalances() {
                 functionName: 'tokenOfOwnerByIndex',
                 args: [address as `0x${string}`, BigInt(i)]
               });
+              
+              console.log(`🎯 Token at index ${i}:`, tokenId.toString());
               ownedTokens.push(tokenId.toString());
             }
           } catch (error) {
@@ -189,11 +285,8 @@ export function useAssetBalances() {
             }
           }
         }
-        
-        console.log(`${nft.name} NFT balance:`, {
-          totalOwned,
-          ownedTokens
-        });
+
+        console.log(`✅ Final ownedTokens for ${nft.name}:`, ownedTokens);
 
         return {
           ...nft,
@@ -224,7 +317,10 @@ export function useAssetBalances() {
 
   // Fetch all balances
   const fetchAllBalances = async () => {
+    console.log('🚀 fetchAllBalances called', { address, isConnected });
+    
     if (!address || !isConnected) {
+      console.log('❌ No address or not connected, setting empty balances');
       // Initialize empty balances when not connected
       setTokenBalances(KNOWN_TOKENS.map(token => ({
         ...token,
@@ -242,6 +338,7 @@ export function useAssetBalances() {
       return;
     }
 
+    console.log('✅ Starting balance fetch for address:', address);
     setIsLoading(true);
 
     try {
@@ -260,9 +357,34 @@ export function useAssetBalances() {
         isLoading: true,
       })));
 
-      // Fetch token balances
-      const tokenPromises = KNOWN_TOKENS.map(token => fetchTokenBalance(token));
-      const tokenResults = await Promise.allSettled(tokenPromises);
+      // Fetch token balances with staggered loading to avoid rate limits
+      // Priority: MON first, then CHOG, then others
+      const priorityTokens = KNOWN_TOKENS.filter(token => token.symbol === 'MON' || token.symbol === 'CHOG');
+      const otherTokens = KNOWN_TOKENS.filter(token => token.symbol !== 'MON' && token.symbol !== 'CHOG');
+      
+      // Fetch priority tokens first to ensure they always load
+      
+      // Fetch priority tokens first (no delay)
+      const priorityPromises = priorityTokens.map(token => fetchTokenBalance(token, 0));
+      const priorityResults = await Promise.allSettled(priorityPromises);
+      
+      // Fetch other tokens with staggered delays
+      const otherPromises = otherTokens.map((token, index) => 
+        fetchTokenBalance(token, index * RATE_LIMIT_DELAY)
+      );
+      const otherResults = await Promise.allSettled(otherPromises);
+      
+      // Combine results in original order
+      const tokenResults: any[] = [];
+      KNOWN_TOKENS.forEach((token, index) => {
+        const priorityIndex = priorityTokens.findIndex(p => p.symbol === token.symbol);
+        if (priorityIndex !== -1) {
+          tokenResults[index] = priorityResults[priorityIndex];
+        } else {
+          const otherIndex = otherTokens.findIndex(o => o.symbol === token.symbol);
+          tokenResults[index] = otherResults[otherIndex];
+        }
+      });
       
       const tokenBalancesData = tokenResults.map((result, index) => {
         if (result.status === 'fulfilled') {
@@ -279,8 +401,15 @@ export function useAssetBalances() {
       });
 
       // Fetch NFT balances
+      console.log('🎯 Starting NFT balance fetch for', KNOWN_NFTS.length, 'collections');
       const nftPromises = KNOWN_NFTS.map(nft => fetchNFTBalance(nft));
       const nftResults = await Promise.allSettled(nftPromises);
+      
+      console.log('🎯 NFT results:', nftResults.map((result, index) => ({
+        collection: KNOWN_NFTS[index].name,
+        status: result.status,
+        totalOwned: result.status === 'fulfilled' ? result.value.totalOwned : 0
+      })));
       
       const nftBalancesData = nftResults.map((result, index) => {
         if (result.status === 'fulfilled') {
@@ -298,6 +427,12 @@ export function useAssetBalances() {
 
       setTokenBalances(tokenBalancesData);
       setNftBalances(nftBalancesData);
+      
+      console.log('✅ Final NFT balances set:', nftBalancesData.map(nft => ({
+        name: nft.name,
+        totalOwned: nft.totalOwned,
+        ownedTokens: nft.ownedTokens
+      })));
     } catch (error) {
       console.error('Error fetching balances:', error);
     } finally {

@@ -119,7 +119,7 @@ contract NadRaffleV2 is ReentrancyGuard, Ownable {
         require(maxTickets > 0, "Max tickets must be greater than 0");
         require(maxTicketsPerWallet > 0 && maxTicketsPerWallet <= maxTickets, "Invalid max tickets per wallet");
         require(expirationTime > block.timestamp, "Expiration time must be in the future");
-        require(expirationTime >= block.timestamp + 15 minutes, "Raffle duration must be at least 15 minutes");
+        require(expirationTime >= block.timestamp + 13 minutes, "Raffle duration must be at least 13 minutes");
 
         // Calculate platform fee for raffle creation (small fee in native token)
         uint256 creationFee = 0.001 ether; // Small creation fee

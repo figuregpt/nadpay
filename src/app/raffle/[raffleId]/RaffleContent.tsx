@@ -1,23 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Wallet, Trophy, ArrowLeft, Ticket, Users, Clock, Gift, Star, Search, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
+import { Wallet, Trophy, ArrowLeft, Ticket, Users, Clock, Gift, Star, Search, ChevronLeft, ChevronRight, Sun, Moon, Bell, Plus, X } from "lucide-react";
 import { useAccount, useBalance, useSwitchChain, usePublicClient, useWalletClient } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useTheme } from "next-themes";
-import { useRaffleV3, formatRaffleV3, NADRAFFLE_V3_CONTRACT } from "@/hooks/useNadRaffleV3Contract";
-import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
+import { useRaffleV3, formatRaffleV3, NADRAFFLE_V4_FAST_CONTRACT } from "@/hooks/useNadRaffleV4FastContract";
+import { decodePredictableSecureRaffleId, createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { formatEther, parseEther } from "viem";
 import { getKnownToken } from "@/lib/knownAssets";
 import { useNFTMetadata } from "@/hooks/useNFTMetadata";
+import { useUserRaffles } from "@/hooks/useUserRaffles";
+import Link from "next/link";
 
 export default function RaffleContent() {
   const params = useParams();
   const secureRaffleId = params.raffleId as string;
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   
   // Decode secure raffle ID to get internal ID
   const internalRaffleId = decodePredictableSecureRaffleId(secureRaffleId);
@@ -39,30 +42,75 @@ export default function RaffleContent() {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
-  // Use V3 hook for raffle data
-  const { data: raffleData, isLoading: loadingRaffle, error: raffleError } = useRaffleV3(raffleId);
+  // Use V3 hook for raffle data with refetch capability
+  const { data: raffleData, isLoading: loadingRaffle, error: raffleError, refetch: refetchRaffleData } = useRaffleV3(raffleId);
+  
+  // Also check ID 0 for auto-redirect
+  const { data: raffle0Data } = useRaffleV3(0);
 
-  // Get user tickets
-  const { data: userTickets } = useReadContract({
-    address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
-    abi: NADRAFFLE_V3_CONTRACT.abi,
+  // Auto-redirect logic: if current raffle is empty but ID 0 has data, redirect
+  useEffect(() => {
+    if (!loadingRaffle && raffleData && raffle0Data) {
+      const currentRaffleEmpty = !Array.isArray(raffleData) || !raffleData[2] || raffleData[2] === ''; // title is empty
+      const raffle0HasData = Array.isArray(raffle0Data) && raffle0Data[2] && raffle0Data[2] !== ''; // title exists
+      
+      if (currentRaffleEmpty && raffle0HasData && raffleId !== 0) {
+        console.log('🔄 Auto-redirecting to correct raffle (ID 0)');
+        const correctUrl = createPredictableSecureRaffleId(0);
+        router.push(`/raffle/${correctUrl}`);
+        return;
+      }
+    }
+  }, [raffleData, raffle0Data, loadingRaffle, raffleId, router]);
+
+  // Get user tickets with refetch capability
+  const { data: userTickets, refetch: refetchUserTickets } = useReadContract({
+    address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
     functionName: 'getUserTickets',
     args: address ? [BigInt(raffleId), address as `0x${string}`] : undefined,
     query: {
-      enabled: !!address && raffleId > 0,
+      enabled: !!address && raffleId >= 0,
+      refetchInterval: 5000, // Auto refetch every 5 seconds
     },
   });
 
-  // Get all raffle tickets to show participants
-  const { data: allTickets } = useReadContract({
-    address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
-    abi: NADRAFFLE_V3_CONTRACT.abi,
+  // Get all raffle tickets to show participants with refetch capability
+  const { data: allTickets, refetch: refetchAllTickets } = useReadContract({
+    address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
     functionName: 'getRaffleTickets',
     args: [BigInt(raffleId)],
     query: {
-      enabled: raffleId > 0,
+      enabled: raffleId >= 0,
+      refetchInterval: 5000, // Auto refetch every 5 seconds
     },
   });
+
+  // Get randomness commitment for reveal countdown
+  const { data: randomnessCommitment } = useReadContract({
+    address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
+    functionName: 'randomnessCommitments',
+    args: [BigInt(raffleId)],
+    query: {
+      enabled: raffleId >= 0,
+    },
+  });
+
+  // Get reveal deadline for countdown
+  const { data: revealDeadline } = useReadContract({
+    address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+    abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
+    functionName: 'revealDeadlines',
+    args: [BigInt(raffleId)],
+    query: {
+      enabled: raffleId >= 0,
+    },
+  });
+
+  // State for countdown timer
+  const [revealCountdown, setRevealCountdown] = useState<string | null>(null);
 
   // Purchase tickets functionality using writeContract
   const { writeContract, data: purchaseHash, isPending: purchasing, error: purchaseError } = useWriteContract();
@@ -78,6 +126,35 @@ export default function RaffleContent() {
   
   const [quantity, setQuantity] = useState(1);
   
+  // Notifications and My Tickets state
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMyTickets, setShowMyTickets] = useState(false);
+  
+  // Toast notification state
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+    show: boolean;
+  }>({ type: 'success', message: '', show: false });
+
+  // Show notification function
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    setNotification({ type, message, show: true });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
+  
+  // User raffles hook
+  const { 
+    userTickets: allUserTickets, 
+    notifications, 
+    getUnreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    clearNotification 
+  } = useUserRaffles(address);
+  
   const purchaseTickets = async (raffleId: number, ticketQuantity: number, ticketPriceInEther: string) => {
     if (!raffle) throw new Error('Raffle not loaded');
     
@@ -85,8 +162,8 @@ export default function RaffleContent() {
     const isNativePayment = raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000';
     
     return writeContract({
-      address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
-      abi: NADRAFFLE_V3_CONTRACT.abi,
+      address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+      abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
       functionName: 'purchaseTickets',
       args: [BigInt(raffleId), BigInt(ticketQuantity)],
       value: isNativePayment ? totalPrice : BigInt(0), // Only send MON if native payment
@@ -100,6 +177,20 @@ export default function RaffleContent() {
 
   // Convert contract data to display format
   const raffle = raffleData ? formatRaffleV3(raffleData) : null;
+  
+  // Debug raffle data
+  if (raffle) {
+    console.log('🔍 Raw raffle data from contract:', raffleData);
+    console.log('🎯 Formatted raffle data:', raffle);
+    console.log('📊 Key values:', {
+      ticketPrice: raffle.ticketPrice.toString(),
+      maxTickets: raffle.maxTickets.toString(),
+      ticketsSold: raffle.ticketsSold.toString(),
+      rewardAmount: raffle.rewardAmount.toString(),
+      expirationTime: raffle.expirationTime.toString(),
+      status: raffle.status
+    });
+  }
 
   // Fetch NFT metadata if reward is NFT
   const shouldFetchNFT = raffle?.rewardType === 1;
@@ -122,21 +213,34 @@ export default function RaffleContent() {
   // Handle successful purchase and auto refresh
   useEffect(() => {
     if (isConfirmed) {
-      alert('Tickets purchased successfully!');
-      // Force page refresh to update data
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      // Immediately refetch all data instead of page reload
+      const refetchData = async () => {
+        try {
+          await Promise.all([
+            refetchRaffleData(),
+            refetchUserTickets(),
+            refetchAllTickets(),
+          ]);
+          console.log('✅ Data refreshed after successful purchase');
+        } catch (error) {
+          console.error('❌ Error refreshing data:', error);
+          // Fallback to page reload if refetch fails
+          window.location.reload();
+        }
+      };
+      
+      // Small delay to ensure transaction is processed
+      setTimeout(refetchData, 1000);
     }
-  }, [isConfirmed]);
+  }, [isConfirmed, refetchRaffleData, refetchUserTickets, refetchAllTickets]);
 
   const handleClaimReward = async () => {
     if (!raffle || !address) return;
     
     try {
       await claimRewardWrite({
-        address: NADRAFFLE_V3_CONTRACT.address as `0x${string}`,
-        abi: NADRAFFLE_V3_CONTRACT.abi,
+        address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+        abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
         functionName: 'claimReward',
         args: [BigInt(raffleId)],
       });
@@ -147,29 +251,139 @@ export default function RaffleContent() {
 
   const handlePurchaseTickets = async () => {
     if (!isConnected || !raffle || !address) {
-      alert('Please connect your wallet');
+      showNotification('error', 'Please connect your wallet');
       return;
     }
 
     if (chain?.id !== 10143) {
-      alert('Please switch to Monad Testnet');
+      showNotification('error', 'Please switch to Monad Testnet');
       return;
     }
 
     try {
       const ticketPriceInEther = formatEther(raffle.ticketPrice);
       const totalPrice = parseFloat(ticketPriceInEther) * quantity;
+      const totalPriceWei = parseEther((totalPrice).toString());
+      const isNativePayment = raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000';
       
-      // Check user's balance
-      if (balance && parseFloat(balance.formatted) < totalPrice) {
-        alert('Insufficient balance');
+      // Check user's balance (for native token only, for ERC20 we'll check differently)
+      if (isNativePayment && balance && parseFloat(balance.formatted) < totalPrice) {
+        showNotification('error', 'Insufficient MON balance');
         return;
       }
 
+      // If it's not native payment (MON), we need to handle ERC20 token approval
+      if (!isNativePayment) {
+        try {
+          // First check ERC20 token balance
+          const tokenBalance = await publicClient?.readContract({
+            address: raffle.ticketPaymentToken as `0x${string}`,
+            abi: [
+              {
+                name: 'balanceOf',
+                type: 'function',
+                stateMutability: 'view',
+                inputs: [{ name: 'account', type: 'address' }],
+                outputs: [{ name: '', type: 'uint256' }]
+              }
+            ],
+            functionName: 'balanceOf',
+            args: [address as `0x${string}`]
+          });
+
+          if (!tokenBalance || tokenBalance < totalPriceWei) {
+            const tokenSymbol = getPaymentTokenSymbol();
+            showNotification('error', `Insufficient ${tokenSymbol} balance`);
+            return;
+          }
+
+          // Then check if we have enough allowance
+          const allowance = await publicClient?.readContract({
+            address: raffle.ticketPaymentToken as `0x${string}`,
+            abi: [
+              {
+                name: 'allowance',
+                type: 'function',
+                stateMutability: 'view',
+                inputs: [
+                  { name: 'owner', type: 'address' },
+                  { name: 'spender', type: 'address' }
+                ],
+                outputs: [{ name: '', type: 'uint256' }]
+              }
+            ],
+            functionName: 'allowance',
+            args: [address as `0x${string}`, NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`]
+          });
+
+          // If allowance is insufficient, request approval
+          if (!allowance || allowance < totalPriceWei) {
+            const approvalHash = await writeContract({
+              address: raffle.ticketPaymentToken as `0x${string}`,
+              abi: [
+                {
+                  name: 'approve',
+                  type: 'function',
+                  stateMutability: 'nonpayable',
+                  inputs: [
+                    { name: 'spender', type: 'address' },
+                    { name: 'amount', type: 'uint256' }
+                  ],
+                  outputs: [{ name: '', type: 'bool' }]
+                }
+              ],
+              functionName: 'approve',
+              args: [NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`, totalPriceWei]
+            });
+
+            // Wait for approval transaction to be confirmed
+            if (publicClient) {
+              console.log('⏳ Waiting for approval confirmation...');
+              // Wait a bit for the transaction to be processed
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              console.log('✅ Approval confirmed, proceeding with purchase...');
+              
+              // Additional delay to ensure blockchain state is updated
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              
+              // Verify approval was successful by checking allowance again
+              const newAllowance = await publicClient?.readContract({
+                address: raffle.ticketPaymentToken as `0x${string}`,
+                abi: [
+                  {
+                    name: 'allowance',
+                    type: 'function',
+                    stateMutability: 'view',
+                    inputs: [
+                      { name: 'owner', type: 'address' },
+                      { name: 'spender', type: 'address' }
+                    ],
+                    outputs: [{ name: '', type: 'uint256' }]
+                  }
+                ],
+                functionName: 'allowance',
+                args: [address as `0x${string}`, NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`]
+              });
+              
+              if (!newAllowance || newAllowance < totalPriceWei) {
+                throw new Error('Approval verification failed. Please try again.');
+              }
+              
+              console.log('✅ Approval verified, allowance sufficient');
+            }
+          }
+        } catch (approvalError) {
+          console.error('Approval failed:', approvalError);
+          showNotification('error', 'Token approval failed. Please try again.');
+          return;
+        }
+      }
+
+      // Now proceed with ticket purchase
       await purchaseTickets(raffleId, quantity, ticketPriceInEther);
     } catch (error) {
       console.error('Purchase failed:', error);
-      alert('Purchase failed. Please try again.');
+      showNotification('error', 'Purchase failed. Please try again.');
     }
   };
 
@@ -235,12 +449,6 @@ export default function RaffleContent() {
     // Check if quantity exceeds available tickets
     if (quantity > (maxTickets - ticketsSold)) {
       return false;
-    }
-    
-    // Check wallet limit
-    if (Number(raffle.maxTicketsPerWallet || 0) > 0) {
-      const userCount = getUserTicketCount();
-      return userCount + quantity <= Number(raffle.maxTicketsPerWallet || 0);
     }
     
     return true;
@@ -330,6 +538,47 @@ export default function RaffleContent() {
     return knownToken?.symbol || 'TOKEN';
   };
 
+  // Reveal countdown functions
+  const getRevealTimeRemaining = () => {
+    if (!revealDeadline || Number(revealDeadline) === 0) return null;
+    
+    const now = Date.now();
+    const deadline = Number(revealDeadline) * 1000;
+    const remaining = deadline - now;
+    
+    if (remaining <= 0) return 'Ready';
+    
+    const minutes = Math.floor(remaining / (1000 * 60));
+    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+    
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
+  const isRevealReady = () => {
+    if (!revealDeadline || Number(revealDeadline) === 0) return false;
+    return Date.now() >= Number(revealDeadline) * 1000;
+  };
+
+  const hasRandomnessCommitment = () => {
+    return randomnessCommitment && randomnessCommitment !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+  };
+
+  // Update reveal countdown every second
+  useEffect(() => {
+    if (!hasRandomnessCommitment() || !revealDeadline) return;
+
+    const updateCountdown = () => {
+      const timeRemaining = getRevealTimeRemaining();
+      setRevealCountdown(timeRemaining);
+    };
+
+    updateCountdown(); // Initial update
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [revealDeadline, randomnessCommitment]);
+
   // Early return if raffle ID is invalid
   if (internalRaffleId === null) {
     return (
@@ -391,38 +640,166 @@ export default function RaffleContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* NadPay Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <a href="/app" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-white" />
+      {/* Toast Notification */}
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-full duration-300">
+          <div className={`p-4 rounded-lg shadow-lg border max-w-sm ${
+            notification.type === 'success' 
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200'
+              : notification.type === 'error'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200'
+              : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200'
+          }`}>
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                {notification.type === 'success' && (
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                {notification.type === 'error' && (
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                {notification.type === 'info' && (
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">NadRaffle</h1>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{notification.message}</p>
               </div>
-            </a>
-            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex items-center p-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                onClick={() => setNotification(prev => ({ ...prev, show: false }))}
+                className="flex-shrink-0 ml-2 p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
               >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4" />
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <Link 
+                href="/rafflehouse"
+                className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm sm:text-base font-medium">Back to RaffleHouse</span>
+              </Link>
+            </div>
+            
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <Link 
+                  href="/"
+                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/app/dashboard"
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/nadpay"
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  NadPay
+                </Link>
+                <Link 
+                  href="/nadswap"
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  NadSwap
+                </Link>
+              </div>
+            
+              {/* My Tickets Button */}
+              {isConnected && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMyTickets(!showMyTickets)}
+                    className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors relative"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    {allUserTickets.filter(ticket => ticket.status === 0).length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {allUserTickets.filter(ticket => ticket.status === 0).length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            
+              {/* Notifications Button */}
+              {isConnected && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors relative"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {getUnreadCount() > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {getUnreadCount()}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 ) : (
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 )}
               </button>
-              <a 
-                href="/app"
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm"
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Create Your Raffle</span>
-                <span className="sm:hidden">Create</span>
-              </a>
+            
+              {/* Custom Wallet Button */}
+              <div className="relative">
+                <ConnectKitButton.Custom>
+                  {({ show, truncatedAddress, ensName }) => (
+                    <button
+                      onClick={show}
+                      className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                    >
+                      <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold">
+                          {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium hidden sm:inline">
+                        {ensName || truncatedAddress}
+                      </span>
+                    </button>
+                  )}
+                </ConnectKitButton.Custom>
+              </div>
             </div>
           </div>
         </div>
@@ -438,16 +815,56 @@ export default function RaffleContent() {
               transition={{ duration: 0.6 }}
               className="lg:col-span-2"
             >
-              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 p-8">
+              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 p-6">
             {/* Raffle Header */}
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Trophy className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <div className="text-center mb-6">
+              {raffle.rewardType === 1 ? (
+                // NFT Raffle - Keep Trophy
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Trophy className="w-8 h-8 text-white" />
+                </div>
+              ) : (
+                // Token Raffle - Use Coin Logo
+                <div className="w-16 h-16 bg-white dark:bg-dark-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg border border-gray-200 dark:border-dark-600">
+                  {(() => {
+                    const token = getKnownToken(raffle.rewardTokenAddress);
+                    if (token?.logo) {
+                      return (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol}
+                          className="w-10 h-10 rounded-full"
+                          onError={(e) => {
+                            // Fallback to text if image fails
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-10 h-10 bg-gray-100 dark:bg-dark-600 rounded-full flex items-center justify-center">
+                                  <span class="text-lg font-bold text-gray-700 dark:text-gray-300">${token.symbol.charAt(0)}</span>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      );
+                    } else {
+                      // Fallback to symbol letter
+                      return (
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-dark-600 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                            {getRewardTokenSymbol().charAt(0)}
+                          </span>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+              )}
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 {raffle.title}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
+              <p className="text-gray-600 dark:text-gray-400 text-base">
                 {raffle.description}
               </p>
               
@@ -462,6 +879,29 @@ export default function RaffleContent() {
                 }`}>
                   {getRaffleStatus()}
                 </span>
+
+                {/* Reveal Countdown - Show when raffle is ended/sold out but winner not selected yet */}
+                {(getRaffleStatus() === 'Ended' || (Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0))) && 
+                 raffle.winner === '0x0000000000000000000000000000000000000000' && 
+                 hasRandomnessCommitment() && 
+                 revealCountdown && 
+                 revealCountdown !== 'Ready' ? (
+                  <span className="px-4 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-orange-400 to-red-500 text-white animate-pulse shadow-lg">
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Winner reveal in: {revealCountdown}
+                  </span>
+                ) : null}
+
+                {/* Ready to Reveal */}
+                {(getRaffleStatus() === 'Ended' || (Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0))) && 
+                 raffle.winner === '0x0000000000000000000000000000000000000000' && 
+                 hasRandomnessCommitment() && 
+                 isRevealReady() ? (
+                  <span className="px-4 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-bounce shadow-lg">
+                    <Star className="w-4 h-4 inline mr-2" />
+                    Ready to reveal winner!
+                  </span>
+                ) : null}
                 
                 {raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
                   <span className="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
@@ -474,27 +914,27 @@ export default function RaffleContent() {
 
             {/* NFT Showcase - Only for NFT rewards */}
             {raffle.rewardType === 1 && (
-              <div className="mb-8">
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
-                  <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+              <div className="mb-6">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="flex flex-col md:flex-row items-start md:items-center space-y-3 md:space-y-0 md:space-x-4">
                     {/* NFT Image */}
                     <div className="flex-shrink-0">
                       {nftLoading ? (
-                        <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center">
-                          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : nftMetadata?.image ? (
                         <img
                           src={nftMetadata.image}
                           alt={nftMetadata.name || 'NFT'}
-                          className="w-24 h-24 rounded-xl object-cover border-2 border-white dark:border-gray-700 shadow-lg"
+                          className="w-20 h-20 rounded-lg object-cover border-2 border-white dark:border-gray-700 shadow-lg"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                             const parent = (e.target as HTMLImageElement).parentElement;
                             if (parent) {
                               parent.innerHTML = `
-                                <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
                                   </svg>
                                 </div>
@@ -513,14 +953,14 @@ export default function RaffleContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                             {nftMetadata?.name || `NFT #${raffle.rewardAmount.toString()}`}
                           </h3>
-                          <p className="text-sm text-purple-600 dark:text-purple-400 mb-2">
+                          <p className="text-xs text-purple-600 dark:text-purple-400 mb-1.5">
                             Token ID: {raffle.rewardAmount.toString()}
                           </p>
                           {nftMetadata?.description && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3" style={{
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2" style={{
                               display: '-webkit-box',
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
@@ -529,7 +969,7 @@ export default function RaffleContent() {
                               {nftMetadata.description}
                             </p>
                           )}
-                          <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
                             <span>Contract: {raffle.rewardTokenAddress.slice(0, 6)}...{raffle.rewardTokenAddress.slice(-4)}</span>
                             <span>•</span>
                             <span>ERC-721</span>
@@ -538,7 +978,7 @@ export default function RaffleContent() {
                         
                         {/* Prize Badge */}
                         <div className="flex-shrink-0">
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg">
                             🏆 Prize NFT
                           </div>
                         </div>
@@ -549,116 +989,177 @@ export default function RaffleContent() {
               </div>
             )}
 
-            {/* Raffle Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Gift className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            {/* Raffle Stats - Enhanced */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700">
+                <div className="flex items-center space-x-3">
+                  {raffle.rewardType === 1 ? (
+                    // NFT Reward - Keep Gift icon
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                      <Gift className="w-6 h-6 text-white" />
+                    </div>
+                  ) : (
+                    // Token Reward - Use coin logo
+                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                      {getRewardTokenSymbol() === 'MON' ? (
+                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-orange-500">M</span>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-blue-500">{getRewardTokenSymbol().charAt(0)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">Reward</p>
+                    {raffle.rewardType === 1 ? (
+                      // NFT Reward
+                      <div>
+                        <p className="font-bold text-sm text-gray-900 dark:text-white leading-tight">
+                          {nftMetadata?.name || `NFT #${raffle.rewardAmount.toString()}`}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          ID: {raffle.rewardAmount.toString()}
+                        </p>
+                      </div>
+                    ) : (
+                      // Token Reward
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">
+                        {formatEther(raffle.rewardAmount || BigInt(0))} {getRewardTokenSymbol()}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Reward</p>
-                {raffle.rewardType === 1 ? (
-                  // NFT Reward
-                  <div className="space-y-1">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {nftMetadata?.name || `NFT #${raffle.rewardAmount.toString()}`}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Token ID: {raffle.rewardAmount.toString()}
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <Ticket className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Ticket Price</p>
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">
+                      {formatEther(raffle.ticketPrice || BigInt(0))} {getPaymentTokenSymbol()}
                     </p>
                   </div>
-                ) : (
-                  // Token Reward
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {formatEther(raffle.rewardAmount || BigInt(0))} {getRewardTokenSymbol()}
-                  </p>
-                )}
+                </div>
               </div>
               
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Ticket className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Tickets Sold</p>
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">
+                      {raffle.ticketsSold?.toString() || '0'}/{raffle.maxTickets?.toString() || '0'}
+                    </p>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, (Number(raffle.ticketsSold || 0) / Number(raffle.maxTickets || 1)) * 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Ticket Price</p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {formatEther(raffle.ticketPrice || BigInt(0))} {getPaymentTokenSymbol()}
-                </p>
               </div>
               
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Time Left</p>
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">
+                      {getTimeRemaining() || 'No limit'}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Tickets Sold</p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {raffle.ticketsSold?.toString() || '0'}/{raffle.maxTickets?.toString() || '0'}
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Time Left</p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {getTimeRemaining() || 'No limit'}
-                </p>
               </div>
             </div>
 
             {/* User's Tickets */}
             {isConnected && getUserTicketCount() > 0 && (
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 mb-6">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 mb-4">
                 <div className="flex items-center space-x-2">
-                  <Ticket className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <span className="font-medium text-purple-800 dark:text-purple-200">
+                  <Ticket className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium text-sm text-purple-800 dark:text-purple-200">
                     You own {getUserTicketCount()} ticket{getUserTicketCount() !== 1 ? 's' : ''} in this raffle
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Winner Section */}
-            {raffle.status === 1 && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <Star className="w-5 h-5 text-white" />
+            {/* Winner Section - Compact */}
+            {raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-600 rounded-lg p-4 mb-4"
+              >
+                {/* Compact Winner Display */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                      <Trophy className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-green-800 dark:text-green-200">
+                        Winner: {raffle.winner.slice(0, 6)}...{raffle.winner.slice(-4)}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        Prize: {raffle.rewardType === 1 ? (
+                          `NFT #${raffle.rewardAmount.toString()}`
+                        ) : (
+                          `${formatEther(raffle.rewardAmount || BigInt(0))} ${getRewardTokenSymbol()}`
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">
-                      Winner Announced!
-                    </h3>
-                    <p className="text-green-700 dark:text-green-300">
-                      {raffle.winner.slice(0, 6)}...{raffle.winner.slice(-4)}
-                    </p>
-                  </div>
+                  
+                  {address?.toLowerCase() === raffle.winner.toLowerCase() && (
+                    <div className="flex items-center space-x-2">
+                      <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-full">
+                        <Star className="w-3 h-3 mr-1" />
+                        That's You! 🎉
+                      </span>
+                      {!raffle.rewardClaimed && (
+                        <button
+                          onClick={handleClaimReward}
+                          disabled={claiming || isClaimConfirming}
+                          className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-xs"
+                        >
+                          {claiming || isClaimConfirming ? (
+                            <div className="flex items-center space-x-1">
+                              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Claiming...</span>
+                            </div>
+                          ) : (
+                            <span>Claim Prize</span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                
-                {address?.toLowerCase() === raffle.winner.toLowerCase() && !raffle.rewardClaimed && (
-                  <button
-                    onClick={handleClaimReward}
-                    disabled={claiming || isClaimConfirming}
-                    className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {claiming || isClaimConfirming ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>{claiming ? 'Claiming...' : 'Confirming...'}</span>
-                      </div>
-                    ) : (
-                      'Claim Your Reward'
-                    )}
-                  </button>
-                )}
 
-                {address?.toLowerCase() === raffle.winner.toLowerCase() && raffle.rewardClaimed && (
-                  <div className="text-center">
-                    <p className="text-green-700 dark:text-green-300 font-medium">
-                      🎉 Reward claimed successfully!
+                {/* Message for non-winners */}
+                {address?.toLowerCase() !== raffle.winner.toLowerCase() && (
+                  <div className="mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                    <p className="text-xs text-green-600 dark:text-green-400 text-center">
+                      Better luck next time! 🍀
                     </p>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
 
             {/* Purchase Section */}
@@ -700,15 +1201,47 @@ export default function RaffleContent() {
               </div>
             ) : !canPurchase() ? (
               <div className="text-center">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {raffle.status !== 0 ? 'This raffle has ended' :
-                     isExpired() ? 'This raffle has expired' :
-                     Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0) ? 'Sold Out - All tickets have been sold' :
-                     quantity > (Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)) ? `Only ${Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)} tickets remaining` :
-                     'You have reached the maximum tickets per wallet'}
-                  </p>
-                </div>
+                {/* Sold Out - Special Treatment - Only show if no winner announced */}
+                {Number(raffle.ticketsSold || 0) >= Number(raffle.maxTickets || 0) && raffle.winner === '0x0000000000000000000000000000000000000000' ? (
+                  <div className="space-y-3">
+                    <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <Ticket className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-1 text-center">
+                        🎫 Sold Out!
+                      </h3>
+                      <p className="text-red-600 dark:text-red-400 mb-3 text-center text-sm">
+                        All tickets sold! Winner will be revealed soon.
+                      </p>
+                      
+                                             {/* Show winner selection status if sold out but winner not selected */}
+                       {raffle.winner === '0x0000000000000000000000000000000000000000' && (
+                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                           <div className="flex items-center justify-center space-x-2 mb-1">
+                             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                             <span className="font-medium text-blue-900 dark:text-blue-200 text-sm">Selecting Winner</span>
+                           </div>
+                           <p className="text-blue-700 dark:text-blue-300 text-center text-xs">
+                             Winner will be announced shortly! ⚡
+                           </p>
+                         </div>
+                       )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Other cases (expired, ended, etc.) */
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {raffle.status !== 0 ? 'This raffle has ended' :
+                       isExpired() ? 'This raffle has expired' :
+                       quantity > (Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)) ? `Only ${Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)} tickets remaining` :
+                       'You have reached the maximum tickets per wallet'}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -727,17 +1260,13 @@ export default function RaffleContent() {
                     <input
                       type="number"
                       min="1"
-                      max={Math.min(
-                        Number(raffle.maxTicketsPerWallet || 0) - getUserTicketCount(),
-                        Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)
-                      )}
+                      max={Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0)}
                       value={quantity}
                       onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-20 text-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
                     />
                     <button
                       onClick={() => setQuantity(Math.min(
-                        Number(raffle.maxTicketsPerWallet || 0) - getUserTicketCount(),
                         Number(raffle.maxTickets || 0) - Number(raffle.ticketsSold || 0),
                         quantity + 1
                       ))}
@@ -915,6 +1444,159 @@ export default function RaffleContent() {
           </div>
         </div>
       </div>
+
+      {/* My Tickets Dropdown */}
+      {showMyTickets && (
+        <div className="fixed top-16 right-4 z-50 w-96 max-w-[90vw] bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-xl">
+          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Tickets</h3>
+              <button
+                onClick={() => setShowMyTickets(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {allUserTickets.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No tickets purchased yet</p>
+              </div>
+            ) : (
+              allUserTickets.slice(0, 20).map((ticket) => (
+                <div key={ticket.raffleId} className="p-4 border-b border-gray-100 dark:border-dark-700 last:border-b-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                          {ticket.raffleName}
+                        </h4>
+                        {ticket.isWinner && (
+                          <span className="text-xs bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded-full">
+                            Winner! 🎉
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <span>{ticket.ticketCount} ticket{ticket.ticketCount !== 1 ? 's' : ''}</span>
+                        <span
+                          className={`px-2 py-1 rounded-full ${
+                            ticket.status === 0
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                          }`}
+                        >
+                          {ticket.status === 0 ? 'Active' : 'Ended'}
+                        </span>
+                      </div>
+                      
+                      <Link
+                        href={`/raffle/${createPredictableSecureRaffleId(ticket.raffleId)}`}
+                        className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                        onClick={() => setShowMyTickets(false)}
+                      >
+                        View Raffle
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="fixed top-16 right-4 z-50 w-96 max-w-[90vw] bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-xl">
+          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h3>
+              <div className="flex items-center space-x-2">
+                {getUnreadCount() > 0 && (
+                  <button
+                    onClick={() => {
+                      markAllAsRead();
+                    }}
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No notifications yet</p>
+              </div>
+            ) : (
+              notifications.slice(0, 20).map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`p-4 border-b border-gray-100 dark:border-dark-700 last:border-b-0 ${
+                    !notif.read ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                                             <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                         {(notif as any).title || 'Notification'}
+                       </p>
+                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                         {(notif as any).message || 'No message'}
+                       </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        {new Date(notif.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {!notif.read && (
+                        <button
+                          onClick={() => markAsRead(notif.id)}
+                          className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                        >
+                          Mark read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => clearNotification(notif.id)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close dropdowns */}
+      {(showNotifications || showMyTickets) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowNotifications(false);
+            setShowMyTickets(false);
+          }}
+        />
+      )}
     </div>
   );
 } 

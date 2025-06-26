@@ -1,0 +1,31 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "nadpay-web"
+source = "."
+
+[services.build]
+buildCommand = "npm run build"
+
+[services.deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+
+[[services]]
+name = "raffle-v4-fast-finalizer"
+source = "."
+
+[services.build]
+buildCommand = "npm install"
+
+[services.deploy]
+startCommand = "npm run finalizer:start"
+healthcheckTimeout = 300 

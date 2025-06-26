@@ -78,7 +78,7 @@ export const KNOWN_NFTS: KnownNFT[] = [
     address: "0x3019BF1dfB84E5b46Ca9D0eEC37dE08a59A41308",
     name: "Nad Name Service",
     description: "",
-    image: "https://api.nad.domains/nft-metadata/10143/image/ZXJkaW5j",
+    image: "https://nad.domains/_next/static/media/icon-white.c3edcfb6.svg",
     website: "",
     verified: true,
     totalSupply: 4869316

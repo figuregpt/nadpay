@@ -29,6 +29,13 @@ export const publicClient = createPublicClient({
   transport: http("https://testnet-rpc.monad.xyz"),
 });
 
+// Custom HTTP transport with retry and rate limiting
+const customHttp = http('https://testnet-rpc.monad.xyz', {
+  retryCount: 5, // Increase retry count for rate limiting
+  retryDelay: 2000, // 2 second base delay (viem uses exponential backoff internally)
+  timeout: 30000, // 30 second timeout
+})
+
 export const config = createConfig({
   // Only Monad testnet - more focused experience
   chains: [monadTestnet],
@@ -71,6 +78,6 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [monadTestnet.id]: http(),
+    [monadTestnet.id]: customHttp,
   },
 }); 

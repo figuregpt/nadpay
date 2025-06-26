@@ -7,9 +7,9 @@ import { publicClient } from "@/lib/wagmi";
 import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
 import { getKnownToken } from "@/lib/knownAssets";
 
-// V3 Contract configuration for metadata
-const NADRAFFLE_V3_CONTRACT = {
-  address: "0x3F0F22132a0A3864B5CD0F79D211Bf28511A76f0" as `0x${string}`,
+// V4 Contract configuration for metadata
+const NADRAFFLE_V4_FAST_CONTRACT = {
+      address: "0xb7a8e84F06124D2E444605137E781cDd7ac480fa" as `0x${string}`,
   abi: [
     {
       "inputs": [{ "name": "raffleId", "type": "uint256" }],
@@ -21,22 +21,20 @@ const NADRAFFLE_V3_CONTRACT = {
           { "name": "creator", "type": "address" },
           { "name": "title", "type": "string" },
           { "name": "description", "type": "string" },
-          { "name": "imageHash", "type": "string" },
           { "name": "rewardType", "type": "uint8" },
           { "name": "rewardTokenAddress", "type": "address" },
           { "name": "rewardAmount", "type": "uint256" },
-          { "name": "ticketPaymentToken", "type": "address" },
           { "name": "ticketPrice", "type": "uint256" },
+          { "name": "ticketPaymentToken", "type": "address" },
           { "name": "maxTickets", "type": "uint256" },
-          { "name": "maxTicketsPerWallet", "type": "uint256" },
-          { "name": "expirationTime", "type": "uint256" },
-          { "name": "autoDistributeOnSoldOut", "type": "bool" },
           { "name": "ticketsSold", "type": "uint256" },
           { "name": "totalEarned", "type": "uint256" },
+          { "name": "expirationTime", "type": "uint256" },
+          { "name": "autoDistributeOnSoldOut", "type": "bool" },
           { "name": "winner", "type": "address" },
           { "name": "status", "type": "uint8" },
-          { "name": "createdAt", "type": "uint256" },
-          { "name": "rewardClaimed", "type": "bool" }
+          { "name": "rewardClaimed", "type": "bool" },
+          { "name": "createdAt", "type": "uint256" }
         ]
       }],
       "stateMutability": "view",
@@ -77,8 +75,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     
     // Fetch raffle data from contract using internal ID
     const raffleData = await publicClient.readContract({
-      address: NADRAFFLE_V3_CONTRACT.address,
-      abi: NADRAFFLE_V3_CONTRACT.abi,
+      address: NADRAFFLE_V4_FAST_CONTRACT.address,
+      abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
       functionName: 'getRaffle',
       args: [BigInt(internalRaffleId)]
     }) as any;

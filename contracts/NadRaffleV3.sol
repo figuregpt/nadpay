@@ -119,7 +119,7 @@ contract NadRaffleV3 is ReentrancyGuard, Ownable {
         require(maxTickets > 0, "Max tickets must be greater than 0");
         require(maxTicketsPerWallet > 0 && maxTicketsPerWallet <= maxTickets, "Invalid max tickets per wallet");
         require(expirationTime > block.timestamp, "Expiration time must be in the future");
-        require(expirationTime >= block.timestamp + 15 minutes, "Raffle duration must be at least 15 minutes");
+        require(expirationTime >= block.timestamp + 13 minutes, "Raffle duration must be at least 13 minutes");
 
         // Calculate platform fee for raffle creation (small fee in native token)
         uint256 creationFee = 0.001 ether; // Small creation fee
@@ -304,32 +304,38 @@ contract NadRaffleV3 is ReentrancyGuard, Ownable {
         
         raffle.winner = winningTicket.buyer;
         raffle.status = RaffleStatus.ENDED;
+        raffle.rewardClaimed = true; // Mark as claimed since we're auto-distributing
 
-        emit RaffleEnded(raffleId, raffle.winner, winningTicket.ticketNumber, finalRandomHash);
-    }
-
-    function claimReward(uint256 raffleId) external nonReentrant {
-        Raffle storage raffle = raffles[raffleId];
-        require(raffle.status == RaffleStatus.ENDED, "Raffle has not ended");
-        require(raffle.winner == msg.sender, "Not the winner");
-        require(!raffle.rewardClaimed, "Reward already claimed");
-
-        raffle.rewardClaimed = true;
-
+        // Automatically distribute reward to winner
         if (raffle.rewardType == RewardType.TOKEN) {
             if (raffle.rewardTokenAddress == address(0)) {
                 // Native MON reward
-                payable(msg.sender).transfer(raffle.rewardAmount);
+                payable(raffle.winner).transfer(raffle.rewardAmount);
             } else {
                 // ERC20 token reward
-                IERC20(raffle.rewardTokenAddress).transfer(msg.sender, raffle.rewardAmount);
+                IERC20(raffle.rewardTokenAddress).transfer(raffle.winner, raffle.rewardAmount);
             }
         } else {
             // NFT reward
-            IERC721(raffle.rewardTokenAddress).transferFrom(address(this), msg.sender, raffle.rewardAmount);
+            IERC721(raffle.rewardTokenAddress).transferFrom(address(this), raffle.winner, raffle.rewardAmount);
         }
 
-        emit RewardClaimed(raffleId, msg.sender, raffle.rewardType, raffle.rewardAmount);
+        emit RaffleEnded(raffleId, raffle.winner, winningTicket.ticketNumber, finalRandomHash);
+        emit RewardClaimed(raffleId, raffle.winner, raffle.rewardType, raffle.rewardAmount);
+    }
+
+    function claimReward(uint256 raffleId) external view {
+        // This function is deprecated since rewards are now automatically distributed
+        // when the raffle ends. Keeping for backwards compatibility.
+        Raffle storage raffle = raffles[raffleId];
+        require(raffle.status == RaffleStatus.ENDED, "Raffle has not ended");
+        require(raffle.winner == msg.sender, "Not the winner");
+        
+        // Since rewards are auto-distributed, this will always be true for ended raffles
+        require(raffle.rewardClaimed, "Rewards are automatically distributed when raffle ends");
+        
+        // No action needed - reward was already distributed automatically
+        revert("Rewards are automatically distributed - no manual claiming needed");
     }
 
     function cancelRaffle(uint256 raffleId) external nonReentrant {

@@ -1,0 +1,19 @@
+{
+  "contractName": "NadRaffleV3",
+  "address": "0x55B20b9114B49E262eEDeea91684a3DBF83caf69",
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "network": "monadTestnet",
+  "chainId": 10143,
+  "deployedAt": "2025-06-24T20:26:51.895Z",
+  "features": [
+    "Automatic reward distribution",
+    "No manual claiming needed",
+    "Prevents creator manipulation",
+    "Supports both ERC20 and NFT rewards",
+    "Multi-token payment support",
+    "Expired raffle auto-finalization"
+  ],
+  "gasUsed": "Estimated ~3.5M gas",
+  "verificationCommand": "npx hardhat verify --network monadTestnet 0x55B20b9114B49E262eEDeea91684a3DBF83caf69",
+  "blockNumber": "TBD"
+}

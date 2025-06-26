@@ -3,11 +3,17 @@ import { parseEther, formatEther } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useState, useEffect } from 'react';
 
-// V2 Contract address
-const NADPAY_V2_CONTRACT_ADDRESS = "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`;
+// V2 Ultra-Secure Contract address
+const NADPAY_V2_CONTRACT_ADDRESS = "0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25" as `0x${string}`;
 
-// V2 ABI with multi-token support
-const NADPAY_V2_ABI = [
+// Import ultra-secure ABI
+import NADPAY_V2_ULTRA_SECURE_ABI_JSON from '../../NadPayV2-UltraSecure.abi.json';
+
+// V2 Ultra-Secure ABI
+const NADPAY_V2_ABI = NADPAY_V2_ULTRA_SECURE_ABI_JSON;
+
+// Old V2 ABI (keeping for reference)
+const NADPAY_V2_ABI_OLD = [
   {
     "inputs": [],
     "stateMutability": "nonpayable",
@@ -700,9 +706,9 @@ const NADPAY_V2_ABI = [
         "type": "uint256"
       },
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "name": "userPurchases",
@@ -718,12 +724,12 @@ const NADPAY_V2_ABI = [
   }
 ] as const;
 
-// Enhanced PaymentLink interface for V2
+// Enhanced PaymentLink interface for V2 Ultra-Secure
 export interface PaymentLinkV2 {
+  id: bigint;
   creator: string;
   title: string;
-  description: string;
-  coverImage: string;
+  // Note: description and coverImage removed in ultra-secure version
   price: bigint;
   paymentToken: string; // New field for V2
   totalSales: bigint;
@@ -752,7 +758,12 @@ export function usePaymentLinkV2(linkId: number) {
     query: {
       enabled: linkId >= 0,
     }
-  });
+  }) as {
+    data: PaymentLinkV2 | undefined;
+    isLoading: boolean;
+    error: Error | null;
+    refetch: () => void;
+  };
 }
 
 export function usePaymentLinkPurchasesV2(linkId: number) {
@@ -813,7 +824,7 @@ export function useCreatorLinksV2(creatorAddress?: string) {
             abi: NADPAY_V2_ABI,
             functionName: 'getPaymentLink',
             args: [linkIds[i]],
-          });
+          }) as any;
           linkDetails.push({ ...link, linkId: Number(linkIds[i]) });
           
           // Add delay between requests (except for the last one)
@@ -883,8 +894,8 @@ export function useCreatePaymentLinkV2() {
 
   const createPaymentLink = async (params: {
     title: string;
-    description: string;
-    coverImage: string;
+    description: string; // Still accepted but not used in ultra-secure contract
+    coverImage: string; // Still accepted but not used in ultra-secure contract
     price: string; // in token units
     paymentToken: string; // 0x0 for MON, token address for ERC20
     totalSales: number;
@@ -898,14 +909,12 @@ export function useCreatePaymentLinkV2() {
       abi: NADPAY_V2_ABI,
       functionName: 'createPaymentLink',
       args: [
-        params.title,
-        params.description,
-        params.coverImage,
-        priceInWei,
-        params.paymentToken as `0x${string}`,
-        BigInt(params.totalSales),
-        BigInt(params.maxPerWallet),
-        BigInt(params.expiresAt),
+        params.title, // Only title is used in ultra-secure contract
+        priceInWei, // uint256
+        params.paymentToken as `0x${string}`, // address
+        BigInt(params.totalSales), // uint256
+        BigInt(params.maxPerWallet), // uint256
+        BigInt(params.expiresAt), // uint256
       ],
     });
   };
@@ -1004,10 +1013,9 @@ export function useDeactivatePaymentLinkV2() {
 export function formatPaymentLinkV2(rawLink: unknown): PaymentLinkV2 & { linkId: number; uniqueBuyersCount?: number } {
   const link = rawLink as any;
   return {
+    id: BigInt(link.id || link.linkId || 0),
     creator: link.creator,
     title: link.title,
-    description: link.description,
-    coverImage: link.coverImage,
     price: BigInt(link.price),
     paymentToken: link.paymentToken, // V2 feature
     totalSales: BigInt(link.totalSales),
@@ -1017,7 +1025,7 @@ export function formatPaymentLinkV2(rawLink: unknown): PaymentLinkV2 & { linkId:
     isActive: link.isActive,
     createdAt: BigInt(link.createdAt),
     expiresAt: BigInt(link.expiresAt),
-    linkId: link.linkId || 0,
+    linkId: link.linkId || Number(link.id) || 0,
     uniqueBuyersCount: link.uniqueBuyersCount,
   };
 }

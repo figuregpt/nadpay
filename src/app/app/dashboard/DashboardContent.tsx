@@ -69,18 +69,20 @@ const NADPAY_V2_ABI = [
     "type": "function"
   }
 ];
-import { useCreatorRafflesV3, formatRaffleV3, formatPriceV3Raffle } from "@/hooks/useNadRaffleV3Contract";
+import { useCreatorRafflesV3, formatRaffleV3, formatPriceV3Raffle } from "@/hooks/useNadRaffleV4FastContract";
 import { NADPAY_CONTRACT } from "@/lib/contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { getKnownToken } from "@/lib/knownAssets";
+import { useUserRaffles } from "@/hooks/useUserRaffles";
+import TwitterProfile from "@/components/TwitterProfile";
 
 interface PaymentLinkData {
   linkId: string;
   _id: string;
   creator: string;
   title: string;
-  description: string;
-  coverImage: string;
+  description?: string; // Optional since removed in ultra-secure contract
+  coverImage?: string; // Optional since removed in ultra-secure contract
   price: string;
   paymentToken: string; // New field for V2
   paymentTokenSymbol?: string; // Helper field
@@ -121,7 +123,7 @@ export default function DashboardContent() {
   // Contract constants - V2
   const CONTRACT_ADDRESS = "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905" as `0x${string}`;
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles'>('payment-links');
+  const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles' | 'my-tickets'>('payment-links');
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [selectedLink, setSelectedLink] = useState<PaymentLinkData | null>(null);
   const [participantsSearchQuery, setParticipantsSearchQuery] = useState("");
@@ -133,6 +135,7 @@ export default function DashboardContent() {
   // Pagination states
   const [paymentLinksPage, setPaymentLinksPage] = useState(1);
   const [rafflesPage, setRafflesPage] = useState(1);
+  const [myTicketsPage, setMyTicketsPage] = useState(1);
   const itemsPerPage = 5;
   
   // Create secure link ID using internal ID + creator address as seed
@@ -164,20 +167,25 @@ export default function DashboardContent() {
     totalLinksError: totalLinksError?.message,
     contractAddress: "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905"
   });
-  // V3 contract - raffle hooks (re-enabled with fixed ABI)
+  // V4 Fast contract - raffle hooks
   const {
-    raffles: creatorRafflesData,
+    data: creatorRafflesData,
     isLoading: loadingRaffles,
-    error: rafflesError,
     refetch: refetchRaffles,
   } = useCreatorRafflesV3(address);
   
   // Debug logging for raffles
-  console.log('🎫 Raffle Debug: V2 hooks enabled with fixed ABI', {
+  console.log('🎫 Raffle Debug: V4 Fast hooks enabled', {
     creatorRafflesData,
-    loadingRaffles,
-    rafflesError
+    loadingRaffles
   });
+
+  // User tickets hook for My Tickets tab
+  const { 
+    userTickets, 
+    notifications, 
+    isLoading: loadingUserTickets 
+  } = useUserRaffles(address);
   const { 
     deactivatePaymentLink, 
     isConfirmed: deactivationConfirmed 
@@ -453,12 +461,9 @@ export default function DashboardContent() {
     const headers = ['Address', 'Amount', 'Price', 'Title', 'Description', 'Status', 'Created', 'Expires', 'Sales', 'Buyers', 'Earned'];
     
     // CSV data
-    const csvData = filteredPaymentLinks.map((link: PaymentLinkData) => [
-      link.creatorAddress || address || '',
-      `${link.salesCount}/${link.totalSales > 0 ? link.totalSales : '∞'}`,
-              `${link.price} ${link.paymentTokenSymbol || 'MON'}`,
+    const csvData = filteredPaymentLinks.map(link => [
       `"${link.title.replace(/"/g, '""')}"`, // Escape quotes
-      `"${link.description.replace(/"/g, '""')}"`, // Escape quotes
+      `"${(link.description || 'No description').replace(/"/g, '""')}"`, // Escape quotes and handle undefined
       getLinkStatus(link),
       new Date(link.createdAt).toLocaleDateString(),
       link.expiresAt && Number(link.expiresAt) > 0
@@ -611,27 +616,24 @@ export default function DashboardContent() {
 
 
 
-  // Filter payment links based on search query
+  // Filter functions
   const filteredPaymentLinks = paymentLinks.filter((link: PaymentLinkData) => {
-    if (!searchQuery.trim()) return true;
-    
+    if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
       link.title.toLowerCase().includes(query) ||
-      link.description.toLowerCase().includes(query) ||
+      (link.description && link.description.toLowerCase().includes(query)) ||
       link.linkId.toString().includes(query) ||
       link.price.toString().includes(query)
     );
   });
 
-  // Filter raffles based on search query
   const filteredRaffles = raffles.filter((raffle: RaffleData) => {
-    if (!searchQuery.trim()) return true;
-    
+    if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
       raffle.title.toLowerCase().includes(query) ||
-      raffle.description.toLowerCase().includes(query) ||
+      (raffle.description && raffle.description.toLowerCase().includes(query)) ||
       raffle.id.toString().includes(query) ||
       raffle.ticketPrice.toString().includes(query)
     );
@@ -648,6 +650,18 @@ export default function DashboardContent() {
   const paginatedRaffles = filteredRaffles.slice(
     (rafflesPage - 1) * itemsPerPage,
     rafflesPage * itemsPerPage
+  );
+
+  // Filter and paginate my tickets - only show active raffles
+  const activeUserTickets = userTickets.filter(ticket => ticket.status === 0); // Only active raffles
+  const filteredMyTickets = activeUserTickets.filter(ticket =>
+    ticket.raffleName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalMyTicketsPages = Math.ceil(filteredMyTickets.length / itemsPerPage);
+  const paginatedMyTickets = filteredMyTickets.slice(
+    (myTicketsPage - 1) * itemsPerPage,
+    myTicketsPage * itemsPerPage
   );
 
   // Pagination component
@@ -798,7 +812,7 @@ export default function DashboardContent() {
           </ConnectKitButton.Custom>
           <div className="mt-6">
             <a 
-              href="/app"
+              href="/"
               className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
@@ -842,46 +856,83 @@ export default function DashboardContent() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <a
-                href="/app"
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm"
-              >
-                <span className="hidden sm:inline">Create New Link</span>
-                <span className="sm:hidden">New Link</span>
-              </a>
-              <a
-                href="/app"
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm"
-              >
-                <span className="hidden sm:inline">Create Raffle</span>
-                <span className="sm:hidden">New Raffle</span>
-              </a>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <a 
+                  href="/" 
+                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
+                >
+                  Home
+                </a>
+                <a 
+                  href="/nadpay" 
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  NadPay
+                </a>
+                <a 
+                  href="/nadswap" 
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  NadSwap
+                </a>
+                <a 
+                  href="/rafflehouse" 
+                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                >
+                  RaffleHouse
+                </a>
+              </div>
+              
+              {/* Theme Toggle */}
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
               >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4" />
+                {theme === "dark" ? (
+                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 ) : (
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 )}
               </button>
-              <a
-                href="/app"
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Back to Home</span>
-                <span className="sm:hidden">Back</span>
-              </a>
+              
+              {/* Custom Wallet Button */}
+              {isConnected ? (
+                <div className="relative">
+                  <ConnectKitButton.Custom>
+                    {({ show, truncatedAddress, ensName }) => (
+                      <button
+                        onClick={show}
+                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                      >
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold">
+                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium hidden sm:inline">
+                          {ensName || truncatedAddress}
+                        </span>
+                      </button>
+                    )}
+                  </ConnectKitButton.Custom>
+                </div>
+              ) : (
+                <ConnectKitButton />
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Twitter Profile Section */}
+        <div className="mb-8">
+          <TwitterProfile />
+        </div>
+
         {/* NadPay Stats Overview */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">NadPay Overview</h2>
@@ -1074,6 +1125,37 @@ export default function DashboardContent() {
               <span>Raffles ({raffles.length})</span>
             </div>
           </button>
+          <button
+            onClick={() => setActiveTab('my-tickets')}
+            className={`flex-1 px-6 py-3 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'my-tickets'
+                ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-lg">🎟️</span>
+              <span>My Tickets ({activeUserTickets.length})</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <a
+            href="/nadpay"
+            className="inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm"
+          >
+            <Link2 className="w-5 h-5 mr-2" />
+            <span>Create New Link</span>
+          </a>
+          <a
+            href="/rafflehouse/create"
+            className="inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm"
+          >
+            <span className="text-lg mr-2">🎫</span>
+            <span>Create New Raffle</span>
+          </a>
         </div>
 
         {/* Payment Links */}
@@ -1137,7 +1219,7 @@ export default function DashboardContent() {
                 Create your first payment link to start earning on Monad
               </p>
               <a
-                href="/app"
+                href="/nadpay"
                 className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
               >
                 Create Payment Link
@@ -1344,7 +1426,7 @@ export default function DashboardContent() {
                   Create your first raffle to start engaging your community
                 </p>
                 <a
-                  href="/app"
+                  href="/rafflehouse/create"
                   className="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
                 >
                   Create Raffle
@@ -1483,6 +1565,216 @@ export default function DashboardContent() {
               totalPages={totalRafflesPages}
               onPageChange={setRafflesPage}
             />
+          </motion.div>
+        )}
+
+        {/* My Tickets */}
+        {activeTab === 'my-tickets' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700"
+        >
+          <div className="p-6 border-b border-gray-200 dark:border-dark-700">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  My Raffle Tickets
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  All raffles you've participated in
+                </p>
+              </div>
+              {userTickets.length > 0 && (
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search tickets..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="block w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Found {filteredMyTickets.length} of {activeUserTickets.length} active tickets
+              </div>
+            )}
+          </div>
+
+          {loadingUserTickets ? (
+            <div className="p-12 text-center">
+              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading your tickets...</p>
+            </div>
+                        ) : activeUserTickets.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🎟️</span>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No tickets yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                You haven't participated in any raffles yet. Browse and join exciting raffles!
+              </p>
+              <a
+                href="/rafflehouse"
+                className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Browse Raffles
+              </a>
+            </div>
+          ) : filteredMyTickets.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No tickets found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                No tickets match your search &quot;{searchQuery}&quot;
+              </p>
+              <button
+                onClick={() => setSearchQuery("")}
+                className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Clear Search
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {paginatedMyTickets.map((ticket, index) => (
+                <motion.div
+                  key={ticket.raffleId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
+                  className="p-6"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {ticket.raffleName}
+                        </h3>
+                        {ticket.isWinner && (
+                          <span className="ml-3 px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                            🎉 Winner!
+                          </span>
+                        )}
+                        <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+                          ticket.status === 0
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                        }`}>
+                          {ticket.status === 0 ? 'Active' : 'Ended'}
+                        </span>
+                      </div>
+                      
+                      {/* Ticket Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Tickets Owned</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {ticket.ticketCount}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {ticket.status === 0 ? 'Active' : 'Ended'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Result</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {ticket.isWinner ? (
+                              <span className="text-green-600 dark:text-green-400">Winner! 🎉</span>
+                            ) : ticket.status === 1 ? (
+                              <span className="text-gray-600 dark:text-gray-400">Not won</span>
+                            ) : (
+                              <span className="text-blue-600 dark:text-blue-400">Pending</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Reward Claimed</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {ticket.isWinner ? (
+                              ticket.rewardClaimed ? (
+                                <span className="text-green-600 dark:text-green-400">Yes ✅</span>
+                              ) : (
+                                <span className="text-orange-600 dark:text-orange-400">Pending ⏳</span>
+                              )
+                            ) : (
+                              <span className="text-gray-500 dark:text-gray-400">N/A</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Special Messages */}
+                      {ticket.isWinner && !ticket.rewardClaimed && (
+                        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
+                            🎉 Congratulations! You won this raffle. Don't forget to claim your reward!
+                          </p>
+                        </div>
+                      )}
+
+                      {ticket.isWinner && ticket.rewardClaimed && (
+                        <div className="mb-4 inline-flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <p className="text-green-800 dark:text-green-300 text-sm font-medium">
+                            ✅ Reward successfully claimed!
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={`/raffle/${createPredictableSecureRaffleId(ticket.raffleId)}`}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View Raffle
+                        </a>
+                        
+                        {ticket.isWinner && !ticket.rewardClaimed && (
+                          <a
+                            href={`/raffle/${createPredictableSecureRaffleId(ticket.raffleId)}`}
+                            className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                          >
+                            <span className="w-4 h-4 mr-1">🎁</span>
+                            Claim Reward
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+          
+          {/* My Tickets Pagination */}
+          {totalMyTicketsPages > 1 && (
+            <PaginationControls
+              currentPage={myTicketsPage}
+              totalPages={totalMyTicketsPages}
+              onPageChange={setMyTicketsPage}
+            />
+          )}
           </motion.div>
         )}
       </div>
