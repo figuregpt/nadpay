@@ -47,33 +47,48 @@ export const KNOWN_TOKENS: KnownToken[] = [
     logo: "https://imagedelivery.net/tWwhAahBw7afBzFUrX5mYQ/5d1206c2-042c-4edc-9f8b-dcef2e9e8f00/public",
     description: "",
     verified: true
-  }  // 
-  // ✅ NEW TOKEN EXAMPLE - Copy this format:
-  // {
-  //   address: "0xe0590015a873bf326bd645c3e1266d4db41c4e6b",        // ← Real deployed contract address
-  //   name: "Chog",                     // ← From contract name() function
-  //   symbol: "CHOG",                              // ← From contract symbol() function  
-  //   decimals: 18,                               // ← From contract decimals() function
-  //   logo: "https://your-cdn.com/logo.png",      // ← Optional: Logo URL
-  //   description: "Your token description",       // ← Optional: Brief description
-  //   coingeckoId: "your-token-coingecko-id",     // ← Optional: For price feeds
-  //   website: "https://yourtoken.com",           // ← Optional: Project website
-  //   verified: true                              // ← Always true for admin-added tokens
-  // },
+  },
+  {
+    address: "0xf817257fed379853cDe0fa4F97AB987181B1E5Ea", // Example community token
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    logo: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/usdc.png/public",
+    description: "",
+    verified: true
+  },
+  {
+    address: "0x88b8E2161DEDC77EF4ab7585569D2415a1C1055D", // Example community token
+    name: "Tether USD",
+    symbol: "USDT",
+    decimals: 6,
+    logo: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/images.png/public",
+    description: "",
+    verified: true
+  },
+  {
+    address: "0xfe140e1dCe99Be9F4F15d657CD9b7BF622270C50", // Example community token
+    name: "Moyaki",
+    symbol: "YAKI",
+    decimals: 18,
+    logo: "https://imagedelivery.net/tWwhAahBw7afBzFUrX5mYQ/6679b698-a845-412b-504b-23463a3e1900/public",
+    description: "",
+    verified: true
+  },
+  {
+    address: "0x0F0BDEbF0F83cD1EE3974779Bcb7315f9808c714", // Example community token
+    name: "Molandak",
+    symbol: "DAK",
+    decimals: 18,
+    logo: "https://imagedelivery.net/tWwhAahBw7afBzFUrX5mYQ/27759359-9374-4995-341c-b2636a432800/public",
+    description: "",
+    verified: true
+  }
 ];
 
 // Known NFT collections on Monad testnet (ADMIN CONTROLLED)
 export const KNOWN_NFTS: KnownNFT[] = [
-  {
-    address: "0x4567890123456789012345678901234567890123",
-    name: "Monad Genesis NFTs",
-    description: "First NFT collection on Monad testnet",
-    image: "https://via.placeholder.com/300x300/6366f1/ffffff?text=Genesis",
-    website: "https://genesis.monad.xyz",
-    verified: true,
-    floorPrice: "1.5",
-    totalSupply: 10000
-  },
+
   {
     address: "0x3019BF1dfB84E5b46Ca9D0eEC37dE08a59A41308",
     name: "Nad Name Service",
@@ -84,23 +99,42 @@ export const KNOWN_NFTS: KnownNFT[] = [
     totalSupply: 4869316
   },
   {
-    address: "0x5678901234567890123456789012345678901234",
-    name: "Monad Builders",
-    description: "NFTs for early Monad builders and contributors",
-    image: "https://via.placeholder.com/300x300/10b981/ffffff?text=Builder",
-    website: "https://builders.monad.xyz",
+    address: "0x846B6EaE59b84108eB64DdD54f013b68D112917d",
+    name: "FrensNads",
+    description: "",
+    image: "https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fmonad-testnet%2Fi9YO%252F4yHXUdJsWcTqhqvf4N%252FOFFE2gUD7SCSwVPFg4mjTtUVrGCuQf930w%252F4MDZsLiiQRib%252BKrGtFUk08ExcIr9thKzElN4CElEMjAupE8I%253D",
+    website: "",
     verified: true,
-    floorPrice: "0.8",
-    totalSupply: 5000
+    totalSupply: 333
   },
   {
-    address: "0x6789012345678901234567890123456789012345",
-    name: "Community Art Collection",
-    description: "Community-driven art NFT collection",
-    image: "https://via.placeholder.com/300x300/f59e0b/ffffff?text=Art",
+    address: "0xC5c9425D733b9f769593bd2814B6301916f91271",
+    name: "Purple Frens",
+    description: "",
+    image: "https://bafybeic7qtumkpusmadwyhrhd6ce3ilj6fcumemf7dgyflqhwb2qyy6vwm.ipfs.w3s.link/purple_frens_cover.png",
+    website: "",
     verified: true,
-    totalSupply: 2500
+    totalSupply: 1111
+  },
+  {
+    address: "0xfCF06eB434762aeD4B55300DAC713c6Bc3484117",
+    name: "Spikes",
+    description: "",
+    image: "https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fmonad-testnet%2Fi9YO%252F4yHXUdJsWcTqhqvf0aTPGa7dMbaoJpVINCUIuTbYpz%252FAM0ZI38bbmW5peeVIgH4fvhO%252Fqgc3c%252Bvqag4utIVFcylE0oHY%252Bz0sS4qeqGr1xW%252BSbXlJkImE0K8ke9V5W54iuvOLtY6FXTTK4A8kQ%253D%253D",
+    website: "",
+    verified: true,
+    totalSupply: 3333
+  },
+  {
+    address: "0x000000009e44eBa131196847C685F20Cd4b68aC4",
+    name: "FELIX",
+    description: "",
+    image: "%https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fmonad-testnet%2F6qPHZoEj3nB9yhHygcTgQX9aLzKmRR%252B7DM893auPFu3W91AG0KQvlXsAo27GpZwSlZuu%252FqkXUTC%252BPPI%252Bi%252BkV%252FfapbdD209GEO8qdJHe%252B9aPQ7EIRSHWGTXlTPxOO4whI7dei7Smt1pmWUObL4rOhUw%253D%253D",
+    website: "",
+    verified: true,
+    totalSupply: 2000
   }
+
 ];
 
 // Token categories for UI organization

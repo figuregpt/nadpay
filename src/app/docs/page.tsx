@@ -54,13 +54,36 @@ export default function DocsPage() {
       ]
     },
     {
-      id: "creating-links",
-      title: "Creating Payment Links",
-      icon: Link2,
+      id: "nadpay",
+      title: "NadPay - Payment Links",
+      icon: CreditCard,
       subsections: [
-        { id: "basic-link", title: "Basic Payment Link" },
-        { id: "advanced-options", title: "Advanced Options" },
-        { id: "image-upload", title: "Image Upload" }
+        { id: "nadpay-overview", title: "Overview" },
+        { id: "creating-links", title: "Creating Payment Links" },
+        { id: "payment-process", title: "Payment Process" },
+        { id: "nadpay-dashboard", title: "Dashboard" }
+      ]
+    },
+    {
+      id: "rafflehouse",
+      title: "RaffleHouse - V4 Fast Raffles",
+      icon: Globe,
+      subsections: [
+        { id: "raffle-overview", title: "Overview" },
+        { id: "creating-raffles", title: "Creating Raffles" },
+        { id: "v4-fast-features", title: "V4 Fast Features" },
+        { id: "raffle-participation", title: "Participating in Raffles" }
+      ]
+    },
+    {
+      id: "nadswap",
+      title: "NadSwap - Decentralized Trading",
+      icon: ArrowLeft,
+      subsections: [
+        { id: "swap-overview", title: "Overview" },
+        { id: "creating-swaps", title: "Creating Swap Proposals" },
+        { id: "swap-process", title: "Swap Process" },
+        { id: "escrow-security", title: "Escrow Security" }
       ]
     },
     {
@@ -69,38 +92,18 @@ export default function DocsPage() {
       icon: Code,
       subsections: [
         { id: "contract-overview", title: "Contract Overview" },
-        { id: "functions", title: "Functions" },
-        { id: "events", title: "Events" }
+        { id: "contract-addresses", title: "Contract Addresses" },
+        { id: "security-features", title: "Security Features" }
       ]
     },
     {
-      id: "dashboard",
-      title: "Dashboard",
+      id: "advanced",
+      title: "Advanced Features",
       icon: Settings,
       subsections: [
-        { id: "overview", title: "Overview" },
-        { id: "analytics", title: "Analytics" },
-        { id: "management", title: "Link Management" }
-      ]
-    },
-    {
-      id: "payment-process",
-      title: "Payment Process",
-      icon: CreditCard,
-      subsections: [
-        { id: "customer-flow", title: "Customer Flow" },
-        { id: "transaction-flow", title: "Transaction Flow" },
-        { id: "confirmations", title: "Confirmations" }
-      ]
-    },
-    {
-      id: "security",
-      title: "Security",
-      icon: Shield,
-      subsections: [
-        { id: "security-features", title: "Security Features" },
-        { id: "best-practices", title: "Best Practices" },
-        { id: "audit", title: "Smart Contract Audit" }
+        { id: "multi-token-support", title: "Multi-Token Support" },
+        { id: "nft-integration", title: "NFT Integration" },
+        { id: "rate-limiting", title: "Rate Limiting" }
       ]
     }
   ];
@@ -112,51 +115,461 @@ export default function DocsPage() {
           <div className="space-y-8">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                Welcome to NadPay
+                Welcome to NadPay Ecosystem
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                The decentralized payment link platform built on Monad blockchain.
+                The complete decentralized commerce platform built on Monad blockchain.
               </p>
             </div>
 
             <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-primary-800 dark:text-primary-200 mb-2">
-                What is NadPay?
+                What is NadPay Ecosystem?
               </h3>
               <p className="text-primary-700 dark:text-primary-300">
-                NadPay is a decentralized payment platform that allows you to create secure payment links 
-                on the Monad blockchain. Accept payments in MON tokens with customizable limits, 
-                automatic image compression, and real-time analytics.
+                NadPay is a comprehensive decentralized commerce platform featuring three main applications: 
+                NadPay for payment links, RaffleHouse for V4 Fast raffles, and NadSwap for secure asset trading. 
+                All built with ultra-secure smart contracts on Monad blockchain.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6">
-                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 mb-3 sm:mb-4" />
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Lightning Fast
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <CreditCard className="w-8 h-8 text-blue-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  NadPay
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  Built on Monad's high-performance blockchain for instant transactions.
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Create secure payment links for digital products and services. Multi-token support with advanced analytics.
                 </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                  <li>• Payment link creation</li>
+                  <li>• Multi-token support</li>
+                  <li>• Real-time analytics</li>
+                  <li>• Image compression</li>
+                </ul>
               </div>
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6">
-                <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 mb-3 sm:mb-4" />
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Secure & Trustless
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <Globe className="w-8 h-8 text-purple-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  RaffleHouse
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  Smart contract-based payments with no intermediaries or custody risks.
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  V4 Fast raffle system with 2-minute reveal windows. Ultra-secure randomness and instant winner selection.
                 </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                  <li>• V4 Fast 2-minute reveals</li>
+                  <li>• Token & NFT rewards</li>
+                  <li>• Ultra-secure randomness</li>
+                  <li>• Emergency selection</li>
+                </ul>
               </div>
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 mb-3 sm:mb-4" />
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Easy to Use
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <ArrowLeft className="w-8 h-8 text-green-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  NadSwap
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  Simple interface for creators and seamless experience for customers.
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Decentralized asset trading with escrow security. Swap tokens and NFTs safely with smart contracts.
                 </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                  <li>• Escrow-based swaps</li>
+                  <li>• Token & NFT support</li>
+                  <li>• Proposal system</li>
+                  <li>• Zero counterparty risk</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <Zap className="w-6 h-6 text-yellow-600 mb-2" />
+                <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Lightning Fast</h4>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">Optimized for Monad's 0.5s block time</p>
+              </div>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <Shield className="w-6 h-6 text-green-600 mb-2" />
+                <h4 className="font-semibold text-green-800 dark:text-green-200">Ultra-Secure</h4>
+                <p className="text-sm text-green-700 dark:text-green-300">All contracts are Ultra-Secure versions</p>
+              </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <Users className="w-6 h-6 text-blue-600 mb-2" />
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">User-Friendly</h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Intuitive interface for all skill levels</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "nadpay-overview":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                NadPay - Payment Links
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Create secure payment links for digital products and services with multi-token support.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                💳 NadPay V2 Ultra-Secure
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300">
+                The latest version of NadPay features ultra-secure smart contracts with multi-token support, 
+                advanced analytics, and comprehensive security features.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  ✨ Key Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Multi-Token Support</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Accept payments in MON, USDC, USDT, and more</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Image Compression</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Automatic image optimization and IPFS storage</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Analytics Dashboard</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Real-time sales tracking and insights</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Customizable Limits</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Set sales limits and per-wallet restrictions</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔒 Security Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Ultra-Secure Contracts</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Reentrancy protection and comprehensive security</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Emergency Controls</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Pause functionality for critical situations</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Access Control</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Role-based permissions and ownership management</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Rate Limiting</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Built-in protection against RPC overload</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                📊 Contract Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
+                  <div className="flex items-center mt-1">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded text-sm break-all">
+                      0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V2 Ultra-Secure</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "raffle-overview":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                RaffleHouse - V4 Fast Raffles
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Ultra-fast raffle system with 2-minute reveal windows optimized for Monad blockchain.
+              </p>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                ⚡ V4 Fast Technology
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300">
+                Revolutionary raffle system with 2-minute reveal windows, ultra-secure randomness, and emergency 
+                winner selection. Optimized for Monad's 0.5-second block time.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🚀 V4 Fast Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">2-Minute Reveal Window</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Ultra-fast winner selection vs 1-hour in other versions</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Ultra-Secure Randomness</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Commit-reveal scheme with emergency fallback</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Token & NFT Rewards</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Support for both ERC20 tokens and ERC721 NFTs</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Real-Time Countdown</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Live countdown timers for reveal windows</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🎯 Raffle Types
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Token Raffles</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Win MON, USDC, USDT, or any ERC20 token</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">NFT Raffles</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Win unique NFTs and digital collectibles</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Time-Limited</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Set expiration times for automatic ending</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Sold-Out Auto-End</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Automatic winner selection when all tickets sold</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                📊 Contract Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
+                  <div className="flex items-center mt-1">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded text-sm break-all">
+                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V4 Fast</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "swap-overview":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                NadSwap - Decentralized Trading
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Secure peer-to-peer asset trading with escrow protection and zero counterparty risk.
+              </p>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                🔒 Escrow-Based Security
+              </h3>
+              <p className="text-green-700 dark:text-green-300">
+                NadSwap V3 uses smart contract escrow to eliminate counterparty risk. Assets are locked 
+                in the contract until both parties fulfill their obligations or the swap is cancelled.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔄 Swap Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Token-to-Token</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Swap any ERC20 tokens (MON, USDC, USDT, etc.)</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">NFT-to-Token</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Trade NFTs for tokens or vice versa</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">NFT-to-NFT</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Direct NFT-to-NFT trading</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Proposal System</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Create proposals and wait for acceptance</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🛡️ Security Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Escrow Protection</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Assets locked until swap completion</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Cancellation Rights</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Either party can cancel before acceptance</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">No Counterparty Risk</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Smart contract handles all asset transfers</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Emergency Pause</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Contract can be paused in emergencies</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                📊 Contract Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
+                  <div className="flex items-center mt-1">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded text-sm break-all">
+                      0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V3</p>
+                </div>
               </div>
             </div>
           </div>
@@ -442,25 +855,35 @@ export default function DocsPage() {
                 Smart Contract Overview
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Understanding NadPay's smart contract architecture.
+                Understanding the NadPay Ecosystem's ultra-secure smart contract architecture.
               </p>
             </div>
 
-            {/* NadPay Contract */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🛡️ Ultra-Secure Architecture
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300">
+                All contracts in the NadPay ecosystem use Ultra-Secure versions with comprehensive security features, 
+                reentrancy protection, emergency controls, and rate limiting capabilities.
+              </p>
+            </div>
+
+            {/* NadPay V2 Contract */}
             <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <Link2 className="w-5 h-5 mr-2 text-primary-500" />
-                NadPay Contract
+                <CreditCard className="w-5 h-5 mr-2 text-blue-500" />
+                NadPay V2 Ultra-Secure Contract
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0xa81F9ED8cf8030424F049b385a1dB32cA504177d
+                      0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xa81F9ED8cf8030424F049b385a1dB32cA504177d")}
+                      onClick={() => copyToClipboard("0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -468,39 +891,31 @@ export default function DocsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Network</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Monad Testnet</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compiler Version</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Solidity 0.8.20</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">License</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">MIT</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V2 Ultra-Secure</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Payment Links & Digital Commerce</p>
+                  <p className="mt-1 text-gray-900 dark:text-white">Payment Links & Multi-Token Support</p>
                 </div>
               </div>
             </div>
 
-            {/* NadRaffle Contract */}
+            {/* NadRaffle V4 Fast Contract */}
             <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Globe className="w-5 h-5 mr-2 text-purple-500" />
-                NadRaffle Contract
+                NadRaffle V4 Fast Contract
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e
+                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e")}
+                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -508,69 +923,345 @@ export default function DocsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Network</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Monad Testnet</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compiler Version</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Solidity 0.8.20</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">License</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">MIT</p>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V4 Fast</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Raffles & Community Engagement</p>
+                  <p className="mt-1 text-gray-900 dark:text-white">Ultra-Fast Raffles with 2-min Reveals</p>
                 </div>
               </div>
             </div>
 
+            {/* NadSwap V3 Contract */}
             <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Key Features
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <ArrowLeft className="w-5 h-5 mr-2 text-green-500" />
+                NadSwap V3 Contract
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
+                  <div className="flex items-center mt-1">
+                    <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
+                      0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">V3</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">Escrow-Based Asset Trading</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Network</h4>
+                <p className="text-gray-600 dark:text-gray-400">Monad Testnet</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Compiler</h4>
+                <p className="text-gray-600 dark:text-gray-400">Solidity 0.8.20+</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">License</h4>
+                <p className="text-gray-600 dark:text-gray-400">MIT</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "contract-addresses":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Contract Addresses
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                All deployed contract addresses on Monad Testnet.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
+                <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+                  <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                    💳 NadPay V2 Ultra-Secure
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
+                      0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
+                    Payment links with multi-token support and advanced analytics
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
+                <div className="bg-purple-50 dark:bg-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+                  <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200">
+                    ⚡ NadRaffle V4 Fast
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
+                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
+                    Ultra-fast raffles with 2-minute reveal windows and emergency selection
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
+                <div className="bg-green-50 dark:bg-green-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
+                    🔄 NadSwap V3
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
+                      0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard("0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f")}
+                      className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
+                    Escrow-based asset trading with zero counterparty risk
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                📝 Important Notes
+              </h3>
+              <ul className="text-yellow-700 dark:text-yellow-300 space-y-1">
+                <li>• All contracts are deployed on Monad Testnet (Chain ID: 10143)</li>
+                <li>• These are Ultra-Secure versions with comprehensive security features</li>
+                <li>• Always verify contract addresses before interacting</li>
+                <li>• Use the copy button to avoid typos when copying addresses</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case "security-features":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Security Features
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Comprehensive security measures across all NadPay ecosystem contracts.
+              </p>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                🛡️ Ultra-Secure Architecture
+              </h3>
+              <p className="text-red-700 dark:text-red-300">
+                All contracts in the NadPay ecosystem implement Ultra-Secure versions with multiple layers 
+                of protection against common attack vectors and edge cases.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔒 Core Security Features
+                </h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
-                    <Shield className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <Shield className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">Security</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        ReentrancyGuard and Ownable patterns
-                      </p>
+                      <strong className="text-gray-900 dark:text-white">Reentrancy Guards</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Protection against reentrancy attacks</p>
                     </div>
                   </li>
                   <li className="flex items-start">
-                    <Zap className="w-5 h-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <Shield className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">Gas Optimized</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Efficient storage and function calls
-                      </p>
+                      <strong className="text-gray-900 dark:text-white">Access Control</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Role-based permissions and ownership</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Shield className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Emergency Pause</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Circuit breaker for critical situations</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Shield className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Input Validation</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Comprehensive parameter checking</p>
                     </div>
                   </li>
                 </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  ⚡ Advanced Protection
+                </h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
-                    <Users className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <Zap className="w-5 h-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">Multi-User</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Support for multiple creators
-                      </p>
+                      <strong className="text-gray-900 dark:text-white">Rate Limiting</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Protection against RPC overload</p>
                     </div>
                   </li>
                   <li className="flex items-start">
-                    <Settings className="w-5 h-5 text-purple-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <Zap className="w-5 h-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">Configurable</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Flexible limits and pricing
-                      </p>
+                      <strong className="text-gray-900 dark:text-white">Overflow Protection</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">SafeMath and bounds checking</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Zap className="w-5 h-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Front-running Protection</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Commit-reveal schemes where applicable</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Zap className="w-5 h-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <strong className="text-gray-900 dark:text-white">Gas Optimization</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Efficient code to prevent DoS attacks</p>
                     </div>
                   </li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "creating-links":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Creating Payment Links
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Step-by-step guide to creating secure payment links with NadPay.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                💡 Getting Started
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300">
+                Creating a payment link is simple and only requires three essential fields: title, description, and price. 
+                Advanced options like limits and custom images are optional.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📝 Required Fields
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      1
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Title</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Clear, descriptive name for your product or service
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Description</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Detailed explanation of what customers are purchasing
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">Price & Token</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Set price and choose payment token (MON, USDC, USDT, etc.)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  ⚙️ Optional Features
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Sales Limits</h4>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      Set maximum total sales and per-wallet purchase limits
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Cover Image</h4>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      Upload product image with automatic compression
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
