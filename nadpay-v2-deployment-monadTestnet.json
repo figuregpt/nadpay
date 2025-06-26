@@ -1,0 +1,16 @@
+{
+  "network": "monadTestnet",
+  "contractName": "NadPayV2",
+  "address": "0x091f3ae2E54584BE7195E2A8C5eD3976d0851905",
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "deploymentTime": "2025-06-23T18:09:34.933Z",
+  "blockNumber": 22980480,
+  "platformFee": "100",
+  "feeRecipient": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "features": [
+    "Multi-token payments (MON + ERC20)",
+    "SafeERC20 integration",
+    "Enhanced events with payment token info",
+    "Emergency token withdrawal"
+  ]
+}

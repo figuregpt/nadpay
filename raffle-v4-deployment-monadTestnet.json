@@ -1,0 +1,13 @@
+{
+  "contractName": "NadRaffleV4",
+  "contractAddress": "0xf63e0F0F2602C2D1b0cB1C9709e4B2581561c08d",
+  "network": "monadTestnet",
+  "deployedAt": "2025-06-24T22:39:15.175Z",
+  "features": [
+    "Automatic expiration handling",
+    "No manual trigger needed",
+    "Gas-optimized auto-finalization",
+    "Active raffle tracking",
+    "Multi-token support"
+  ]
+}

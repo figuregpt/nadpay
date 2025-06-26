@@ -1,0 +1,16 @@
+{
+  "contractName": "NadSwap",
+  "contractAddress": "0x1B4287f4f0baB446895Aa5e48E49f6C8b303C930",
+  "network": "monadTestnet",
+  "deployedAt": "2025-06-25T02:58:17.025Z",
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "version": "v2.0.0",
+  "features": [
+    "ERC20 token swaps",
+    "NFT swaps",
+    "1-hour proposal duration",
+    "0.1 MON proposal fee",
+    "Escrow system",
+    "No native token support"
+  ]
+}

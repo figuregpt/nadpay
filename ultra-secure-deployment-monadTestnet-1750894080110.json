@@ -1,0 +1,31 @@
+{
+  "network": "monadTestnet",
+  "chainId": 10143,
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "deploymentTime": "2025-06-25T23:27:51.691Z",
+  "contracts": {
+    "nadPayV2": {
+      "address": "0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25",
+      "constructorArgs": [
+        "0x742d35cC6634C0532925A3b8D4E4f1B7e8c4f4E1"
+      ],
+      "deploymentTx": "0x12e9849200e17e787051d62f1b3ecd51e5a925444ec455fe1c1ec1e3c1b61563"
+    },
+    "nadSwapV3": {
+      "address": "0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f",
+      "constructorArgs": [],
+      "deploymentTx": "0x8f6d9ec85b1a11d1972bcca0b535d19b3fab79f72327b85ee92bb154ba6403ff"
+    },
+    "nadRaffleV4": {
+      "address": "0x755c6402938a039828fe3b6c7C54A07Ea7115C42",
+      "constructorArgs": [],
+      "deploymentTx": "0xe0c049127649d8772feef17c05578e657748308eb31e8fd8b1155debff439b00"
+    }
+  },
+  "gasUsed": {
+    "nadPayV2": "2610917",
+    "nadSwapV3": "2411810",
+    "nadRaffleV4": "3770759"
+  },
+  "notes": "Ultra-secure versions with all security vulnerabilities fixed"
+}

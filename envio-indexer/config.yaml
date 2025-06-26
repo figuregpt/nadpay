@@ -1,0 +1,34 @@
+name: nadpay-indexer
+description: NadPay and NadRaffle indexer for Monad Testnet
+
+networks:
+  - id: 10143
+    hypersync_config:
+      url: https://testnet-rpc.monad.xyz
+    rpc_config:
+      url: https://testnet-rpc.monad.xyz
+    start_block: 22527200
+    contracts:
+      - name: NadPay
+        address: "0x17c31F99b27c10fbFF0aA241202DF687377DC24A"
+        handler: src/EventHandlers.ts
+        events:
+          - event: PaymentLinkCreated(uint256 indexed linkId, address indexed creator, string title, uint256 price, uint256 totalSales, uint256 maxPerWallet, uint256 expireTimestamp)
+          - event: PurchaseMade(uint256 indexed linkId, address indexed buyer, uint256 amount, uint256 totalPrice)
+      
+      - name: NadRaffle
+        address: "0x960F8C6AaDFA3902060A61E3c612833aA05B2837"
+        handler: src/EventHandlers.ts
+        events:
+          - event: RaffleCreated(uint256 indexed raffleId, address indexed creator, string title, uint8 rewardType, address rewardTokenAddress, uint256 rewardAmount, uint256 ticketPrice, uint256 maxTickets, uint256 maxTicketsPerWallet, uint256 expirationTimestamp, bool autoDistributeOnSoldOut)
+          - event: TicketPurchased(uint256 indexed raffleId, address indexed buyer, uint256 amount)
+          - event: RaffleEnded(uint256 indexed raffleId, address indexed winner, uint8 rewardType, address rewardTokenAddress, uint256 rewardAmount)
+          - event: RewardClaimed(uint256 indexed raffleId, address indexed winner)
+
+      # Common ERC20 tokens on Monad Testnet - add known token addresses here
+      # Example tokens (replace with actual addresses when available):
+      # - name: TestUSDC
+      #   address: "0x..." 
+      #   handler: src/EventHandlers.ts
+      #   events:
+      #     - event: Transfer(address indexed from, address indexed to, uint256 value) 

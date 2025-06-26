@@ -1,0 +1,21 @@
+{
+  "contractName": "NadSwapV3",
+  "contractAddress": "0x0ebDFAFbef16A22eA8ffaba4DdA051AC4df8f979",
+  "deploymentTxHash": "0x3edb4389f3134a2c2a04b5301a703ee453334789137da717bdc153fd4e7ffbea",
+  "blockNumber": 23288991,
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "deployedAt": "2025-06-25T17:39:03.062Z",
+  "network": "monadTestnet",
+  "chainId": 10143,
+  "proposalFee": "0.1",
+  "proposalDuration": 3600,
+  "features": [
+    "Escrow-based asset swaps",
+    "Native MON support",
+    "ERC20 token support",
+    "ERC721 NFT support",
+    "Auto-expiration after 1 hour",
+    "Manual cancellation",
+    "Emergency withdrawal"
+  ]
+}

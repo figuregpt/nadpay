@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #836EF9 0%, #7c3aed 100%);
+}
+
+/* Dark mode improvements */
+@layer base {
+  :root {
+    --primary: #836EF9;
+    --primary-dark: #7c3aed;
+    --dark-bg: #200052;
+    --dark-surface: #2d1b69;
+  }
+  
+  .dark {
+    --background: #200052;
+    --foreground: #f8fafc;
+    --card: #2d1b69;
+    --card-foreground: #f1f5f9;
+    --border: #4c1d95;
+    --input: #4c1d95;
+  }
+  
+  html.dark {
+    background-color: #200052;
+  }
+  
+  body.dark {
+    background-color: #200052;
+    color: #f8fafc;
+  }
+}

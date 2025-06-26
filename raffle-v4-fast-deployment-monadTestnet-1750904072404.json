@@ -1,0 +1,16 @@
+{
+  "contractName": "NadRaffleV4Fast",
+  "contractAddress": "0xb7a8e84F06124D2E444605137E781cDd7ac480fa",
+  "deployerAddress": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "network": "monadTestnet",
+  "deploymentTime": "2025-06-26T02:14:32.349Z",
+  "blockNumber": 23347785,
+  "revealWindowSeconds": "120",
+  "revealWindowMinutes": "2",
+  "features": [
+    "2-minute reveal window (instead of 1 hour)",
+    "Optimized for Monad's 0.5s block time",
+    "Same security features as Ultra-Secure",
+    "Fast winner selection"
+  ]
+}

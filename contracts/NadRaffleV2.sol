@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract NadRaffleV2 is ReentrancyGuard, Ownable {
@@ -119,6 +119,7 @@ contract NadRaffleV2 is ReentrancyGuard, Ownable {
         require(maxTickets > 0, "Max tickets must be greater than 0");
         require(maxTicketsPerWallet > 0 && maxTicketsPerWallet <= maxTickets, "Invalid max tickets per wallet");
         require(expirationTime > block.timestamp, "Expiration time must be in the future");
+        require(expirationTime >= block.timestamp + 13 minutes, "Raffle duration must be at least 13 minutes");
 
         // Calculate platform fee for raffle creation (small fee in native token)
         uint256 creationFee = 0.001 ether; // Small creation fee

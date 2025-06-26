@@ -1,0 +1,9 @@
+{
+  "contractAddress": "0xAE2c7410Ee04644F9007fe4d1e2d0aD2C438e081",
+  "transactionHash": "0x35997bd8e79f9dea0e3a2e550f1d16949677ffb36ff527157adf9d7fb06a7165",
+  "blockNumber": 23187916,
+  "gasUsed": "1567513",
+  "network": "monadTestnet",
+  "deployedAt": "2025-06-25T02:51:14.809Z",
+  "contractName": "NadSwap"
+}

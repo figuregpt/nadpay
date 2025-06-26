@@ -1,0 +1,11 @@
+{
+  "network": "monadTestnet",
+  "contractName": "NadRaffle",
+  "contractAddress": "0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e",
+  "deploymentBlock": 22854210,
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "timestamp": "2025-06-22T22:44:04.296Z",
+  "chainId": "10143",
+  "transactionHash": "0x1719ebc19a690ad3e0a20549595ed52e8f52206f9252df060b73a50c8dff078e",
+  "gasUsed": "2372700"
+}

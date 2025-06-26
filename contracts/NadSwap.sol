@@ -1,15 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+interface IERC721 {
+    function transferFrom(address from, address to, uint256 tokenId) external;
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
 
-contract NadSwap is ReentrancyGuard, Ownable {
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+contract NadSwap {
     uint256 public constant PROPOSAL_DURATION = 1 hours;
     uint256 public proposalFee = 0.1 ether; // 0.1 MON
     uint256 public nextProposalId = 1;
+    address public owner;
+    
+    // Reentrancy guard
+    uint256 private _status;
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
     
     struct Asset {
         address contractAddress;
@@ -57,7 +81,10 @@ contract NadSwap is ReentrancyGuard, Ownable {
         address indexed proposer
     );
     
-    constructor() {}
+    constructor() {
+        owner = msg.sender;
+        _status = _NOT_ENTERED;
+    }
     
     function createProposal(
         address _targetWallet,
@@ -78,37 +105,19 @@ contract NadSwap is ReentrancyGuard, Ownable {
             
             if (asset.isNFT) {
                 require(asset.amount == 0, "NFT amount should be 0");
-                require(asset.contractAddress != address(0), "Invalid NFT contract address");
                 IERC721(asset.contractAddress).transferFrom(
                     msg.sender,
                     address(this),
                     asset.tokenId
                 );
             } else {
-                require(asset.tokenId == 0, "Token ID should be 0 for tokens");
+                require(asset.tokenId == 0, "Token ID should be 0 for ERC20");
                 require(asset.amount > 0, "Token amount must be greater than 0");
-                require(asset.contractAddress != address(0), "Native tokens not supported - use ERC20 tokens only");
-                
-                // ERC20 tokens only
                 IERC20(asset.contractAddress).transferFrom(
                     msg.sender,
                     address(this),
                     asset.amount
                 );
-            }
-        }
-        
-        // Validate requested assets (no transfer needed, just validation)
-        for (uint256 i = 0; i < _requestedAssets.length; i++) {
-            Asset memory asset = _requestedAssets[i];
-            
-            if (asset.isNFT) {
-                require(asset.amount == 0, "NFT amount should be 0");
-                require(asset.contractAddress != address(0), "Invalid NFT contract address");
-            } else {
-                require(asset.tokenId == 0, "Token ID should be 0 for tokens");
-                require(asset.amount > 0, "Token amount must be greater than 0");
-                require(asset.contractAddress != address(0), "Native tokens not supported - use ERC20 tokens only");
             }
         }
         
@@ -146,7 +155,7 @@ contract NadSwap is ReentrancyGuard, Ownable {
         require(!proposal.isExpired, "Proposal expired");
         require(block.timestamp <= proposal.deadline, "Proposal deadline passed");
         
-        // Transfer requested assets from acceptor to proposer
+        // Transfer requested assets from accepter to proposer
         for (uint256 i = 0; i < proposal.requestedAssets.length; i++) {
             Asset memory asset = proposal.requestedAssets[i];
             
@@ -157,7 +166,6 @@ contract NadSwap is ReentrancyGuard, Ownable {
                     asset.tokenId
                 );
             } else {
-                // ERC20 tokens only (native tokens not supported)
                 IERC20(asset.contractAddress).transferFrom(
                     msg.sender,
                     proposal.proposer,
@@ -177,8 +185,8 @@ contract NadSwap is ReentrancyGuard, Ownable {
                     asset.tokenId
                 );
             } else {
-                // ERC20 tokens only
-                IERC20(asset.contractAddress).transfer(
+                IERC20(asset.contractAddress).transferFrom(
+                    address(this),
                     msg.sender,
                     asset.amount
                 );
@@ -227,10 +235,10 @@ contract NadSwap is ReentrancyGuard, Ownable {
         emit ProposalExpired(_proposalId, proposal.proposer);
     }
     
-    function _returnAssetsToProposer(uint256 proposalId) private {
-        Proposal storage proposal = proposals[proposalId];
+    function _returnAssetsToProposer(uint256 _proposalId) internal {
+        Proposal storage proposal = proposals[_proposalId];
         
-        // Return offered assets to proposer
+        // Return offered assets from escrow to proposer
         for (uint256 i = 0; i < proposal.offeredAssets.length; i++) {
             Asset memory asset = proposal.offeredAssets[i];
             
@@ -241,8 +249,8 @@ contract NadSwap is ReentrancyGuard, Ownable {
                     asset.tokenId
                 );
             } else {
-                // ERC20 tokens only
-                IERC20(asset.contractAddress).transfer(
+                IERC20(asset.contractAddress).transferFrom(
+                    address(this),
                     proposal.proposer,
                     asset.amount
                 );
@@ -318,7 +326,7 @@ contract NadSwap is ReentrancyGuard, Ownable {
     }
     
     function withdrawFees() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        payable(owner).transfer(address(this).balance);
     }
     
     // Emergency function to handle stuck assets
@@ -328,9 +336,9 @@ contract NadSwap is ReentrancyGuard, Ownable {
         bool _isNFT
     ) external onlyOwner {
         if (_isNFT) {
-            IERC721(_token).transferFrom(address(this), owner(), _tokenId);
+            IERC721(_token).transferFrom(address(this), owner, _tokenId);
         } else {
-            IERC20(_token).transfer(owner(), IERC20(_token).balanceOf(address(this)));
+            IERC20(_token).transfer(owner, IERC20(_token).balanceOf(address(this)));
         }
     }
 } 
