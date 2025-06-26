@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  //console.log("Deploying NadPay contract to Monad Testnet...");
+  ////console.log("Deploying NadPay contract to Monad Testnet...");
 
   // Get the ContractFactory and Signers here.
   const NadPay = await hre.ethers.getContractFactory("NadPay");
@@ -13,13 +13,13 @@ async function main() {
   
   const contractAddress = await nadpay.getAddress();
   
-  //console.log("✅ NadPay deployed to:", contractAddress);
-  //console.log("🌐 Network:", hre.network.name);
-  //console.log("⛽ Deployer:", await nadpay.runner.getAddress());
+  ////console.log("✅ NadPay deployed to:", contractAddress);
+  ////console.log("🌐 Network:", hre.network.name);
+  ////console.log("⛽ Deployer:", await nadpay.runner.getAddress());
   
   // Verify on explorer (if available)
   if (hre.network.name !== "hardhat") {
-    //console.log("⏳ Waiting for block confirmations...");
+    ////console.log("⏳ Waiting for block confirmations...");
     await nadpay.deploymentTransaction().wait(6);
     
     try {
@@ -27,9 +27,9 @@ async function main() {
         address: contractAddress,
         constructorArguments: [],
       });
-      //console.log("✅ Contract verified on explorer");
+      ////console.log("✅ Contract verified on explorer");
     } catch (error) {
-      //console.log("❌ Verification failed:", error.message);
+      ////console.log("❌ Verification failed:", error.message);
     }
   }
   
@@ -49,10 +49,10 @@ async function main() {
     JSON.stringify(deploymentInfo, null, 2)
   );
   
-  //console.log("📄 Deployment info saved to deployment-" + hre.network.name + ".json");
-  //console.log("\n🚀 Contract is ready to use!");
-  //console.log("📋 Contract Address:", contractAddress);
-  //console.log("🔗 Explorer:", `https://testnet.monadexplorer.com/address/${contractAddress}`);
+  ////console.log("📄 Deployment info saved to deployment-" + hre.network.name + ".json");
+  ////console.log("\n🚀 Contract is ready to use!");
+  ////console.log("📋 Contract Address:", contractAddress);
+  ////console.log("🔗 Explorer:", `https://testnet.monadexplorer.com/address/${contractAddress}`);
 }
 
 main()
