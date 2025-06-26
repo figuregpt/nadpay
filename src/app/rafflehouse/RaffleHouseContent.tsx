@@ -538,25 +538,38 @@ export default function RaffleHouseContent() {
             </button>
             
               {/* Custom Wallet Button */}
-              <div className="relative">
+              {isConnected ? (
+                <div className="relative">
+                  <ConnectKitButton.Custom>
+                    {({ show, truncatedAddress, ensName }) => (
+                      <button
+                        onClick={show}
+                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                      >
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold">
+                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium hidden sm:inline">
+                          {ensName || truncatedAddress}
+                        </span>
+                      </button>
+                    )}
+                  </ConnectKitButton.Custom>
+                </div>
+              ) : (
                 <ConnectKitButton.Custom>
-                  {({ show, truncatedAddress, ensName }) => (
+                  {({ show }) => (
                     <button
                       onClick={show}
-                      className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
                     >
-                      <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-bold">
-                          {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium hidden sm:inline">
-                        {ensName || truncatedAddress}
-                      </span>
+                      Connect Wallet
                     </button>
                   )}
                 </ConnectKitButton.Custom>
-              </div>
+              )}
           </div>
         </div>
         </div>
