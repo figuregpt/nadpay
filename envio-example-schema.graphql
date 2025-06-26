@@ -1,0 +1,75 @@
+type PaymentLink @entity {
+  id: ID! # linkId as string
+  creator: String! # address
+  title: String!
+  description: String!
+  coverImage: String!
+  price: BigInt!
+  totalSales: BigInt!
+  maxPerWallet: BigInt!
+  salesCount: BigInt!
+  totalEarned: BigInt!
+  isActive: Boolean!
+  createdAt: BigInt!
+  expiresAt: BigInt!
+  
+  # Relations
+  purchases: [Purchase!]! @derivedFrom(field: "paymentLink")
+}
+
+type Purchase @entity {
+  id: ID! # txHash + logIndex
+  paymentLink: PaymentLink!
+  buyer: String! # address
+  amount: BigInt!
+  totalPrice: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type Raffle @entity {
+  id: ID! # raffleId as string
+  creator: String! # address
+  title: String!
+  description: String!
+  imageHash: String!
+  rewardType: RewardType!
+  rewardTokenAddress: String!
+  rewardAmount: BigInt!
+  ticketPrice: BigInt!
+  maxTickets: BigInt!
+  maxTicketsPerWallet: BigInt!
+  expirationTime: BigInt!
+  autoDistributeOnSoldOut: Boolean!
+  ticketsSold: BigInt!
+  totalEarned: BigInt!
+  winner: String # address, null if not ended
+  status: RaffleStatus!
+  createdAt: BigInt!
+  rewardClaimed: Boolean!
+  
+  # Relations  
+  tickets: [Ticket!]! @derivedFrom(field: "raffle")
+}
+
+type Ticket @entity {
+  id: ID! # raffleId + ticketNumber
+  raffle: Raffle!
+  buyer: String! # address
+  ticketNumber: BigInt!
+  amount: BigInt! # ticket price
+  purchaseTime: BigInt!
+  randomSeed: String!
+  txHash: String!
+}
+
+enum RewardType {
+  TOKEN
+  NFT
+}
+
+enum RaffleStatus {
+  ACTIVE
+  ENDED  
+  CANCELLED
+} 

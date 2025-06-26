@@ -1,0 +1,45 @@
+name: nadpay-indexer
+description: NadPay payment links and raffle indexer
+
+networks:
+  - id: 10143
+    name: monad-testnet
+    rpc_config:
+      url: https://testnet-rpc.monad.xyz
+    start_block: 0
+
+contracts:
+  - name: NadPay
+    address: "0x17c31F99b27c10fbFF0aA241202DF687377DC24A"
+    abi_file_path: ./abis/NadPay.json
+    handler: src/EventHandlers.ts
+    events:
+      - event: PaymentLinkCreated
+        requiredEntities:
+          - name: PaymentLink
+      - event: PurchaseMade
+        requiredEntities:
+          - name: Purchase
+          - name: PaymentLink
+      - event: PaymentLinkDeactivated
+        requiredEntities:
+          - name: PaymentLink
+
+  - name: NadRaffle
+    address: "0x960F8C6AaDFA3902060A61E3c612833aA05B2837"
+    abi_file_path: ./abis/NadRaffle.json
+    handler: src/EventHandlers.ts
+    events:
+      - event: RaffleCreated
+        requiredEntities:
+          - name: Raffle
+      - event: TicketPurchased
+        requiredEntities:
+          - name: Ticket
+          - name: Raffle
+      - event: RaffleEnded
+        requiredEntities:
+          - name: Raffle
+      - event: RewardClaimed
+        requiredEntities:
+          - name: Raffle 
