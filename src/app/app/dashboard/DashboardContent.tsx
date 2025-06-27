@@ -152,8 +152,8 @@ export default function DashboardContent() {
     return `${addressSeed}_${Math.abs(hash).toString(16).slice(0, 8)}`;
   };
   
-  // Contract hooks
-  const { data: creatorLinksData, isLoading: loadingLinks, refetch, error: linksError } = useCreatorLinksV2(address);
+  // Contract hooks - Enable debug mode to show all payment links
+  const { data: creatorLinksData, isLoading: loadingLinks, refetch, error: linksError } = useCreatorLinksV2(address, true);
   const { data: totalLinks, error: totalLinksError } = useTotalLinksV2();
   
   // Debug logging

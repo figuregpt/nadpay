@@ -778,7 +778,7 @@ export function usePaymentLinkPurchasesV2(linkId: number) {
   });
 }
 
-export function useCreatorLinksV2(creatorAddress?: string) {
+export function useCreatorLinksV2(creatorAddress?: string, debug = false) {
   const publicClient = usePublicClient();
   const [links, setLinks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -786,7 +786,7 @@ export function useCreatorLinksV2(creatorAddress?: string) {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
   const refetch = async (forceRefresh = false) => {
-    if (!creatorAddress || !publicClient) return;
+    if ((!creatorAddress && !debug) || !publicClient) return;
 
     // Rate limiting: Don't refetch more than once every 3 seconds
     const now = Date.now();
@@ -799,47 +799,60 @@ export function useCreatorLinksV2(creatorAddress?: string) {
     setError(null);
 
     try {
-      // Add delay between requests to avoid rate limiting
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      let creatorLinkIds: bigint[] = [];
+      
+      if (debug) {
+        // Debug mode: get all links and show them
+        const totalLinks = await publicClient.readContract({
+          address: NADPAY_V2_CONTRACT_ADDRESS,
+          abi: NADPAY_V2_ABI,
+          functionName: 'getTotalLinks',
+        }) as bigint;
+        
+        console.log('🔍 DEBUG MODE: Total Links:', totalLinks.toString());
+        
+        // Create array of all link IDs
+        creatorLinkIds = Array.from({ length: Number(totalLinks) }, (_, i) => BigInt(i));
+      } else {
+        // Normal mode: get creator-specific links
+        creatorLinkIds = await publicClient.readContract({
+          address: NADPAY_V2_CONTRACT_ADDRESS,
+          abi: NADPAY_V2_ABI,
+          functionName: 'getAllCreatorLinks',
+          args: [creatorAddress as `0x${string}`],
+        }) as bigint[];
+      }
 
-      // First get link IDs
-      const linkIds = await publicClient.readContract({
-        address: NADPAY_V2_CONTRACT_ADDRESS,
-        abi: NADPAY_V2_ABI,
-        functionName: 'getCreatorLinks',
-        args: [creatorAddress as `0x${string}`],
-      }) as bigint[];
+      console.log('📋 Creator Link IDs:', creatorLinkIds.map(id => id.toString()));
 
-      console.log('📋 Creator Link IDs:', linkIds.map(id => id.toString()));
-
-      // Add delay before fetching details
-      await delay(500);
-
-      // Then get each link's details with delays between requests
-      const linkDetails = [];
-      for (let i = 0; i < linkIds.length; i++) {
+      const creatorLinks: any[] = [];
+      
+      // Fetch each link details
+      for (const linkId of creatorLinkIds) {
         try {
           const link = await publicClient.readContract({
             address: NADPAY_V2_CONTRACT_ADDRESS,
             abi: NADPAY_V2_ABI,
             functionName: 'getPaymentLink',
-            args: [linkIds[i]],
+            args: [linkId],
           }) as any;
-          linkDetails.push({ ...link, linkId: Number(linkIds[i]) });
           
-          // Add delay between requests (except for the last one)
-          if (i < linkIds.length - 1) {
-            await delay(300);
+          // In debug mode, show all links; in normal mode, filter by creator
+          if (debug || link.creator.toLowerCase() === creatorAddress?.toLowerCase()) {
+            creatorLinks.push({
+              ...link,
+              linkId: Number(linkId),
+            });
           }
         } catch (linkError) {
-          console.error(`❌ Error fetching link ${linkIds[i]}:`, linkError);
-          // Continue with other links even if one fails
+          console.error(`❌ Error fetching link ${linkId.toString()}:`, linkError);
+          // Continue with next link
         }
       }
 
-      console.log('📋 Creator Link Details:', linkDetails);
+      console.log('📋 Creator Links Found:', creatorLinks);
       
-      setLinks(linkDetails);
+      setLinks(creatorLinks);
       setLastFetchTime(now);
     } catch (err) {
       console.error('❌ Error fetching creator links:', err);
@@ -853,7 +866,7 @@ export function useCreatorLinksV2(creatorAddress?: string) {
     if (creatorAddress) {
       refetch();
     }
-  }, [creatorAddress]);
+  }, [creatorAddress, publicClient]);
 
   return {
     data: links,
