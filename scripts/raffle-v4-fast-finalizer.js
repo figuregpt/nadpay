@@ -29,7 +29,8 @@ class RaffleV4FastFinalizer {
     this.revealWindow = 30; // 30 seconds (updated from 2 minutes for production)
     this.commitments = new Map(); // Store our randomness commitments
     this.processedRaffles = new Set(); // Cache processed raffle IDs to avoid reprocessing
-    this.maxBatchSize = 50; // Process max 50 raffles per cycle
+    this.maxBatchSize = 10; // Process max 10 raffles per cycle (reduced for rate limiting)
+    this.requestDelay = 500; // 500ms delay between RPC requests
   }
 
   async checkWalletBalance() {
@@ -50,6 +51,11 @@ class RaffleV4FastFinalizer {
     return Math.floor(Math.random() * 1000000000);
   }
 
+  // Add delay between RPC requests to avoid rate limiting
+  async delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async getRafflesThatNeedCommitment() {
     try {
       // Use getActiveRaffleIds() instead of checking all raffles
@@ -67,6 +73,8 @@ class RaffleV4FastFinalizer {
 
       for (const raffleId of raffleIdsToCheck) {
         try {
+          // Add delay to avoid rate limiting
+          await this.delay(this.requestDelay);
           const raffle = await this.contract.getRaffle(raffleId);
           
           // ✅ Skip if raffle is already cancelled (status = 2)
@@ -152,6 +160,8 @@ class RaffleV4FastFinalizer {
 
       for (const raffleId of raffleIdsToCheck) {
         try {
+          // Add delay to avoid rate limiting
+          await this.delay(this.requestDelay);
           const raffle = await this.contract.getRaffle(raffleId);
           
           // ✅ Skip if raffle is already cancelled (status = 2)
@@ -444,7 +454,7 @@ class RaffleV4FastFinalizer {
     }
   }
 
-  startCronJob(intervalMinutes = 1) {
+  startCronJob(intervalMinutes = 3) {
     console.log(`🤖 Starting V4 Fast Raffle Finalizer`);
     console.log(`📍 Contract: ${this.contractAddress}`);
     console.log(`👤 Wallet: ${this.wallet.address}`);
