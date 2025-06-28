@@ -3,10 +3,18 @@ require("dotenv").config();
 
 class RaffleV4FastFinalizer {
   constructor() {
+    // Check environment variables
+    if (!process.env.PRIVATE_KEY) {
+      throw new Error("❌ PRIVATE_KEY environment variable not found!");
+    }
+    
+    console.log("✅ Environment variables loaded");
+    console.log(`🔑 Wallet address: ${new ethers.Wallet(process.env.PRIVATE_KEY).address}`);
+    
     // Use Monad testnet provider
     this.provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
     this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
-            this.contractAddress = "0xa874905B117242eC6c966E35B18985e9242Bb633"; // V4 WORKING contract
+    this.contractAddress = "0xa874905B117242eC6c966E35B18985e9242Bb633"; // V4 WORKING contract
     
     this.abi = [
       "function getActiveRaffleIds() external view returns (uint256[])",
@@ -483,21 +491,40 @@ class RaffleV4FastFinalizer {
 
 // Usage
 async function main() {
-  const finalizer = new RaffleV4FastFinalizer();
+  console.log("🚀 Starting Raffle V4 Fast Finalizer...");
   
-  // Check if this is a manual run or cron job
-  const args = process.argv.slice(2);
-  
-  if (args.includes('--once')) {
-    // Manual single run
-    await finalizer.triggerOnce();
-    process.exit(0);
-  } else {
-    // Start cron job
-    const interval = args.includes('--interval') ? 
-      parseInt(args[args.indexOf('--interval') + 1]) || 1 : 1;
+  try {
+    const finalizer = new RaffleV4FastFinalizer();
     
-    finalizer.startCronJob(interval);
+    // Check wallet connection first
+    console.log("🔗 Testing wallet connection...");
+    const hasBalance = await finalizer.checkWalletBalance();
+    if (!hasBalance) {
+      console.log("⚠️  Low wallet balance, but continuing...");
+    }
+    
+    // Check if this is a manual run or cron job
+    const args = process.argv.slice(2);
+    
+    if (args.includes('--once')) {
+      // Manual single run
+      console.log("🎯 Running finalizer once (test mode)");
+      await finalizer.triggerOnce();
+      process.exit(0);
+    } else {
+      // Start cron job
+      const interval = args.includes('--interval') ? 
+        parseInt(args[args.indexOf('--interval') + 1]) || 3 : 3;
+      
+      console.log(`🤖 Starting continuous finalizer (${interval} minute intervals)`);
+      finalizer.startCronJob(interval);
+    }
+  } catch (error) {
+    console.error("💥 Finalizer startup failed:", error.message);
+    console.log("🔄 Retrying in 30 seconds...");
+    setTimeout(() => {
+      main();
+    }, 30000);
   }
 }
 
