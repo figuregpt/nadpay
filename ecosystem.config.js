@@ -14,7 +14,7 @@ module.exports = {
     {
       name: 'raffle-finalizer',
       script: 'npm',
-      args: 'run finalizer:start',
+      args: 'run finalizer:fast',
       cwd: '/app',
       env: {
         NODE_ENV: 'production'
