@@ -21,8 +21,8 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
-# Expose port
-EXPOSE 3000
+# Expose port (Railway will set PORT dynamically)
+EXPOSE ${PORT:-3000}
 
 # Start both web app and finalizer using PM2
 CMD ["pm2-runtime", "start", "ecosystem.config.js"] 
