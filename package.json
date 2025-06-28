@@ -27,6 +27,7 @@
     "autoprefixer": "^10.4.21",
     "connectkit": "^1.9.1",
     "dotenv": "^16.5.0",
+    "ethers": "^6.14.4",
     "framer-motion": "^12.18.1",
     "ipfs-http-client": "^60.0.1",
     "lucide-react": "^0.517.0",
