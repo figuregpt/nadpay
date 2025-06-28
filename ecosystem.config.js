@@ -7,7 +7,8 @@ module.exports = {
       cwd: '/app',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
+        HOSTNAME: '0.0.0.0'
       }
     },
     {
