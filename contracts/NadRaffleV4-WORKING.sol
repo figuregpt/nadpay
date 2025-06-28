@@ -88,7 +88,7 @@ contract NadRaffleV4Working is ReentrancyGuard, Ownable2Step, Pausable {
     mapping(uint256 => uint256) public dailyWithdrawn;
     
     // ✅ NEW: Admin configurable parameters
-    uint256 public configuredMinDuration = 5 minutes; // Admin can change this
+    uint256 public configuredMinDuration = 55 minutes; // Admin can change this
     uint256 public configuredRevealWindow = 2 minutes; // Admin can change this
     uint256 public configuredMaxTicketsPerPurchase = 100; // Admin can change this
     bool public adminOverrideEnabled = false; // Emergency admin powers
