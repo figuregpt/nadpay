@@ -20,6 +20,26 @@ export interface NFTWithMetadata {
   error?: string;
 }
 
+// In-memory cache for NFT metadata
+const metadataCache = new Map<string, {
+  data: NFTMetadata | null;
+  timestamp: number;
+  error?: string;
+}>();
+
+// Cache duration: 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
+
+// Helper function to generate cache key
+function getCacheKey(contractAddress: string, tokenId: string): string {
+  return `${contractAddress.toLowerCase()}-${tokenId}`;
+}
+
+// Helper function to check if cache entry is valid
+function isCacheValid(timestamp: number): boolean {
+  return Date.now() - timestamp < CACHE_DURATION;
+}
+
 // Rate limiting helper
 class RateLimiter {
   private requests: number[] = [];
@@ -110,6 +130,13 @@ const ERC721_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function'
+  },
+  {
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    name: 'ownerOf',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
   }
 ] as const;
 
@@ -146,7 +173,7 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
   }
 }
 
-// Hook to get owned NFTs with metadata for a specific collection
+// Hook to get owned NFTs with metadata for a specific collection using Transfer events
 export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?: string) {
   const [nfts, setNfts] = useState<NFTWithMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,50 +191,146 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
       setIsLoading(true);
       setError(null);
       
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('❌ NFT loading timeout after 10 seconds');
+        setError('Loading timeout - please refresh');
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
+      
       try {
-        // Get balance of owner
-        const balance = await publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: ERC721_ABI,
-          functionName: 'balanceOf',
-          args: [ownerAddress as `0x${string}`]
-        });
+        console.log('🔍 Starting NFT fetch for:', ownerAddress);
+        
+        // Method 1: Use Transfer events (but with limits for speed)
+        const fromBlock = BigInt(Math.max(0, Date.now() - 30 * 24 * 60 * 60 * 1000)); // Last 30 days only
+        const toBlock = 'latest';
+        
+        console.log('📅 Scanning events from block:', fromBlock.toString());
+        
+        let ownedTokenIds: string[] = [];
+        
+        try {
+          // Get Transfer events with timeout
+          const [transfersToUser, transfersFromUser] = await Promise.race([
+            Promise.all([
+              publicClient.getLogs({
+                address: contractAddress as `0x${string}`,
+                event: {
+                  type: 'event',
+                  name: 'Transfer',
+                  inputs: [
+                    { name: 'from', type: 'address', indexed: true },
+                    { name: 'to', type: 'address', indexed: true },
+                    { name: 'tokenId', type: 'uint256', indexed: true }
+                  ]
+                },
+                args: { to: ownerAddress as `0x${string}` },
+                fromBlock,
+                toBlock
+              }),
+              publicClient.getLogs({
+                address: contractAddress as `0x${string}`,
+                event: {
+                  type: 'event',
+                  name: 'Transfer',
+                  inputs: [
+                    { name: 'from', type: 'address', indexed: true },
+                    { name: 'to', type: 'address', indexed: true },
+                    { name: 'tokenId', type: 'uint256', indexed: true }
+                  ]
+                },
+                args: { from: ownerAddress as `0x${string}` },
+                fromBlock,
+                toBlock
+              })
+            ]),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Event scan timeout')), 5000)
+            )
+          ]) as [any[], any[]];
 
-        const balanceNum = Number(balance);
-        if (balanceNum === 0) {
+          console.log('📨 Transfer TO user:', transfersToUser.length);
+          console.log('📤 Transfer FROM user:', transfersFromUser.length);
+
+          // Process transfers to build current ownership map
+          const tokenOwnership = new Map<string, boolean>();
+
+          transfersToUser.forEach(log => {
+            const tokenId = log.args?.tokenId?.toString();
+            if (tokenId) {
+              tokenOwnership.set(tokenId, true);
+            }
+          });
+
+          transfersFromUser.forEach(log => {
+            const tokenId = log.args?.tokenId?.toString();
+            if (tokenId) {
+              tokenOwnership.set(tokenId, false);
+            }
+          });
+
+          ownedTokenIds = Array.from(tokenOwnership.entries())
+            .filter(([_, isOwned]) => isOwned)
+            .map(([tokenId, _]) => tokenId);
+
+          console.log('🎯 From events:', ownedTokenIds);
+        } catch (eventError) {
+          console.log('⚠️ Event scan failed/timeout, using fallback:', eventError);
+        }
+
+        // Always try fallback method if events didn't work or found nothing
+        if (ownedTokenIds.length === 0) {
+          console.log('🔄 Using tokenOfOwnerByIndex fallback...');
+          
+          try {
+            const balance = await publicClient.readContract({
+              address: contractAddress as `0x${string}`,
+              abi: ERC721_ABI,
+              functionName: 'balanceOf',
+              args: [ownerAddress as `0x${string}`]
+            });
+
+            const balanceNum = Number(balance);
+            console.log('👛 Balance:', balanceNum);
+
+            if (balanceNum > 0) {
+              // Get first few tokens quickly, then validate
+              const maxTokens = Math.min(balanceNum, 10); // Limit for speed
+              
+              for (let i = 0; i < maxTokens; i++) {
+                try {
+                  const tokenId = await publicClient.readContract({
+                    address: contractAddress as `0x${string}`,
+                    abi: ERC721_ABI,
+                    functionName: 'tokenOfOwnerByIndex',
+                    args: [ownerAddress as `0x${string}`, BigInt(i)]
+                  });
+                  
+                  ownedTokenIds.push(tokenId.toString());
+                  console.log('✅ Token from index:', tokenId.toString());
+                } catch (error) {
+                  console.log('❌ Error at index', i, '- stopping');
+                  break;
+                }
+              }
+            }
+          } catch (error) {
+            console.log('❌ Fallback failed:', error);
+            throw new Error('Failed to load NFTs - please refresh the page');
+          }
+        }
+
+        console.log('🏆 Final token IDs:', ownedTokenIds);
+        clearTimeout(timeoutId);
+
+        if (ownedTokenIds.length === 0) {
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
-        // Get all owned token IDs with rate limiting
-        const tokenIds: string[] = [];
-        for (let i = 0; i < balanceNum; i++) {
-          try {
-            await rateLimiter.throttle();
-            
-            const tokenId = await retryWithBackoff(async () => {
-              return await publicClient.readContract({
-                address: contractAddress as `0x${string}`,
-                abi: ERC721_ABI,
-                functionName: 'tokenOfOwnerByIndex',
-                args: [ownerAddress as `0x${string}`, BigInt(i)]
-              });
-            });
-            
-            console.log(`🎯 useOwnedNFTsWithMetadata - Token at index ${i}:`, tokenId.toString());
-            tokenIds.push(tokenId.toString());
-          } catch (error) {
-            console.error(`Error fetching token at index ${i}:`, error);
-            // Some contracts might not support tokenOfOwnerByIndex
-            // In that case, we'll need to use a different approach
-          }
-        }
-
-        console.log(`✅ useOwnedNFTsWithMetadata - Final tokenIds:`, tokenIds);
-
         // Initialize NFTs array
-        const nftArray: NFTWithMetadata[] = tokenIds.map(tokenId => ({
+        const nftArray: NFTWithMetadata[] = ownedTokenIds.map(tokenId => ({
           address: contractAddress,
           tokenId,
           metadata: null,
@@ -216,48 +339,39 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
         
         setNfts(nftArray);
 
-        // Fetch metadata for each token with rate limiting
-        const metadataPromises = tokenIds.map(async (tokenId, index) => {
+        // Fetch metadata quickly (parallel but limited)
+        const metadataPromises = ownedTokenIds.slice(0, 5).map(async (tokenId, index) => {
           try {
-            await rateLimiter.throttle();
-            
-            // Get tokenURI with retry logic
-            const tokenURI = await retryWithBackoff(async () => {
-              return await publicClient.readContract({
-                address: contractAddress as `0x${string}`,
-                abi: ERC721_ABI,
-                functionName: 'tokenURI',
-                args: [BigInt(tokenId)]
-              });
+            const tokenURI = await publicClient.readContract({
+              address: contractAddress as `0x${string}`,
+              abi: ERC721_ABI,
+              functionName: 'tokenURI',
+              args: [BigInt(tokenId)]
             });
 
-            // Fetch metadata from URI
             const metadata = await fetchNFTMetadata(tokenURI);
             
-            // Update the specific NFT in the array
             setNfts(prev => prev.map((nft, i) => 
               i === index 
                 ? { ...nft, metadata, isLoading: false }
                 : nft
             ));
           } catch (error) {
-            console.error(`Error fetching metadata for token ${tokenId}:`, error);
-            const errorMessage = error instanceof Error && error.message.includes('429') 
-              ? 'Rate limited - please wait and try again' 
-              : 'Failed to load metadata';
-              
+            console.error(`Metadata error for ${tokenId}:`, error);
             setNfts(prev => prev.map((nft, i) => 
               i === index 
-                ? { ...nft, isLoading: false, error: errorMessage }
+                ? { ...nft, isLoading: false, error: 'Failed to load' }
                 : nft
             ));
           }
         });
 
         await Promise.all(metadataPromises);
+        
       } catch (error) {
-        console.error('Error fetching owned NFTs:', error);
-        setError(error instanceof Error ? error.message : 'Unknown error');
+        console.error('❌ NFT fetch error:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load NFTs');
+        clearTimeout(timeoutId);
       } finally {
         setIsLoading(false);
       }
@@ -283,6 +397,18 @@ export function useNFTMetadata(contractAddress: string, tokenId: string) {
       return;
     }
 
+    const cacheKey = getCacheKey(contractAddress, tokenId);
+    
+    // Check cache first
+    const cached = metadataCache.get(cacheKey);
+    if (cached && isCacheValid(cached.timestamp)) {
+      console.log('📋 Using cached NFT metadata for', tokenId);
+      setMetadata(cached.data);
+      setError(cached.error || null);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchMetadata = async () => {
       setIsLoading(true);
       setError(null);
@@ -302,12 +428,27 @@ export function useNFTMetadata(contractAddress: string, tokenId: string) {
 
         // Fetch metadata from URI
         const fetchedMetadata = await fetchNFTMetadata(tokenURI);
+        
+        // Cache the result
+        metadataCache.set(cacheKey, {
+          data: fetchedMetadata,
+          timestamp: Date.now()
+        });
+        
         setMetadata(fetchedMetadata);
       } catch (error) {
         console.error('Error fetching NFT metadata:', error);
         const errorMessage = error instanceof Error && error.message.includes('429') 
           ? 'Rate limited - please wait and try again' 
           : (error instanceof Error ? error.message : 'Unknown error');
+        
+        // Cache the error too
+        metadataCache.set(cacheKey, {
+          data: null,
+          timestamp: Date.now(),
+          error: errorMessage
+        });
+        
         setError(errorMessage);
       } finally {
         setIsLoading(false);

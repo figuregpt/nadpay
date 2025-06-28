@@ -305,6 +305,20 @@ contract NadRaffleV4Fast is ReentrancyGuard, Ownable2Step, Pausable {
         emit RandomnessCommitted(raffleId, commitment, block.timestamp + REVEAL_WINDOW);
     }
 
+    function commitRandomnessForExpiredRaffle(uint256 raffleId) 
+        external 
+        validRaffleId(raffleId) 
+        whenNotPaused
+    {
+        Raffle storage raffle = raffles[raffleId];
+        require(raffle.status == RaffleStatus.ACTIVE, "Raffle is not active");
+        require(block.timestamp >= raffle.expirationTime, "Raffle has not expired");
+        require(raffle.ticketsSold > 0, "No tickets sold");
+        require(randomnessCommits[raffleId].commitment == bytes32(0), "Randomness already committed");
+        
+        _commitRandomnessForRaffle(raffleId);
+    }
+
     function revealAndSelectWinner(uint256 raffleId, uint256 nonce) 
         external 
         validRaffleId(raffleId)
@@ -478,6 +492,28 @@ contract NadRaffleV4Fast is ReentrancyGuard, Ownable2Step, Pausable {
         return commit.commitment != bytes32(0) && !commit.revealed && block.timestamp > commit.revealDeadline;
     }
 
+    // ✅ Auto-finalization for expired raffles
+    function finalizeExpiredRaffles() external {
+        uint256 processed = 0;
+        uint256 maxProcess = 10; // Process max 10 expired raffles per call
+        
+        for (uint256 i = 0; i < activeRaffleIds.length && processed < maxProcess; i++) {
+            uint256 raffleId = activeRaffleIds[i];
+            Raffle storage raffle = raffles[raffleId];
+            
+            if (block.timestamp >= raffle.expirationTime && raffle.status == RaffleStatus.ACTIVE) {
+                if (raffle.ticketsSold == 0) {
+                    // No tickets sold, cancel and return reward to creator
+                    _cancelRaffleInternal(raffleId);
+                } else if (randomnessCommits[raffleId].commitment == bytes32(0)) {
+                    // Tickets sold but no randomness committed, commit it
+                    _commitRandomnessForRaffle(raffleId);
+                }
+                processed++;
+            }
+        }
+    }
+
     // ✅ Internal helper functions
     function _removeFromActiveRaffles(uint256 raffleId) internal {
         for (uint256 i = 0; i < activeRaffleIds.length; i++) {
@@ -487,6 +523,26 @@ contract NadRaffleV4Fast is ReentrancyGuard, Ownable2Step, Pausable {
                 break;
             }
         }
+    }
+    
+    function _cancelRaffleInternal(uint256 raffleId) internal {
+        Raffle storage raffle = raffles[raffleId];
+        raffle.status = RaffleStatus.CANCELLED;
+        
+        _removeFromActiveRaffles(raffleId);
+        
+        // Return reward to creator
+        if (raffle.rewardType == RewardType.TOKEN) {
+            if (raffle.rewardTokenAddress == address(0)) {
+                payable(raffle.creator).transfer(raffle.rewardAmount);
+            } else {
+                IERC20(raffle.rewardTokenAddress).transfer(raffle.creator, raffle.rewardAmount);
+            }
+        } else {
+            IERC721(raffle.rewardTokenAddress).transferFrom(address(this), raffle.creator, raffle.rewardAmount);
+        }
+        
+        emit RaffleCancelled(raffleId, raffle.creator);
     }
     
     function _isContract(address account) internal view returns (bool) {

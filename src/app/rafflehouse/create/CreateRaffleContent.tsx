@@ -382,7 +382,7 @@ export default function CreateRaffleContent() {
       
       // Convert expirationTime to duration (seconds from now)
       const currentTime = Math.floor(Date.now() / 1000);
-      const duration = Math.max(expirationTime - currentTime, 3600); // Minimum 1 hour
+      const duration = Math.max(expirationTime - currentTime, 300); // Minimum 5 minutes (for testing)
       
       console.log('🎫 Creating raffle with data:', {
         ...raffleFormData,
@@ -782,13 +782,44 @@ export default function CreateRaffleContent() {
                           handleRaffleInputChange('rewardTokenAddress', nftData.address);
                           handleRaffleInputChange('rewardType', 'NFT');
                           
-                          // TEMPORARY FIX: Use correct token ID for Nad Name Service NFT
-                          if (nftData.address.toLowerCase() === '0x3019BF1dfB84E5b46Ca9D0eEC37dE08a59A41308'.toLowerCase()) {
-                            console.log('🔧 TEMP FIX: Using correct token ID 4014411 instead of', nftData.tokenId);
-                            handleRaffleInputChange('rewardAmount', '4014411');
-                          } else {
-                            handleRaffleInputChange('rewardAmount', nftData.tokenId);
-                          }
+                          // REAL FIX: Always validate ownership of the token ID before using it
+                          const validateAndUseTokenId = async (contractAddr: string, userAddr: string, reportedTokenId: string) => {
+                            try {
+                              const provider = new (await import('ethers')).JsonRpcProvider("https://testnet-rpc.monad.xyz");
+                              const contract = new (await import('ethers')).Contract(contractAddr, [
+                                "function ownerOf(uint256 tokenId) view returns (address)"
+                              ], provider);
+                              
+                              // Check if user actually owns the reported token ID
+                              try {
+                                const owner = await contract.ownerOf(reportedTokenId);
+                                if (owner.toLowerCase() === userAddr.toLowerCase()) {
+                                  console.log('✅ Token ID ownership confirmed:', reportedTokenId);
+                                  return reportedTokenId;
+                                } else {
+                                  console.error('❌ User does not own token ID:', reportedTokenId, 'Owner:', owner);
+                                  throw new Error(`Token ID ${reportedTokenId} is not owned by user`);
+                                }
+                              } catch (e) {
+                                console.error('❌ Token ID validation failed:', reportedTokenId, e);
+                                throw new Error(`Invalid token ID: ${reportedTokenId}`);
+                              }
+                            } catch (error) {
+                              console.error('❌ Token validation error:', error);
+                              throw error;
+                            }
+                          };
+                          
+                          // Validate ownership before setting token ID
+                          validateAndUseTokenId(nftData.address, address || '', nftData.tokenId)
+                            .then(validTokenId => {
+                              console.log('🎯 Using validated token ID:', validTokenId);
+                              handleRaffleInputChange('rewardAmount', validTokenId);
+                            })
+                            .catch(error => {
+                              console.error('🚨 NFT validation failed, cannot use this NFT for raffle:', error);
+                              alert(`Cannot use this NFT: ${error.message}\n\nThe NFT selector may be showing incorrect token IDs. Please try refreshing the page.`);
+                            });
                         } else {
                           handleRaffleInputChange('rewardTokenAddress', asset.data.address);
                           handleRaffleInputChange('rewardType', asset.type === 'token' ? 'TOKEN' : 'NFT');

@@ -51,7 +51,7 @@ export function useUserRaffles(userAddress?: string) {
           const userTicketCount = await publicClient.readContract({
             address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
             abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
-            functionName: 'getUserTickets',
+            functionName: 'ticketsPurchasedByWallet',
             args: [BigInt(i), userAddress as `0x${string}`],
           }) as bigint;
 

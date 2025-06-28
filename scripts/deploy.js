@@ -3,29 +3,19 @@ const hre = require("hardhat");
 async function main() {
   console.log("Deploying NadPay contract to Monad Testnet...");
 
-  // Get the signer
-  const [deployer] = await hre.ethers.getSigners();
-  console.log("Deploying with account:", deployer.address);
-  
-  // Check balance
-  const balance = await hre.ethers.provider.getBalance(deployer.address);
-  console.log("Account balance:", hre.ethers.formatEther(balance), "MON");
-
   // Get the ContractFactory and Signers here.
   const NadPay = await hre.ethers.getContractFactory("NadPay");
   
   // Deploy the contract
-  console.log("Deploying contract...");
   const nadpay = await NadPay.deploy();
   
-  console.log("Waiting for deployment...");
   await nadpay.waitForDeployment();
   
   const contractAddress = await nadpay.getAddress();
   
   console.log("✅ NadPay deployed to:", contractAddress);
   console.log("🌐 Network:", hre.network.name);
-  console.log("⛽ Deployer:", deployer.address);
+  console.log("⛽ Deployer:", await nadpay.runner.getAddress());
   
   // Verify on explorer (if available)
   if (hre.network.name !== "hardhat") {
@@ -49,7 +39,7 @@ async function main() {
     network: hre.network.name,
     contractAddress: contractAddress,
     deploymentBlock: await hre.ethers.provider.getBlockNumber(),
-    deployer: deployer.address,
+    deployer: await nadpay.runner.getAddress(),
     timestamp: new Date().toISOString(),
     chainId: (await hre.ethers.provider.getNetwork()).chainId.toString()
   };

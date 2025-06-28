@@ -3,16 +3,16 @@ import { parseEther, formatEther, decodeEventLog } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useState, useEffect } from 'react';
 
-// V4 FAST contract address - secure with 2-minute reveal window
-const RAFFLE_V4_FAST_CONTRACT_ADDRESS = "0xb7a8e84F06124D2E444605137E781cDd7ac480fa" as `0x${string}`;
+// V4 WORKING contract address - fully functional with admin controls
+const RAFFLE_V4_FAST_CONTRACT_ADDRESS = "0xa874905B117242eC6c966E35B18985e9242Bb633" as `0x${string}`; // WORKING Contract
 
-// Import the V4 Fast ABI  
-import FastABI from './fast-abi.json';
+// Import the V4 Working ABI
+import WorkingABI from './working-abi.json';
 
 // Export the contract configuration
 export const NADRAFFLE_V4_FAST_CONTRACT = {
   address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-  abi: FastABI,
+  abi: WorkingABI,
 } as const;
 
 export function useNadRaffleV4FastContract() {
@@ -74,7 +74,7 @@ export function useNadRaffleV4FastContract() {
     // (title, description, rewardType, rewardTokenAddress, rewardAmount, ticketPrice, ticketPaymentToken, maxTickets, duration, autoDistributeOnSoldOut)
     return writeContract({
       address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-      abi: FastABI,
+      abi: WorkingABI,
       functionName: 'createRaffle',
       args: [
         params.title,
@@ -157,7 +157,7 @@ export function useNadRaffleV4FastContract() {
 export function useTotalRafflesV3() {
   return useReadContract({
     address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-    abi: FastABI,
+    abi: WorkingABI,
     functionName: 'getTotalRaffles',
   });
 }
@@ -165,7 +165,7 @@ export function useTotalRafflesV3() {
 export function useRaffleV3(raffleId: number) {
   return useReadContract({
     address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-    abi: FastABI,
+    abi: WorkingABI,
     functionName: 'getRaffle',
     args: [BigInt(raffleId)],
     query: {
@@ -188,7 +188,7 @@ export function useCreatorRafflesV3(creatorAddress?: string) {
       // Get total raffles to know how many to check
       const totalRaffles = await publicClient.readContract({
         address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-        abi: FastABI,
+        abi: WorkingABI,
         functionName: 'getTotalRaffles',
       }) as bigint;
 
@@ -199,7 +199,7 @@ export function useCreatorRafflesV3(creatorAddress?: string) {
         try {
           const raffle = await publicClient.readContract({
             address: RAFFLE_V4_FAST_CONTRACT_ADDRESS,
-            abi: FastABI,
+            abi: WorkingABI,
             functionName: 'getRaffle',
             args: [BigInt(i)],
           });

@@ -111,6 +111,9 @@ export default function RaffleContent() {
 
   // State for countdown timer
   const [revealCountdown, setRevealCountdown] = useState<string | null>(null);
+  
+  // State for real-time updates
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   // Purchase tickets functionality using writeContract
   const { writeContract, data: purchaseHash, isPending: purchasing, error: purchaseError } = useWriteContract();
@@ -472,6 +475,17 @@ export default function RaffleContent() {
       return 'Winner Found';
     }
     
+    // 🎯 NEW: Check for "Selecting Winner" state
+    // This happens when raffle is ended (sold out or expired) but no winner selected yet
+    if ((isSoldOut || isRaffleExpired) && !winner && raffle.status === 0) {
+      return 'Selecting Winner';
+    }
+    
+    // 🎯 NEW: Check for "Refunded" state (cancelled with 0 tickets)
+    if (raffle.status === 2 && Number(raffle.ticketsSold || 0) === 0) {
+      return 'Refunded';
+    }
+    
     if (isSoldOut || isRaffleExpired || raffle.status === 1) {
       return 'Ended';
     }
@@ -510,10 +524,12 @@ export default function RaffleContent() {
     const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
     const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
     
-    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
   };
 
   const getPaymentTokenSymbol = () => {
@@ -578,6 +594,15 @@ export default function RaffleContent() {
 
     return () => clearInterval(interval);
   }, [revealDeadline, randomnessCommitment]);
+
+  // Timer for real-time time remaining updates
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000); // Update every second
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Early return if raffle ID is invalid
   if (internalRaffleId === null) {
@@ -873,11 +898,29 @@ export default function RaffleContent() {
                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                   getRaffleStatus() === 'Active'
                     ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                    : getRaffleStatus() === 'Selecting Winner'
+                    ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 dark:from-purple-900/20 dark:to-pink-900/20 dark:text-purple-400 animate-pulse'
+                    : getRaffleStatus() === 'Winner Found'
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                    : getRaffleStatus() === 'Refunded'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                     : getRaffleStatus() === 'Ended'
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                 }`}>
-                  {getRaffleStatus()}
+                  {getRaffleStatus() === 'Selecting Winner' ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+                      Selecting Winner
+                    </>
+                  ) : getRaffleStatus() === 'Refunded' ? (
+                    <>
+                      <ArrowLeft className="w-3 h-3 inline-block mr-2" />
+                      Refunded
+                    </>
+                  ) : (
+                    getRaffleStatus()
+                  )}
                 </span>
 
                 {/* Reveal Countdown - Show when raffle is ended/sold out but winner not selected yet */}
@@ -1070,19 +1113,22 @@ export default function RaffleContent() {
                 </div>
               </div>
               
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Time Left</p>
-                    <p className="font-bold text-sm text-gray-900 dark:text-white">
-                      {getTimeRemaining() || 'No limit'}
-                    </p>
+              {/* Time Left section - only show if not sold out */}
+              {Number(raffle.ticketsSold || 0) < Number(raffle.maxTickets || 0) && (
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Time Left</p>
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">
+                        {getTimeRemaining() || 'No limit'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* User's Tickets */}
@@ -1211,7 +1257,7 @@ export default function RaffleContent() {
                         </div>
                       </div>
                       <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-1 text-center">
-                        🎫 Sold Out!
+                        Sold Out!
                       </h3>
                       <p className="text-red-600 dark:text-red-400 mb-3 text-center text-sm">
                         All tickets sold! Winner will be revealed soon.

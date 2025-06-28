@@ -432,10 +432,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded text-sm break-all">
-                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
+                      0xa874905B117242eC6c966E35B18985e9242Bb633
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
+                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700"
                     >
                       <Copy className="w-4 h-4" />
@@ -912,10 +912,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
+                      0xa874905B117242eC6c966E35B18985e9242Bb633
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
+                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -1028,10 +1028,10 @@ export default function DocsPage() {
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
-                      0xb7a8e84F06124D2E444605137E781cDd7ac480fa
+                      0xa874905B117242eC6c966E35B18985e9242Bb633
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xb7a8e84F06124D2E444605137E781cDd7ac480fa")}
+                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />

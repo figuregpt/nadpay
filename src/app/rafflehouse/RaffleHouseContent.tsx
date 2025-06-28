@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Trophy, Search, Clock, Users, Coins, ArrowLeft, Plus, Moon, Sun, Link2, Bell, Ticket, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -83,42 +83,60 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
     }
   };
 
-  const getNFTName = () => {
+  const getNFTDisplayName = (raffle: RaffleItem) => {
     if (raffle.rewardType === 1) {
-      if (nftLoading) return 'Loading...';
-      return metadata?.name || raffle.title || 'NFT';
+      // For NFT, try to extract name from description or use title
+      if (raffle.description) {
+        // Look for common NFT patterns like "Collection Name #123"
+        const nftPattern = /([^#]+)#?(\d+)?/;
+        const match = raffle.description.match(nftPattern);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
+      }
+      return raffle.title || "NFT";
     }
-    return '';
+    return "";
   };
 
   // Base64 encoded SVG placeholders to avoid external requests
   const createPlaceholderSVG = (text: string, bgColor: string, textColor: string) => {
-    const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-      <rect width="200" height="200" fill="${bgColor}" rx="12"/>
-      <text x="100" y="110" font-family="Arial, sans-serif" font-size="16" font-weight="bold" 
+    const svg = `<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" fill="${bgColor}" rx="8"/>
+      <text x="32" y="38" font-family="Arial, sans-serif" font-size="10" font-weight="bold" 
             text-anchor="middle" fill="${textColor}">${text}</text>
     </svg>`;
     return `data:image/svg+xml;base64,${btoa(svg)}`;
   };
+
+
 
   return (
     <>
       {/* Reward Image - Square with Hover Overlay and Verified Badge */}
       <div className="mb-4 relative group">
         <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-700 flex items-center justify-center relative">
-          <img 
-            src={getRewardImage()} 
-            alt={raffle.rewardType === 1 ? 'NFT Reward' : 'Token Reward'}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = createPlaceholderSVG(
-                raffle.rewardType === 1 ? 'NFT' : 'TOKEN', 
-                '#6B7280', 
-                '#FFFFFF'
-              );
-            }}
-          />
+          {raffle.rewardType === 1 && nftLoading ? (
+            // NFT Loading state with standard spinner
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+            </div>
+          ) : (
+            <img 
+              src={getRewardImage()} 
+              alt={raffle.rewardType === 1 ? 'NFT Reward' : 'Token Reward'}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = createPlaceholderSVG(
+                  raffle.rewardType === 1 ? 'NFT' : 'TOKEN', 
+                  '#6B7280', 
+                  '#FFFFFF'
+                );
+              }}
+            />
+          )}
           
           {/* Verified Badge - Top Left of Image (if Twitter is connected) */}
           {creatorProfile && (
@@ -153,13 +171,17 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
       {/* Status Badge Only */}
       <div className="flex justify-center mb-2">
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          raffle.ticketsSold >= raffle.maxTickets 
+          raffle.status === 2 && raffle.ticketsSold === 0
+            ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+            : raffle.ticketsSold >= raffle.maxTickets 
             ? 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
             : raffle.timeRemaining === 'Ended' || raffle.status === 1 
               ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
               : 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
         }`}>
-          {raffle.ticketsSold >= raffle.maxTickets 
+          {raffle.status === 2 && raffle.ticketsSold === 0
+            ? 'Refunded'
+            : raffle.ticketsSold >= raffle.maxTickets 
             ? 'Sold Out' 
             : raffle.timeRemaining === 'Ended' || raffle.status === 1 
               ? 'Ended' 
@@ -181,6 +203,15 @@ export default function RaffleHouseContent() {
   const [sortBy, setSortBy] = useState<SortOption>('ending-soon');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [currentTime, setCurrentTime] = useState(Date.now());
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreRaffles, setHasMoreRaffles] = useState(true);
+  const RAFFLES_PER_PAGE = 12; // Smaller batch size
+  
+  // Infinite scroll ref
+  const infiniteScrollRef = useRef<HTMLDivElement>(null);
   
   // Notifications and My Tickets state
   const [showNotifications, setShowNotifications] = useState(false);
@@ -210,10 +241,9 @@ export default function RaffleHouseContent() {
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((ms % (1000 * 60)) / 1000);
 
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 1) return `${hours}h ${minutes}m`; // More than 1 hour
-    if (hours === 1) return `${hours}h ${minutes}m ${seconds}s`; // Exactly 1 hour - show seconds
-    if (minutes > 0) return `${minutes}m ${seconds}s`; // Less than 1 hour - show seconds
+    if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
     if (seconds > 0) return `${seconds}s`;
     return 'Ending soon';
   };
@@ -293,90 +323,211 @@ export default function RaffleHouseContent() {
     return token || { symbol: 'TOKEN', name: 'Unknown Token', logo: undefined };
   };
 
-  // Fetch all raffles
-  useEffect(() => {
-    const fetchAllRaffles = async () => {
-      setLoading(true);
-      try {
-        if (!totalRaffles || Number(totalRaffles) === 0) {
-          setRaffles([]);
-          return;
-        }
+  // Helper function to get raffle status for UI display
+  const getRaffleDisplayStatus = (raffle: RaffleItem) => {
+    const now = currentTime;
+    const isExpired = now > raffle.expirationTime * 1000;
+    const isSoldOut = raffle.ticketsSold >= raffle.maxTickets;
+    const hasTickets = raffle.ticketsSold > 0;
+    const hasWinner = raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000';
 
-        const rafflePromises = [];
-        const totalCount = Math.min(Number(totalRaffles), 50); // Limit to 50 most recent raffles
-        
-        for (let i = totalCount; i >= 1; i--) {
-          const promise = publicClient?.readContract({
-            address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
-            abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
-            functionName: 'getRaffle',
-            args: [BigInt(i)],
-          });
-          rafflePromises.push(promise);
-        }
+    // Priority order: Winner > Sold Out > Expired states > Active
+    if (hasWinner) {
+      return {
+        status: 'winner-selected',
+        label: 'Winner Selected',
+        color: 'text-green-600 dark:text-green-400',
+        bgColor: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+        icon: 'trophy'
+      };
+    }
 
-        const raffleResults = await Promise.all(rafflePromises);
-        const formattedRaffles = raffleResults
-          .map((result: any, index) => {
-            if (!result) return null;
-            
-            const raffleId = totalCount - index;
-            const expirationTimeMs = Number(result.expirationTime) * 1000;
-            const now = Date.now();
-            const timeLeft = expirationTimeMs - now;
-            
-            return {
-              id: createPredictableSecureRaffleId(raffleId),
-              internalId: raffleId,
-              creator: result.creator,
-              title: result.title,
-              description: result.description,
-              rewardType: Number(result.rewardType),
-              rewardTokenAddress: result.rewardTokenAddress,
-              rewardAmount: formatPriceV3Raffle(result.rewardAmount),
-              rawRewardAmount: result.rewardAmount, // Keep raw amount for NFT tokenId
-              ticketPaymentToken: result.ticketPaymentToken,
-              ticketPrice: formatPriceV3Raffle(result.ticketPrice),
-              maxTickets: Number(result.maxTickets),
-              ticketsSold: Number(result.ticketsSold),
-              status: Number(result.status),
-              expirationTime: Number(result.expirationTime),
-              createdAt: Number(result.createdAt),
-              winner: result.winner !== '0x0000000000000000000000000000000000000000' ? result.winner : undefined,
-              timeRemaining: timeLeft > 0 ? getTimeRemaining(timeLeft) : 'Ended',
-              participantCount: Number(result.ticketsSold),
-            };
-          })
-          .filter(raffle => raffle !== null) as RaffleItem[];
+    if (isSoldOut && !isExpired) {
+      return {
+        status: 'sold-out',
+        label: 'Sold Out',
+        color: 'text-purple-600 dark:text-purple-400',
+        bgColor: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+        icon: 'clock'
+      };
+    }
 
-        setRaffles(formattedRaffles);
-        
-        // Preload creator profiles for better UX
-        const creatorAddresses = formattedRaffles.map(raffle => raffle.creator);
-        preloadCreatorProfiles(creatorAddresses);
-        
-      } catch (error) {
-        console.error('Error fetching raffles:', error);
-        setRaffles([]);
-      } finally {
-        setLoading(false);
+    if (isExpired) {
+      if (hasTickets) {
+        // Expired with tickets -> selecting winner
+        return {
+          status: 'selecting-winner',
+          label: 'Selecting Winner',
+          color: 'text-blue-600 dark:text-blue-400',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+          icon: 'refresh'
+        };
+      } else {
+        // Expired with no tickets -> refunded
+        return {
+          status: 'refunded',
+          label: 'Refunded',
+          color: 'text-red-600 dark:text-red-400',
+          bgColor: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+          icon: 'arrow-left'
+        };
       }
-    };
+    }
 
+    // Active raffle
+    return {
+      status: 'active',
+      label: 'Active',
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
+      icon: 'clock'
+    };
+  };
+
+  // Fetch raffles with pagination
+  const fetchRafflesPage = async (page = 0, append = false) => {
+    if (page === 0) setLoading(true);
+    else setLoadingMore(true);
+    
+    try {
+      if (!totalRaffles || Number(totalRaffles) === 0) {
+        setRaffles([]);
+        return;
+      }
+
+      const totalCount = Number(totalRaffles);
+      const startIndex = Math.max(0, totalCount - 1 - (page * RAFFLES_PER_PAGE));
+      const endIndex = Math.max(0, totalCount - 1 - ((page + 1) * RAFFLES_PER_PAGE - 1));
+      
+      // If no more raffles to load
+      if (startIndex < 0) {
+        return;
+      }
+
+      const rafflePromises = [];
+      
+      // Load in smaller batches to avoid overwhelming the RPC
+      for (let i = startIndex; i >= endIndex; i--) {
+        const promise = publicClient?.readContract({
+          address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
+          abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
+          functionName: 'getRaffle',
+          args: [BigInt(i)],
+        });
+        rafflePromises.push(promise);
+      }
+
+      const raffleResults = await Promise.all(rafflePromises);
+      const formattedRaffles = raffleResults
+        .map((result: any, index) => {
+          if (!result) return null;
+          
+          const raffleId = startIndex - index;
+          const expirationTimeMs = Number(result.expirationTime) * 1000;
+          const now = Date.now();
+          const timeLeft = expirationTimeMs - now;
+          
+          return {
+            id: createPredictableSecureRaffleId(raffleId),
+            internalId: raffleId,
+            creator: result.creator,
+            title: result.title,
+            description: result.description,
+            rewardType: Number(result.rewardType),
+            rewardTokenAddress: result.rewardTokenAddress,
+            rewardAmount: formatPriceV3Raffle(result.rewardAmount),
+            rawRewardAmount: result.rewardAmount,
+            ticketPaymentToken: result.ticketPaymentToken,
+            ticketPrice: formatPriceV3Raffle(result.ticketPrice),
+            maxTickets: Number(result.maxTickets),
+            ticketsSold: Number(result.ticketsSold),
+            status: Number(result.status),
+            expirationTime: Number(result.expirationTime),
+            createdAt: Number(result.createdAt),
+            winner: result.winner !== '0x0000000000000000000000000000000000000000' ? result.winner : undefined,
+            timeRemaining: timeLeft > 0 ? getTimeRemaining(timeLeft) : 'Ended',
+            participantCount: Number(result.ticketsSold),
+          };
+        })
+        .filter(raffle => raffle !== null) as RaffleItem[];
+
+      if (append) {
+        setRaffles(prev => [...prev, ...formattedRaffles]);
+      } else {
+        setRaffles(formattedRaffles);
+        setCurrentPage(0);
+        setHasMoreRaffles(true); // Reset when fetching first page
+      }
+      
+      // Check if we have more raffles to load
+      if (formattedRaffles.length < RAFFLES_PER_PAGE) {
+        setHasMoreRaffles(false);
+      }
+      
+      // Only preload creator profiles for currently visible raffles
+      if (formattedRaffles.length > 0) {
+        const creatorAddresses = formattedRaffles.slice(0, 6).map(raffle => raffle.creator); // Only first 6
+        preloadCreatorProfiles(creatorAddresses);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching raffles:', error);
+      if (!append) setRaffles([]);
+    } finally {
+      if (page === 0) setLoading(false);
+      else setLoadingMore(false);
+    }
+  };
+
+  // Load more raffles function
+  const loadMoreRaffles = () => {
+    if (!loadingMore && !loading && hasMoreRaffles && publicClient && totalRaffles) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchRafflesPage(nextPage, true);
+    }
+  };
+
+  useEffect(() => {
     if (publicClient && totalRaffles) {
-      fetchAllRaffles();
+      fetchRafflesPage(0, false);
     }
   }, [publicClient, totalRaffles]);
 
-  // Timer for real-time updates
+  // Optimized timer - update less frequently
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
-    }, 1000); // Update every second
+    }, 5000); // Update every 5 seconds instead of 1 second
 
     return () => clearInterval(timer);
   }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && hasMoreRaffles) {
+          loadMoreRaffles();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px', // Start loading 100px before reaching the bottom
+      }
+    );
+
+    if (infiniteScrollRef.current) {
+      observer.observe(infiniteScrollRef.current);
+    }
+
+    return () => {
+      if (infiniteScrollRef.current) {
+        observer.unobserve(infiniteScrollRef.current);
+      }
+    };
+  }, [loadingMore, loading, hasMoreRaffles]);
 
   // Filter and sort raffles
   const filteredAndSortedRaffles = useMemo(() => {
@@ -807,7 +958,7 @@ export default function RaffleHouseContent() {
 
                       {/* Status Section - Bottom Aligned */}
                       <div className="mt-auto">
-                        {raffle.timeRemaining !== 'Ended' && raffle.status === 0 && (
+                        {raffle.timeRemaining !== 'Ended' && raffle.status === 0 && raffle.ticketsSold < raffle.maxTickets && (
                           <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2 text-orange-600 dark:text-orange-400">
@@ -835,32 +986,78 @@ export default function RaffleHouseContent() {
                           </div>
                         )}
 
-                        {(raffle.timeRemaining === 'Ended' || raffle.ticketsSold >= raffle.maxTickets) && (
-                          <div className={`border rounded-lg p-2 ${
-                            raffle.ticketsSold >= raffle.maxTickets
-                              ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
-                              : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                          }`}>
-                            <div className={`flex items-center space-x-2 ${
-                              raffle.ticketsSold >= raffle.maxTickets
-                                ? 'text-purple-600 dark:text-purple-400'
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`}>
-                              <Clock className="w-3 h-3" />
-                              <div>
-                                <div className="text-xs">Status</div>
-                                <div className="font-bold text-xs">
-                                  {raffle.ticketsSold >= raffle.maxTickets ? 'Sold Out' : 'Ended'}
+                        {(() => {
+                          const displayStatus = getRaffleDisplayStatus(raffle);
+                          
+                          // Only show status card for non-active raffles
+                          if (displayStatus.status === 'active') {
+                            return null;
+                          }
+
+                          // Render appropriate icon
+                          const renderIcon = () => {
+                            switch (displayStatus.icon) {
+                              case 'trophy':
+                                return <Trophy className="w-3 h-3" />;
+                              case 'refresh':
+                                return (
+                                  <div className="animate-spin">
+                                    <Clock className="w-3 h-3" />
+                                  </div>
+                                );
+                              case 'arrow-left':
+                                return <ArrowLeft className="w-3 h-3" />;
+                              default:
+                                return <Clock className="w-3 h-3" />;
+                            }
+                          };
+
+                          return (
+                            <div className={`border rounded-lg p-2 ${displayStatus.bgColor}`}>
+                              <div className={`flex items-center space-x-2 ${displayStatus.color}`}>
+                                {renderIcon()}
+                                <div>
+                                  <div className="text-xs">Status</div>
+                                  <div className="font-bold text-xs">
+                                    {displayStatus.label}
+                                    {displayStatus.status === 'selecting-winner' && (
+                                      <div className="text-xs opacity-75 mt-0.5">
+                                        Winner will be announced shortly! ⚡
+                                      </div>
+                                    )}
+                                    {displayStatus.status === 'refunded' && (
+                                      <div className="text-xs opacity-75 mt-0.5">
+                                        Reward returned to creator
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     </Link>
                   </div>
                 </motion.div>
               ))}
+            </div>
+          )}
+
+          {/* Infinite Scroll Trigger */}
+          {!loading && filteredAndSortedRaffles.length > 0 && (
+            <div ref={infiniteScrollRef} className="h-20 flex items-center justify-center mt-8">
+              {loadingMore && hasMoreRaffles ? (
+                <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
+                  <span>Loading more raffles...</span>
+                </div>
+              ) : !hasMoreRaffles ? (
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="text-sm">🎉 You've reached the end!</div>
+                  <div className="text-xs mt-1">No more raffles to load</div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>

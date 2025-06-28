@@ -9,7 +9,7 @@ import { getKnownToken } from "@/lib/knownAssets";
 
 // V4 Contract configuration for metadata
 const NADRAFFLE_V4_FAST_CONTRACT = {
-      address: "0xb7a8e84F06124D2E444605137E781cDd7ac480fa" as `0x${string}`,
+      address: "0xa874905B117242eC6c966E35B18985e9242Bb633" as `0x${string}`, // WORKING Contract
   abi: [
     {
       "inputs": [{ "name": "raffleId", "type": "uint256" }],

@@ -6,16 +6,17 @@ class RaffleV4FastFinalizer {
     // Use Monad testnet provider
     this.provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
     this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
-    this.contractAddress = "0xb7a8e84F06124D2E444605137E781cDd7ac480fa"; // V4 Fast contract
+            this.contractAddress = "0xa874905B117242eC6c966E35B18985e9242Bb633"; // V4 WORKING contract
     
     this.abi = [
-      "function getActiveRaffles() external view returns (uint256[])",
+      "function getActiveRaffleIds() external view returns (uint256[])",
       "function getTotalRaffles() external view returns (uint256)",
       "function getRaffle(uint256 raffleId) external view returns (tuple(uint256 id, address creator, string title, string description, uint8 rewardType, address rewardTokenAddress, uint256 rewardAmount, uint256 ticketPrice, address ticketPaymentToken, uint256 maxTickets, uint256 ticketsSold, uint256 totalEarned, uint256 expirationTime, bool autoDistributeOnSoldOut, address winner, uint8 status, bool rewardClaimed, uint256 createdAt))",
-      "function getRandomnessCommit(uint256 raffleId) external view returns (tuple(bytes32 commitment, uint256 commitTime, bool revealed, uint256 revealDeadline))",
-      "function isRaffleExpired(uint256 raffleId) external view returns (bool)",
-      "function isReadyForReveal(uint256 raffleId) external view returns (bool)",
+      "function randomnessCommits(uint256 raffleId) external view returns (tuple(bytes32 commitment, uint256 commitTime, bool revealed, uint256 revealDeadline))",
       "function commitRandomness(uint256 raffleId, bytes32 commitment) external",
+      "function commitRandomnessForExpiredRaffle(uint256 raffleId) external",
+      "function commitRandomnessForRaffle(uint256 raffleId) external",
+      "function finalizeExpiredRaffles() external",
       "function revealAndSelectWinner(uint256 raffleId, uint256 nonce) external",
       "function emergencySelectWinner(uint256 raffleId) external",
       "event RandomnessCommitted(uint256 indexed raffleId, bytes32 commitment, uint256 revealDeadline)",
@@ -25,7 +26,7 @@ class RaffleV4FastFinalizer {
     
     this.contract = new ethers.Contract(this.contractAddress, this.abi, this.wallet);
     this.isRunning = false;
-    this.revealWindow = 2 * 60; // 2 minutes in seconds
+    this.revealWindow = 30; // 30 seconds (updated from 2 minutes for production)
     this.commitments = new Map(); // Store our randomness commitments
     this.processedRaffles = new Set(); // Cache processed raffle IDs to avoid reprocessing
     this.maxBatchSize = 50; // Process max 50 raffles per cycle
@@ -51,8 +52,8 @@ class RaffleV4FastFinalizer {
 
   async getRafflesThatNeedCommitment() {
     try {
-      // Use getActiveRaffles() instead of checking all raffles
-      const activeRaffleIds = await this.contract.getActiveRaffles();
+      // Use getActiveRaffleIds() instead of checking all raffles
+      const activeRaffleIds = await this.contract.getActiveRaffleIds();
       const rafflesNeedingCommitment = [];
       const currentTime = Math.floor(Date.now() / 1000);
 
@@ -68,6 +69,12 @@ class RaffleV4FastFinalizer {
         try {
           const raffle = await this.contract.getRaffle(raffleId);
           
+          // ✅ Skip if raffle is already cancelled (status = 2)
+          if (raffle.status === 2n) {
+            console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
+            continue;
+          }
+          
           // Check if raffle has no winner yet (should be true for active raffles)
           if (raffle.winner === '0x0000000000000000000000000000000000000000') {
             const isSoldOut = Number(raffle.ticketsSold) >= Number(raffle.maxTickets);
@@ -77,7 +84,7 @@ class RaffleV4FastFinalizer {
             if (isSoldOut || isExpired) {
               // Check if randomness commitment exists
               try {
-                const commitment = await this.contract.getRandomnessCommit(raffleId);
+                const commitment = await this.contract.randomnessCommits(raffleId);
                 
                 if (!commitment.commitment || commitment.commitment === '0x0000000000000000000000000000000000000000000000000000000000000000') {
                   rafflesNeedingCommitment.push({
@@ -118,28 +125,64 @@ class RaffleV4FastFinalizer {
 
   async getRafflesReadyForReveal() {
     try {
-      // Use getActiveRaffles() instead of checking all raffles
-      const activeRaffleIds = await this.contract.getActiveRaffles();
+      // Check both active raffles AND recent raffles to catch expired ones
+      const totalRaffles = await this.contract.getTotalRaffles();
+      const activeRaffleIds = await this.contract.getActiveRaffleIds();
+      
+      // Also check last 20 raffles to catch recently expired ones
+      const recentRaffleIds = [];
+      const startId = Math.max(0, Number(totalRaffles) - 20);
+      for (let i = startId; i < Number(totalRaffles); i++) {
+        recentRaffleIds.push(BigInt(i));
+      }
+      
+      // Combine and deduplicate
+      const allRaffleIds = [...new Set([...activeRaffleIds, ...recentRaffleIds])];
+      
       const rafflesReadyForReveal = [];
       const currentTime = Math.floor(Date.now() / 1000);
 
-      console.log(`🔍 Checking ${activeRaffleIds.length} active raffles for reveal readiness...`);
+      console.log(`🔍 Checking ${allRaffleIds.length} raffles (${activeRaffleIds.length} active + recent) for reveal readiness...`);
 
       // Limit batch size for performance
-      const raffleIdsToCheck = activeRaffleIds.slice(0, this.maxBatchSize);
-      if (activeRaffleIds.length > this.maxBatchSize) {
-        console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${activeRaffleIds.length} total)`);
+      const raffleIdsToCheck = allRaffleIds.slice(0, this.maxBatchSize);
+      if (allRaffleIds.length > this.maxBatchSize) {
+        console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${allRaffleIds.length} total)`);
       }
 
       for (const raffleId of raffleIdsToCheck) {
         try {
           const raffle = await this.contract.getRaffle(raffleId);
           
+          // ✅ Skip if raffle is already cancelled (status = 2)
+          if (raffle.status === 2n) {
+            console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
+            continue;
+          }
+          
           // Check if raffle has no winner yet (should be true for active raffles)
           if (raffle.winner === '0x0000000000000000000000000000000000000000') {
+            const isSoldOut = Number(raffle.ticketsSold) >= Number(raffle.maxTickets);
+            const isExpired = currentTime >= Number(raffle.expirationTime);
+            
+            // Check expired raffles first, regardless of commitment status
+            if (isExpired && Number(raffle.ticketsSold) > 0) {
+              console.log(`⏰ Raffle ${raffleId} is EXPIRED and has ${raffle.ticketsSold} tickets - needs emergency selection`);
+              
+              rafflesReadyForReveal.push({
+                id: Number(raffleId),
+                title: raffle.title,
+                ticketsSold: Number(raffle.ticketsSold),
+                revealDeadline: 0,
+                nonce: null
+              });
+              continue;
+            }
+            
+            // Then check for commitment-based reveals
             try {
               // First check if there's a randomness commitment
-              const commitment = await this.contract.getRandomnessCommit(raffleId);
+              const commitment = await this.contract.randomnessCommits(raffleId);
               const revealDeadline = Number(commitment.revealDeadline);
               
               // Only proceed if reveal deadline has passed
@@ -155,16 +198,16 @@ class RaffleV4FastFinalizer {
                 });
               } else if (revealDeadline > 0) {
                 const remainingTime = revealDeadline - currentTime;
-                console.log(`⏳ Raffle ${raffleId} reveal window active, ${Math.ceil(remainingTime / 60)} minutes remaining`);
+                const timeDisplay = remainingTime >= 60 
+                  ? `${Math.ceil(remainingTime / 60)} minutes` 
+                  : `${remainingTime} seconds`;
+                console.log(`⏳ Raffle ${raffleId} reveal window active, ${timeDisplay} remaining`);
               }
               
             } catch (commitError) {
               // No commitment found, check if we need emergency selection
-              const isSoldOut = Number(raffle.ticketsSold) >= Number(raffle.maxTickets);
-              const isExpired = currentTime >= Number(raffle.expirationTime);
-              
-              if (isSoldOut || isExpired) {
-                console.log(`🚨 Raffle ${raffleId} needs emergency selection (${isSoldOut ? 'sold out' : 'expired'})`);
+              if (isSoldOut) {
+                console.log(`🚨 Raffle ${raffleId} is SOLD OUT and needs emergency selection`);
                 
                 rafflesReadyForReveal.push({
                   id: Number(raffleId),
@@ -191,35 +234,58 @@ class RaffleV4FastFinalizer {
   async commitRandomnessForRaffles(raffles) {
     for (const raffle of raffles) {
       try {
-        console.log(`🎲 Committing randomness for raffle #${raffle.id}: "${raffle.title}"`);
+        const status = raffle.isExpired ? "EXPIRED" : "SOLD OUT";
+        console.log(`🎲 Committing randomness for ${status} raffle #${raffle.id}: "${raffle.title}"`);
         
-        const nonce = this.generateRandomNonce();
-        const commitment = ethers.keccak256(ethers.toUtf8Bytes(nonce.toString()));
-        
-        // Store our nonce for later reveal
-        this.commitments.set(raffle.id, nonce);
-        
-        console.log(`  - Nonce: ${nonce}`);
-        console.log(`  - Commitment: ${commitment}`);
-        
-        // V4 Fast contracts require manual randomness commitment
-        try {
-          const gasEstimate = await this.contract.commitRandomness.estimateGas(raffle.id, commitment);
-          const tx = await this.contract.commitRandomness(raffle.id, commitment, {
-            gasLimit: gasEstimate * BigInt(120) / BigInt(100)
-          });
+        // Use different approach for expired vs sold out raffles
+        if (raffle.isExpired) {
+          // For expired raffles, use the dedicated function (no manual commitment needed)
+          console.log(`  - Using commitRandomnessForExpiredRaffle() for expired raffle`);
           
-          console.log(`📤 Commitment transaction: ${tx.hash}`);
-          const receipt = await tx.wait();
-          console.log(`✅ Randomness committed! Gas used: ${receipt.gasUsed.toString()}`);
+          try {
+            const gasEstimate = await this.contract.commitRandomnessForExpiredRaffle.estimateGas(raffle.id);
+            const tx = await this.contract.commitRandomnessForExpiredRaffle(raffle.id, {
+              gasLimit: gasEstimate * BigInt(120) / BigInt(100)
+            });
+            
+            console.log(`📤 Expired raffle commitment transaction: ${tx.hash}`);
+            const receipt = await tx.wait();
+            console.log(`✅ Randomness committed for expired raffle! Gas used: ${receipt.gasUsed.toString()}`);
+            
+          } catch (expiredError) {
+            console.log(`❌ Failed to commit randomness for expired raffle: ${expiredError.message}`);
+            continue;
+          }
           
-          // Add delay between transactions
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          // For sold out raffles, use manual commitment (original logic)
+          const nonce = this.generateRandomNonce();
+          const commitment = ethers.keccak256(ethers.toUtf8Bytes(nonce.toString()));
           
-        } catch (commitError) {
-          console.log(`⚠️  Could not commit randomness (may be auto-committed): ${commitError.message}`);
-          // Continue - the contract might handle commitment automatically
+          // Store our nonce for later reveal
+          this.commitments.set(raffle.id, nonce);
+          
+          console.log(`  - Nonce: ${nonce}`);
+          console.log(`  - Commitment: ${commitment}`);
+          
+          try {
+            const gasEstimate = await this.contract.commitRandomness.estimateGas(raffle.id, commitment);
+            const tx = await this.contract.commitRandomness(raffle.id, commitment, {
+              gasLimit: gasEstimate * BigInt(120) / BigInt(100)
+            });
+            
+            console.log(`📤 Sold out raffle commitment transaction: ${tx.hash}`);
+            const receipt = await tx.wait();
+            console.log(`✅ Randomness committed for sold out raffle! Gas used: ${receipt.gasUsed.toString()}`);
+            
+          } catch (commitError) {
+            console.log(`⚠️  Could not commit randomness (may be auto-committed): ${commitError.message}`);
+            // Continue - the contract might handle commitment automatically
+          }
         }
+        
+        // Add delay between transactions
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (error) {
         console.error(`❌ Error committing randomness for raffle ${raffle.id}:`, error.message);
@@ -282,75 +348,10 @@ class RaffleV4FastFinalizer {
     }
   }
 
-  async getRafflesNeedingRewardDistribution() {
-    try {
-      // Check recent raffles for reward distribution needs
-      const totalRaffles = await this.contract.getTotalRaffles();
-      const rafflesNeedingReward = [];
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      // Check last 100 raffles for reward distribution
-      const startId = Math.max(0, Number(totalRaffles) - 100);
-      
-      console.log(`🔍 Checking raffles ${startId} to ${totalRaffles} for reward distribution...`);
-
-      for (let raffleId = startId; raffleId < totalRaffles; raffleId++) {
-        try {
-          const raffle = await this.contract.getRaffle(raffleId);
-          
-          // Check if raffle has winner but reward not distributed
-          if (raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && 
-              !raffle.rewardClaimed && raffle.status === 1) { // status 1 = ended
-            
-            // Check if it's been some time since winner selection (avoid immediate distribution)
-            const timeSinceEnd = currentTime - Number(raffle.createdAt);
-            if (timeSinceEnd > 60) { // Wait at least 1 minute
-              rafflesNeedingReward.push({
-                id: Number(raffleId),
-                title: raffle.title,
-                winner: raffle.winner,
-                rewardType: Number(raffle.rewardType),
-                rewardAmount: raffle.rewardAmount.toString(),
-                rewardTokenAddress: raffle.rewardTokenAddress
-              });
-            }
-          }
-        } catch (error) {
-          // Skip individual raffle errors
-        }
-      }
-
-      return rafflesNeedingReward;
-    } catch (error) {
-      console.error("❌ Error getting raffles needing reward distribution:", error.message);
-      return [];
-    }
-  }
-
-  async distributeRewards(raffles) {
-    for (const raffle of raffles) {
-      try {
-        console.log(`🎁 Distributing reward for raffle #${raffle.id}: "${raffle.title}"`);
-        console.log(`  - Winner: ${raffle.winner}`);
-        console.log(`  - Reward Type: ${raffle.rewardType === 0 ? 'Token' : 'NFT'}`);
-        
-        const gasEstimate = await this.contract.distributeReward.estimateGas(raffle.id);
-        const tx = await this.contract.distributeReward(raffle.id, {
-          gasLimit: gasEstimate * BigInt(120) / BigInt(100)
-        });
-        
-        console.log(`📤 Reward distribution transaction: ${tx.hash}`);
-        const receipt = await tx.wait();
-        console.log(`✅ Reward distributed! Gas used: ${receipt.gasUsed.toString()}`);
-        
-        // Add delay between transactions
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-      } catch (error) {
-        console.error(`❌ Error distributing reward for raffle ${raffle.id}:`, error.message);
-      }
-    }
-  }
+  // ✅ REMOVED: Reward distribution functions - now automatic in FIXED contract
+  // The new contract automatically distributes rewards when winners are selected via:
+  // - revealAndSelectWinner() -> auto reward distribution
+  // - emergencySelectWinner() -> auto reward distribution
 
   async processRaffles() {
     if (this.isRunning) {
@@ -370,48 +371,54 @@ class RaffleV4FastFinalizer {
         return;
       }
 
-      // Step 1: Get raffles that need randomness commitment
-      const rafflesNeedingCommitment = await this.getRafflesThatNeedCommitment();
-      
-      if (rafflesNeedingCommitment.length > 0) {
-        console.log(`🎲 Found ${rafflesNeedingCommitment.length} raffles needing commitment:`);
-        rafflesNeedingCommitment.forEach(raffle => {
-          const status = raffle.isSoldOut ? "SOLD OUT" : "EXPIRED";
-          console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${status}, ${raffle.ticketsSold}/${raffle.maxTickets} tickets)`);
+      // ✅ STEP 0: Auto-finalize expired raffles (main workhorse)
+      // This handles: no-ticket cancellation + expired randomness commitment
+      try {
+        console.log("🧹 Auto-finalizing expired raffles...");
+        const tx = await this.contract.finalizeExpiredRaffles({
+          gasLimit: 500000
         });
-        
-        await this.commitRandomnessForRaffles(rafflesNeedingCommitment);
-      } else {
-        console.log("✅ No raffles need randomness commitment");
+        console.log(`📤 Auto-finalize transaction: ${tx.hash}`);
+        await tx.wait();
+        console.log("✅ Auto-finalize completed (no-ticket raffles cancelled, expired raffles committed)");
+      } catch (error) {
+        console.log("⚠️  Auto-finalize error (might be no expired raffles):", error.message);
       }
 
-      // Step 2: Get raffles ready for winner reveal
+      // ✅ STEP 1: Handle sold-out raffles that need commitment
+      // (Only check sold-out, not expired - those are handled by Step 0)
+      const rafflesNeedingCommitment = await this.getRafflesThatNeedCommitment();
+      const soldOutRaffles = rafflesNeedingCommitment.filter(r => r.isSoldOut && !r.isExpired);
+      
+      if (soldOutRaffles.length > 0) {
+        console.log(`🎲 Found ${soldOutRaffles.length} sold-out raffles needing commitment:`);
+        soldOutRaffles.forEach(raffle => {
+          console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (SOLD OUT, ${raffle.ticketsSold}/${raffle.maxTickets} tickets)`);
+        });
+        
+        await this.commitRandomnessForRaffles(soldOutRaffles);
+      } else {
+        console.log("✅ No sold-out raffles need randomness commitment");
+      }
+
+      // ✅ STEP 2: Emergency winner selection for deadline-passed raffles
+      // (Both sold-out and expired raffles that have commitment but passed deadline)
       const rafflesReadyForReveal = await this.getRafflesReadyForReveal();
       
       if (rafflesReadyForReveal.length > 0) {
-        console.log(`🎯 Found ${rafflesReadyForReveal.length} raffles ready for reveal:`);
+        console.log(`🎯 Found ${rafflesReadyForReveal.length} raffles ready for emergency selection:`);
         rafflesReadyForReveal.forEach(raffle => {
           console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${raffle.ticketsSold} tickets sold)`);
         });
         
         await this.revealWinnersForRaffles(rafflesReadyForReveal);
       } else {
-        console.log("✅ No raffles ready for winner reveal");
+        console.log("✅ No raffles ready for emergency selection");
       }
 
-      // Step 3: Get raffles needing reward distribution
-      const rafflesNeedingReward = await this.getRafflesNeedingRewardDistribution();
-      
-      if (rafflesNeedingReward.length > 0) {
-        console.log(`🎁 Found ${rafflesNeedingReward.length} raffles needing reward distribution:`);
-        rafflesNeedingReward.forEach(raffle => {
-          console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (Winner: ${raffle.winner.slice(0, 6)}...${raffle.winner.slice(-4)})`);
-        });
-        
-        await this.distributeRewards(rafflesNeedingReward);
-      } else {
-        console.log("✅ No raffles need reward distribution");
-      }
+      // ✅ REMOVED STEP 3: Reward distribution is now AUTOMATIC
+      // The new contract auto-distributes rewards when winners are selected
+      console.log("✅ Reward distribution is automatic in new contract");
 
     } catch (error) {
       console.error("❌ Processing error:", error.message);

@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install PM2 globally
+RUN npm install -g pm2
+
 # Set working directory
 WORKDIR /app
 
@@ -21,5 +24,5 @@ RUN npm prune --production
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"] 
+# Start both web app and finalizer using PM2
+CMD ["pm2-runtime", "start", "ecosystem.config.js"] 

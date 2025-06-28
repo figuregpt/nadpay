@@ -56,7 +56,7 @@ export function useBlockchainTime() {
     return blockchainTime + timeSinceLastUpdate;
   };
 
-  const getMinimumExpirationTime = (minutesFromNow: number = 15) => {
+  const getMinimumExpirationTime = (minutesFromNow: number = 60) => {
     const currentTime = getCurrentBlockchainTime();
     // Add the full duration requested - buffer is only for validation, not duration calculation
     return currentTime + (minutesFromNow * 60);
@@ -71,9 +71,9 @@ export function useBlockchainTime() {
   };
 
   const getMinimumDateTimeForInput = () => {
-    // Get minimum time with tolerance for UI (12 minutes for better UX)
+    // Get minimum time with tolerance for UI (1 hour for better UX)
     const currentTime = getCurrentBlockchainTime();
-    const minimumTimestamp = currentTime + (12 * 60); // 12 minutes buffer
+    const minimumTimestamp = currentTime + (60 * 60); // 1 hour buffer
     return formatBlockchainTimeForInput(minimumTimestamp);
   };
 
@@ -96,7 +96,7 @@ export function useBlockchainTime() {
       // Utility to check if a timestamp is valid (more lenient - just contract requirement)
       isValidExpirationTime: (timestamp: number) => {
         const currentTime = getCurrentBlockchainTime();
-        const minimumBuffer = 15 * 60 + 5; // 15 minutes 5 seconds (contract requirement + tiny safety)
+        const minimumBuffer = 60 * 60 + 5; // 1 hour 5 seconds (contract requirement + tiny safety)
         return timestamp > currentTime + minimumBuffer;
       }
     };
