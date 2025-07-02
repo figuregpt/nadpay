@@ -1,9 +1,9 @@
-import RaffleHouseContent from './RaffleHouseContent';
-import { Metadata } from 'next';
+import { Metadata } from "next";
+import RaffleHouseContent from "./RaffleHouseContent";
 
 export const metadata: Metadata = {
-  title: 'RaffleHouse - Win NFTs & Tokens on Monad',
-  description: 'Join exciting raffles from creators around the world. Win tokens, NFTs, and exclusive rewards on Monad blockchain.',
+  title: "RaffleHouse - Win NFTs & Crypto | NadPay",
+  description: "Discover and participate in exciting raffles to win NFTs, tokens, and exclusive rewards on Monad",
 };
 
 export default function RaffleHousePage() {
