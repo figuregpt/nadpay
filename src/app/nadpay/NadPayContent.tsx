@@ -2,27 +2,12 @@
 
 import { Moon, Sun, Link2, ArrowLeft, Trophy, CreditCard, ArrowLeftRight, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
-
-// Load Web3 component dynamically (skip SSR)
-const Web3AppContent = dynamic(() => import("../app/Web3AppContent"), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-screen bg-white dark:bg-dark-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-          <Link2 className="w-8 h-8 text-white" />
-        </div>
-        <p className="text-gray-600 dark:text-gray-300">Loading Web3...</p>
-      </div>
-    </div>
-  )
-});
+import Web3AppContent from "../app/Web3AppContent";
 
 export default function NadPayContent() {
   const { isConnected, address } = useAccount();

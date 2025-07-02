@@ -810,7 +810,7 @@ export default function CreateRaffleContent() {
                       { label: '2H', minutes: 121 }, // Add 1 minute buffer
                       { label: '4H', minutes: 241 }, // Add 1 minute buffer
                       { label: '12H', minutes: 721 }, // Add 1 minute buffer
-                      { label: '24H', minutes: 1441 } // Add 1 minute buffer
+                      { label: '24H', minutes: 1438 } // Remove 3 minute buffer
                     ].map((duration) => (
                       <button
                         key={duration.label}

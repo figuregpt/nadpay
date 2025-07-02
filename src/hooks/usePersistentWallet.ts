@@ -27,9 +27,11 @@ export function usePersistentWallet() {
       
       // Only try to reconnect if there was a previously connected wallet and not currently connected
       if (wasConnected === 'true' && savedAddress && !isConnected && status === 'disconnected') {
-        setHasAttemptedReconnect(true);
         // Add reconnection logic here if needed
       }
+      
+      // Always mark as attempted after checking
+      setHasAttemptedReconnect(true);
     };
 
     // Wait briefly, then try to reconnect
