@@ -99,6 +99,15 @@ export const KNOWN_NFTS: KnownNFT[] = [
     totalSupply: 4869316
   },
   {
+    address: "0x05b16393517026d6c635B6e87C256923E91cAf90",
+    name: ".mon",
+    description: "",
+    image: "https://metadata.alldomains.id/.mon/collection_image.png",
+    website: "",
+    verified: true,
+    totalSupply: 208105
+  },
+  {
     address: "0x846B6EaE59b84108eB64DdD54f013b68D112917d",
     name: "FrensNads",
     description: "",
