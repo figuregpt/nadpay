@@ -1,8 +1,8 @@
+# DOCKER BUILD DISABLED - Using nixpacks for faster builds
+# 
 # [build]
 # builder = "DOCKERFILE"
 # dockerfilePath = "Dockerfile"
-# 
-# Uncomment above to use Docker. By default, Railway will use nixpacks which is faster.
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

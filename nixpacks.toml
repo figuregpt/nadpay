@@ -1,18 +1,24 @@
 [phases.setup]
-nixPkgs = ['nodejs-18_x', 'npm-9_x']
+nixPkgs = ['nodejs-18_x']
+aptPkgs = ['g++', 'make', 'python3']
 
 [phases.install]
 cmds = [
-    'npm ci --prefer-offline --no-audit --no-fund --omit=dev'
+    'npm install -g pm2',
+    'npm ci --omit=dev --prefer-offline --no-audit --no-fund --legacy-peer-deps'
 ]
+cacheDirectories = ['/root/.npm']
 
 [phases.build]
 cmds = [
     'npm run build'
 ]
+cacheDirectories = ['/app/.next/cache']
 
 [start]
-cmd = 'npm run start:prod'
+cmd = 'pm2-runtime start ecosystem.config.js'
 
 [variables]
-NODE_ENV = 'production' 
+NODE_ENV = 'production'
+NPM_CONFIG_LOGLEVEL = 'error'
+NODE_OPTIONS = '--max-old-space-size=2048' 
