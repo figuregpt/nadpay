@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useSearchParams } from "next/navigation";
 import { 
   Wallet, 
   Link2, 
@@ -18,10 +19,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  Moon
+  AlertTriangle,
+  RefreshCw,
+  Trophy
 } from "lucide-react";
 import { useAccount, usePublicClient } from "wagmi";
+import { formatEther } from "viem";
 import { ConnectKitButton } from "connectkit";
 import { useCreatorLinksV2, useDeactivatePaymentLinkV2, formatPaymentLinkV2, formatPriceV2, useTotalLinksV2 } from "@/hooks/useNadPayV2Contract";
 
@@ -69,12 +72,13 @@ const NADPAY_V2_ABI = [
     "type": "function"
   }
 ];
-import { useCreatorRafflesV3, formatRaffleV3, formatPriceV3Raffle } from "@/hooks/useNadRaffleV4FastContract";
+import { useCreatorRafflesV6, formatRaffleV6, formatPriceV6, RaffleInfoV6, RAFFLE_STATES_V6 } from "@/hooks/useNadRaffleV6Contract";
 import { NADPAY_CONTRACT } from "@/lib/contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
-import { getKnownToken } from "@/lib/knownAssets";
+import { getKnownToken, getKnownNFT } from "@/lib/knownAssets";
 import { useUserRaffles } from "@/hooks/useUserRaffles";
 import TwitterProfile from "@/components/TwitterProfile";
+import Navbar from "@/components/Navbar";
 
 interface PaymentLinkData {
   linkId: string;
@@ -105,6 +109,7 @@ interface RaffleData {
   description: string;
   rewardType: number;
   rewardAmount: string;
+  rewardTokenAddress?: string; // Add this for token info
   ticketPrice: string;
   maxTickets: bigint;
   ticketsSold: bigint;
@@ -115,15 +120,49 @@ interface RaffleData {
   winner?: string;
 }
 
+interface PurchaseData {
+  _id: string;
+  linkId: string;
+  buyerAddress: string;
+  creatorAddress: string;
+  linkTitle: string;
+  linkDescription?: string;
+  price: string;
+  paymentToken: string;
+  paymentTokenSymbol?: string;
+  quantity: number;
+  totalPaid: string;
+  purchaseDate: string;
+  transactionHash: string;
+  linkStatus: 'active' | 'expired' | 'inactive';
+}
+
 export default function DashboardContent() {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
-  const { theme, setTheme } = useTheme();
+  const searchParams = useSearchParams();
   
   // Contract constants - V2 Ultra-Secure
   const CONTRACT_ADDRESS = "0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25" as `0x${string}`;
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles' | 'my-tickets'>('payment-links');
+  const [activeTab, setActiveTab] = useState<'payment-links' | 'raffles' | 'my-tickets' | 'my-payments'>('payment-links');
+  
+  // Error and success states
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // My Payments states
+  const [myPurchases, setMyPurchases] = useState<PurchaseData[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
+  const [filteredPurchases, setFilteredPurchases] = useState<PurchaseData[]>([]);
+  const [purchaseSearchQuery, setPurchaseSearchQuery] = useState("");
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | '90days'>('all');
+  
+  // User points states for leaderboard stats
+  const [userPoints, setUserPoints] = useState<any>(null);
+  const [userRank, setUserRank] = useState<number | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [selectedLink, setSelectedLink] = useState<PaymentLinkData | null>(null);
   const [participantsSearchQuery, setParticipantsSearchQuery] = useState("");
@@ -152,8 +191,11 @@ export default function DashboardContent() {
     return `${addressSeed}_${Math.abs(hash).toString(16).slice(0, 8)}`;
   };
   
-  // Contract hooks - Enable debug mode to show all payment links
-  const { data: creatorLinksData, isLoading: loadingLinks, refetch, error: linksError } = useCreatorLinksV2(address, true);
+  // Contract hooks - Load all data immediately for better UX
+  const { data: creatorLinksData, isLoading: loadingLinks, refetch, error: linksError } = useCreatorLinksV2(
+    address, 
+    true
+  );
   const { data: totalLinks, error: totalLinksError } = useTotalLinksV2();
   
   // Debug logging
@@ -167,25 +209,291 @@ export default function DashboardContent() {
     totalLinksError: totalLinksError?.message,
     contractAddress: CONTRACT_ADDRESS
   });
-  // V4 Fast contract - raffle hooks
+  // V6 contract - raffle hooks (load immediately)
   const {
     data: creatorRafflesData,
     isLoading: loadingRaffles,
     refetch: refetchRaffles,
-  } = useCreatorRafflesV3(address);
+  } = useCreatorRafflesV6(address);
   
   // Debug logging for raffles
-  console.log('🎫 Raffle Debug: V4 Fast hooks enabled', {
+  console.log('🎫 Raffle Debug: V6 hooks enabled', {
     creatorRafflesData,
     loadingRaffles
   });
 
-  // User tickets hook for My Tickets tab
+  // Handle URL parameters for errors and success messages
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const success = searchParams.get('success');
+    const handle = searchParams.get('handle');
+
+    if (error) {
+      switch (error) {
+        case 'twitter_already_connected':
+          setErrorMessage(
+            handle 
+              ? `Twitter account @${handle} is already connected to another wallet. Please disconnect it first to connect to this wallet.`
+              : 'This Twitter account is already connected to another wallet. Please disconnect it first.'
+          );
+          break;
+        case 'auth_failed':
+          setErrorMessage('Twitter authentication failed. Please try again.');
+          break;
+        case 'token_failed':
+          setErrorMessage('Failed to get Twitter access token. Please try again.');
+          break;
+        case 'user_failed':
+          setErrorMessage('Failed to get Twitter user information. Please try again.');
+          break;
+        case 'callback_failed':
+          setErrorMessage('Twitter connection failed. Please try again.');
+          break;
+        default:
+          setErrorMessage('An error occurred during Twitter connection.');
+      }
+    }
+
+    if (success) {
+      switch (success) {
+        case 'twitter_connected':
+          setSuccessMessage('Twitter account connected successfully!');
+          break;
+        default:
+          setSuccessMessage('Operation completed successfully!');
+      }
+    }
+
+    // Clear messages after 10 seconds
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+        setSuccessMessage(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
+  // Fetch user points and rank
+  const fetchUserPoints = async () => {
+    if (!address) return;
+    
+    setLoadingStats(true);
+    try {
+      const response = await fetch(`/api/points/${address}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserPoints(data);
+        
+        // Fetch leaderboard to get user rank
+        const leaderboardResponse = await fetch('/api/leaderboard?limit=100');
+        if (leaderboardResponse.ok) {
+          const leaderboardData = await leaderboardResponse.json();
+          const userInLeaderboard = leaderboardData.find(
+            (user: any) => user.walletAddress.toLowerCase() === address.toLowerCase()
+          );
+          setUserRank(userInLeaderboard?.rank || null);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user points:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (address) {
+      fetchUserPoints();
+    }
+  }, [address]);
+
+  // Stats formatting helper
+  const formatStatsPoints = (points: number) => {
+    return points ? points.toFixed(1) : '0.0';
+  };
+
+  // Get my purchases from existing payment links data
+  const fetchMyPurchases = async () => {
+    if (!address || !publicClient || !paymentLinks || paymentLinks.length === 0) {
+      return;
+    }
+    
+    setLoadingPurchases(true);
+    
+    try {
+      const allPurchases: PurchaseData[] = [];
+      
+      // Check each payment link for purchases by this address
+      for (const link of paymentLinks) {
+        try {
+          // Get purchases for this payment link using same system as participants
+          const purchases = await publicClient.readContract({
+            address: CONTRACT_ADDRESS,
+            abi: NADPAY_V2_ABI,
+            functionName: 'getPurchases',
+            args: [BigInt(link.linkId)]
+          }) as any[];
+
+          if (!purchases || !Array.isArray(purchases)) {
+            continue;
+          }
+          
+          // Filter purchases by current address
+          const myPurchasesForThisLink = purchases.filter((purchase: any) => 
+            purchase.buyer?.toLowerCase() === address.toLowerCase()
+          );
+          
+          // Convert to our format
+          for (const purchase of myPurchasesForThisLink) {
+            const tokenSymbol = link.paymentTokenSymbol || "MON";
+            const purchaseAmount = Number(purchase.amount || 1);
+            const unitPrice = parseFloat(link.price || '0');
+            const totalPaid = (purchaseAmount * unitPrice).toFixed(4);
+            
+            allPurchases.push({
+              _id: `${link.linkId}-${purchase.buyer}-${purchase.timestamp}`,
+              linkId: link.linkId,
+              buyerAddress: address,
+              creatorAddress: link.creator,
+              linkTitle: link.title,
+              linkDescription: link.description || "",
+              price: link.price,
+              paymentToken: link.paymentToken,
+              paymentTokenSymbol: tokenSymbol,
+              quantity: purchaseAmount,
+              totalPaid: totalPaid,
+              purchaseDate: new Date(Number(purchase.timestamp) * 1000).toISOString(),
+              transactionHash: purchase.txHash || "0x0000000000000000000000000000000000000000000000000000000000000000",
+              linkStatus: link.isActive ? 'active' : 'inactive'
+            });
+          }
+        } catch (error) {
+          // Continue to next link if this one fails
+          continue;
+        }
+      }
+      
+      // Group purchases by linkId (combine multiple purchases from same link)
+      const groupedPurchases = allPurchases.reduce((acc, purchase) => {
+        const existing = acc.find(p => p.linkId === purchase.linkId);
+        
+        if (existing) {
+          // Combine with existing purchase
+          existing.quantity += purchase.quantity;
+          existing.totalPaid = (parseFloat(existing.totalPaid) + parseFloat(purchase.totalPaid)).toFixed(4);
+          // Use the latest purchase date
+          if (new Date(purchase.purchaseDate) > new Date(existing.purchaseDate)) {
+            existing.purchaseDate = purchase.purchaseDate;
+            existing.transactionHash = purchase.transactionHash;
+          }
+        } else {
+          // First purchase for this link
+          acc.push(purchase);
+        }
+        
+        return acc;
+      }, [] as PurchaseData[]);
+      
+      // Sort by purchase date (newest first)
+      const sortedPurchases = groupedPurchases.sort((a, b) => 
+        new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()
+      );
+      
+      setMyPurchases(sortedPurchases);
+      
+    } catch (error) {
+      setMyPurchases([]);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  };
+
+  // User tickets hook for My Tickets tab (load immediately)
   const { 
     userTickets, 
     notifications, 
     isLoading: loadingUserTickets 
   } = useUserRaffles(address);
+
+  // User tickets loaded
+
+  // No need for separate reward fetching - userTickets already include reward info
+
+  // Format reward display using ticket data directly
+  const formatRewardDisplay = (ticket: any) => {
+    if (ticket.rewardType === undefined || ticket.rewardType === null) return 'Loading...';
+    
+    // V6 Contract RewardType values:
+    // 0 = MON_TOKEN
+    // 1 = ERC20_TOKEN (CHOG etc.)
+    // 2 = NFT_TOKEN
+    
+    // Format reward based on type
+    
+    try {
+      if (ticket.rewardType === 0) {
+        // MON tokens - use rewardAmount field
+        const amount = formatEther(BigInt(ticket.rewardAmount || 0));
+        return `${amount} MON`;
+              } else if (ticket.rewardType === 1) {
+          // ERC20 tokens - NOW WORKING WITH PROPER rewardTokenAddress
+          const tokenAddress = ticket.rewardToken?.toLowerCase();
+          const rawAmount = BigInt(ticket.rewardTokenId || 0);
+          
+          if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
+            return `${formatEther(rawAmount)} Unknown Token`;
+          }
+          
+          // Get token from knownAssets (dynamic system)
+          const knownToken = getKnownToken(tokenAddress);
+          
+          if (knownToken) {
+            // Format based on token decimals
+            let formattedAmount;
+            if (knownToken.decimals === 18) {
+              formattedAmount = formatEther(rawAmount);
+            } else {
+              // For tokens with different decimals (like USDC with 6 decimals)
+              const divisor = BigInt(10 ** knownToken.decimals);
+              const wholePart = rawAmount / divisor;
+              const fractionalPart = rawAmount % divisor;
+              formattedAmount = `${wholePart}.${fractionalPart.toString().padStart(knownToken.decimals, '0').replace(/0+$/, '') || '0'}`;
+            }
+            
+            return `${formattedAmount} ${knownToken.symbol}`;
+          }
+          
+          // Unknown token fallback
+          const shortAddress = `${tokenAddress.slice(0, 6)}...${tokenAddress.slice(-4)}`;
+          return `${formatEther(rawAmount)} Token (${shortAddress})`;
+        } else if (ticket.rewardType === 2) {
+        // NFT tokens
+        const tokenAddress = ticket.rewardToken;
+        const tokenId = ticket.rewardTokenId?.toString() || '0';
+        
+        if (!tokenAddress) {
+          return `NFT #${tokenId}`;
+        }
+        
+                 // Check if it's a known NFT collection
+         const knownNFT = getKnownNFT(tokenAddress);
+         if (knownNFT) {
+           return `${knownNFT.name} #${tokenId}`;
+         }
+        
+        // For unknown NFT collections, show address
+        const shortAddress = `${tokenAddress.slice(0, 6)}...${tokenAddress.slice(-4)}`;
+        return `NFT (${shortAddress}) #${tokenId}`;
+      }
+    } catch (error) {
+      console.error(`❌ Error formatting reward display for raffle ${ticket.raffleId}:`, error);
+      console.error('Ticket data:', ticket);
+      return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
+    
+    return `Unknown Type (${ticket.rewardType})`;
+  };
   const { 
     deactivatePaymentLink, 
     isConfirmed: deactivationConfirmed 
@@ -202,111 +510,153 @@ export default function DashboardContent() {
   const isEndingRaffle = false;
   const isRaffleEnded = false;
 
-    // Convert contract data to display format and sort by newest first
-  const paymentLinks: PaymentLinkData[] = creatorLinksData ? creatorLinksData
-    .map((link: unknown) => {
-      try {
-        const formatted = formatPaymentLinkV2(link);
-        console.log('Raw link data:', link);
-        console.log('Formatted link data:', formatted);
-        console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
-        
-        const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
-          ? "MON" 
-          : getKnownToken(formatted.paymentToken)?.symbol || "TOKEN";
-        
-        return {
-          ...formatted,
-          linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
-          _id: (link as { linkId: { toString(): string } }).linkId.toString(),
-          creatorAddress: formatted.creator,
-          price: formatPriceV2(formatted.price),
-          totalEarned: formatPriceV2(formatted.totalEarned),
-          paymentToken: formatted.paymentToken,
-          paymentTokenSymbol: tokenSymbol,
-          uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
-          purchases: [], // Will be fetched separately if needed
-          createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
-          expiresAt: (formatted as any).expiresAt || BigInt(0),
-        };
-    } catch (error) {
-      console.error('Error formatting payment link:', error, link);
-      // Return a default object to prevent crashes
-      return {
-        linkId: '0',
-        _id: '0',
-        creator: '',
-        title: 'Error Loading Link',
-        description: 'This link could not be loaded',
-        coverImage: '',
-        price: '0',
-        paymentToken: '0x0000000000000000000000000000000000000000',
-        paymentTokenSymbol: 'MON',
-        totalSales: BigInt(0),
-        maxPerWallet: BigInt(0),
-        salesCount: BigInt(0),
-        totalEarned: '0',
-        isActive: false,
-        createdAt: new Date().toISOString(),
-        expiresAt: BigInt(0),
-        creatorAddress: '',
-        purchases: [],
-      };
-    }
-  })
-    .sort((a: PaymentLinkData, b: PaymentLinkData) => {
-      // Sort by linkId descending (newest first)
-      return parseInt(b.linkId) - parseInt(a.linkId);
-    }) : [];
-
-  // Convert raffle contract data to display format
-  console.log('creatorRafflesData:', creatorRafflesData);
-  console.log('loadingRaffles:', loadingRaffles);
-  console.log('address:', address);
-  
-  const raffles: RaffleData[] = creatorRafflesData ? creatorRafflesData
-    .map((raffle: any, index: number) => {
-      try {
-        console.log('Processing raffle:', raffle);
-        const formatted = formatRaffleV3(raffle);
-        return {
-          id: formatted.id ? formatted.id.toString() : index.toString(),
-          creator: formatted.creator || '',
-          title: formatted.title || 'Untitled Raffle',
-          description: formatted.description || '',
-          rewardType: Number(formatted.rewardType) || 0,
-          rewardAmount: formatPriceV3Raffle(formatted.rewardAmount),
-          ticketPrice: formatPriceV3Raffle(formatted.ticketPrice),
-          maxTickets: formatted.maxTickets || BigInt(0),
-          ticketsSold: formatted.ticketsSold || BigInt(0),
-          totalEarned: formatPriceV3Raffle(formatted.totalEarned),
-          status: Number(formatted.status) || 0,
-          createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
-          expirationTime: formatted.expirationTime || BigInt(0),
-          winner: formatted.winner !== '0x0000000000000000000000000000000000000000' ? formatted.winner : undefined,
-        };
+    // Convert contract data to display format and sort by newest first - MEMOIZED to prevent infinite loops
+  const paymentLinks: PaymentLinkData[] = useMemo(() => {
+    return creatorLinksData ? creatorLinksData
+      .map((link: unknown) => {
+        try {
+          const formatted = formatPaymentLinkV2(link);
+          console.log('Raw link data:', link);
+          console.log('Formatted link data:', formatted);
+          console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
+          
+          const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
+            ? "MON" 
+            : getKnownToken(formatted.paymentToken)?.symbol || "TOKEN";
+          
+          return {
+            ...formatted,
+            linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
+            _id: (link as { linkId: { toString(): string } }).linkId.toString(),
+            creatorAddress: formatted.creator,
+            price: formatPriceV2(formatted.price),
+            totalEarned: formatPriceV2(formatted.totalEarned),
+            paymentToken: formatted.paymentToken,
+            paymentTokenSymbol: tokenSymbol,
+            uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
+            purchases: [], // Will be fetched separately if needed
+            createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
+            expiresAt: (formatted as any).expiresAt || BigInt(0),
+          };
       } catch (error) {
-        console.error('Error formatting raffle data:', error, raffle);
+        console.error('Error formatting payment link:', error, link);
+        // Return a default object to prevent crashes
         return {
-          id: index.toString(),
+          linkId: '0',
+          _id: '0',
           creator: '',
-          title: 'Error Loading Raffle',
-          description: 'This raffle could not be loaded',
-          rewardType: 0,
-          rewardAmount: '0',
-          ticketPrice: '0',
-          maxTickets: BigInt(0),
-          ticketsSold: BigInt(0),
+          title: 'Error Loading Link',
+          description: 'This link could not be loaded',
+          coverImage: '',
+          price: '0',
+          paymentToken: '0x0000000000000000000000000000000000000000',
+          paymentTokenSymbol: 'MON',
+          totalSales: BigInt(0),
+          maxPerWallet: BigInt(0),
+          salesCount: BigInt(0),
           totalEarned: '0',
-          status: 2, // CANCELLED
+          isActive: false,
           createdAt: new Date().toISOString(),
-          expirationTime: BigInt(0),
+          expiresAt: BigInt(0),
+          creatorAddress: '',
+          purchases: [],
         };
       }
     })
-    .sort((a: RaffleData, b: RaffleData) => {
-      return parseInt(b.id) - parseInt(a.id);
-    }) : [];
+      .sort((a: PaymentLinkData, b: PaymentLinkData) => {
+        // Sort by linkId descending (newest first)
+        return parseInt(b.linkId) - parseInt(a.linkId);
+      }) : [];
+  }, [creatorLinksData]);
+
+  // Convert V6 raffle contract data to display format - MEMOIZED to prevent unnecessary re-renders
+  console.log('creatorRafflesData V6:', creatorRafflesData);
+  console.log('loadingRaffles:', loadingRaffles);
+  console.log('address:', address);
+  
+  const raffles: RaffleData[] = useMemo(() => {
+    return creatorRafflesData ? creatorRafflesData
+      .map((raffle: RaffleInfoV6, index: number) => {
+        try {
+          console.log('Processing V6 raffle:', raffle);
+          
+          // Calculate total earned (tickets sold * ticket price)
+          const totalEarned = raffle.soldTickets * raffle.ticketPrice;
+          
+          return {
+            id: raffle.raffleId !== undefined ? raffle.raffleId.toString() : index.toString(),
+            creator: raffle.creator || '',
+            title: `V6 Raffle #${raffle.raffleId !== undefined ? raffle.raffleId : index}`, // V6 doesn't have title/description
+            // Fix description to use correct field based on reward type
+            description: `Reward: ${
+              raffle.rewardType === 1 
+                ? (() => {
+                    const amount = formatPriceV6(raffle.rewardTokenId || BigInt(0));
+                    const token = raffle.rewardTokenAddress 
+                      ? getKnownToken(raffle.rewardTokenAddress.toLowerCase())
+                      : null;
+                    const symbol = token ? token.symbol : 'Tokens';
+                    return `${amount} ${symbol}`;
+                  })()
+                : raffle.rewardType === 2
+                ? (() => {
+                    const tokenId = (raffle.rewardTokenId || BigInt(0)).toString();
+                    const nft = raffle.rewardTokenAddress 
+                      ? getKnownNFT(raffle.rewardTokenAddress.toLowerCase())
+                      : null;
+                    const name = nft ? nft.name : 'NFT';
+                    return `${name} #${tokenId}`;
+                  })()
+                : formatPriceV6(raffle.rewardAmount) + ' MON'
+            }`,
+            rewardType: Number(raffle.rewardType) || 0,
+            // For ERC20 tokens (type 1), amount is in rewardTokenId, not rewardAmount
+            // For NFTs (type 2), show collection name + token ID instead of amount
+            rewardAmount: raffle.rewardType === 1 
+              ? formatPriceV6(raffle.rewardTokenId || BigInt(0))
+              : raffle.rewardType === 2
+              ? (() => {
+                  const tokenId = (raffle.rewardTokenId || BigInt(0)).toString();
+                  const nft = raffle.rewardTokenAddress 
+                    ? getKnownNFT(raffle.rewardTokenAddress.toLowerCase())
+                    : null;
+                  const name = nft ? nft.name : 'NFT';
+                  return `${name} #${tokenId}`;
+                })()
+              : formatPriceV6(raffle.rewardAmount),
+            rewardTokenAddress: raffle.rewardTokenAddress, // Include token address for identifying specific tokens
+            ticketPrice: formatPriceV6(raffle.ticketPrice),
+            maxTickets: raffle.maxTickets || BigInt(0),
+            ticketsSold: raffle.soldTickets || BigInt(0),
+            totalEarned: formatPriceV6(totalEarned),
+            status: Number(raffle.state) || 0, // V6 uses 'state' instead of 'status'
+            createdAt: raffle.startTime ? new Date(Number(raffle.startTime) * 1000).toISOString() : new Date().toISOString(),
+            expirationTime: raffle.endTime || BigInt(0),
+            winner: raffle.winner !== '0x0000000000000000000000000000000000000000' ? raffle.winner : undefined,
+          };
+        } catch (error) {
+          console.error('Error formatting V6 raffle data:', error, raffle);
+          return {
+            id: index.toString(),
+            creator: '',
+            title: 'Error Loading V6 Raffle',
+            description: 'This raffle could not be loaded',
+            rewardType: 0,
+            rewardAmount: '0',
+            ticketPrice: '0',
+            maxTickets: BigInt(0),
+            ticketsSold: BigInt(0),
+            totalEarned: '0',
+            status: 2, // CANCELLED
+            createdAt: new Date().toISOString(),
+            expirationTime: BigInt(0),
+          };
+        }
+      })
+      .sort((a: RaffleData, b: RaffleData) => {
+        return parseInt(b.id) - parseInt(a.id);
+      }) : [];
+  }, [creatorRafflesData]);
 
   // Refetch when deactivation is confirmed
   const [hasRefetchedAfterDeactivation, setHasRefetchedAfterDeactivation] = useState(false);
@@ -332,11 +682,52 @@ export default function DashboardContent() {
     }
   }, [isRaffleEnded, refetchRaffles]);
 
+  // Fetch purchases when payment links are loaded
+  useEffect(() => {
+    if (address && paymentLinks && paymentLinks.length > 0) {
+      fetchMyPurchases();
+    }
+  }, [address, paymentLinks]);
+
   // Reset to page 1 when switching tabs or searching
   useEffect(() => {
     setPaymentLinksPage(1);
     setRafflesPage(1);
-  }, [activeTab, searchQuery]);
+    setPurchasePage(1);
+    
+    // Fetch purchases when switching to my-payments tab
+    if (activeTab === 'my-payments' && address && paymentLinks.length > 0) {
+      fetchMyPurchases();
+    }
+  }, [activeTab, searchQuery, purchaseSearchQuery]);
+
+  // Filter purchases based on search and date
+  useEffect(() => {
+    let filtered = myPurchases;
+
+    // Search filter
+    if (purchaseSearchQuery) {
+      filtered = filtered.filter(purchase =>
+        purchase.linkTitle.toLowerCase().includes(purchaseSearchQuery.toLowerCase()) ||
+        purchase.creatorAddress.toLowerCase().includes(purchaseSearchQuery.toLowerCase()) ||
+        purchase.transactionHash.toLowerCase().includes(purchaseSearchQuery.toLowerCase())
+      );
+    }
+
+    // Date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const days = dateFilter === '7days' ? 7 : dateFilter === '30days' ? 30 : 90;
+      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      
+      filtered = filtered.filter(purchase =>
+        new Date(purchase.purchaseDate) >= cutoffDate
+      );
+    }
+
+    setFilteredPurchases(filtered);
+    setPurchasePage(1); // Reset to first page when filtering
+  }, [myPurchases, purchaseSearchQuery, dateFilter]);
 
   const copyLink = (linkId: string) => {
     if (!address) return;
@@ -367,18 +758,44 @@ export default function DashboardContent() {
   };
 
   const getRaffleStatus = (raffle: RaffleData) => {
-    switch (raffle.status) {
-      case 0: return 'Active';
-      case 1: return 'Ended';
-      case 2: return 'Cancelled';
-      default: return 'Unknown';
+    const isExpired = isRaffleExpired(raffle);
+    const ticketsSold = Number(raffle.ticketsSold);
+    const maxTickets = Number(raffle.maxTickets);
+    const isSoldOut = ticketsSold >= maxTickets;
+
+    // V6 Smart Logic:
+    // 1. If tickets sold > 0 and expired → "Finished" (yellow)
+    // 2. If not expired and tickets not sold out → "Active" (green)
+    // 3. If tickets sold = 0 and expired → "Cancelled" (red)
+    // 4. If sold out and not expired → "Finished" (yellow)
+    
+    if (ticketsSold > 0 && (isExpired || isSoldOut)) {
+      return 'Finished'; // Yellow - has sales, ended or sold out
+    } else if (!isExpired && !isSoldOut) {
+      return 'Active'; // Green - still running, tickets available
+    } else if (ticketsSold === 0 && isExpired) {
+      return 'Cancelled'; // Red - no sales and expired
+    } else {
+      // Fallback to old logic for edge cases
+      switch (raffle.status) {
+        case 0: return 'Active';
+        case 1: return 'Finished';
+        case 2: return 'Cancelled';
+        case 3: return 'Cancelled'; // V6 EMERGENCY state
+        default: return 'Unknown';
+      }
     }
   };
 
   const getRewardTypeText = (rewardType: number) => {
+    // V6 Contract RewardType values:
+    // 0 = MON_TOKEN
+    // 1 = ERC20_TOKEN
+    // 2 = NFT_TOKEN
     switch (rewardType) {
-      case 0: return 'Token';
-      case 1: return 'NFT';
+      case 0: return 'MON';
+      case 1: return 'ERC20';
+      case 2: return 'NFT';
       default: return 'Unknown';
     }
   };
@@ -485,6 +902,41 @@ export default function DashboardContent() {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `nadpay-payment-links-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export purchases to CSV
+  const exportPurchasesToCSV = () => {
+    if (filteredPurchases.length === 0) {
+      alert('No purchases to export');
+      return;
+    }
+
+    const csvData = filteredPurchases.map(purchase => ({
+      'Transaction Hash': purchase.transactionHash,
+      'Link Title': purchase.linkTitle,
+      'Creator': purchase.creatorAddress,
+      'Unit Price': `${purchase.price} ${purchase.paymentTokenSymbol}`,
+      'Quantity': purchase.quantity,
+      'Total Paid': `${purchase.totalPaid} ${purchase.paymentTokenSymbol}`,
+      'Purchase Date': new Date(purchase.purchaseDate).toLocaleDateString(),
+      'Link Status': purchase.linkStatus,
+      'Link ID': purchase.linkId
+    }));
+
+    const csvContent = [
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `my-purchases-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -652,11 +1104,21 @@ export default function DashboardContent() {
     rafflesPage * itemsPerPage
   );
 
-  // Filter and paginate my tickets - only show active raffles
-  const activeUserTickets = userTickets.filter(ticket => ticket.status === 0); // Only active raffles
-  const filteredMyTickets = activeUserTickets.filter(ticket =>
-    ticket.raffleName.toLowerCase().includes(searchQuery.toLowerCase())
+  // My Purchases pagination
+  const totalPurchasesPages = Math.ceil(filteredPurchases.length / itemsPerPage);
+  const paginatedPurchases = filteredPurchases.slice(
+    (purchasePage - 1) * itemsPerPage,
+    purchasePage * itemsPerPage
   );
+
+  // Filter and paginate my tickets - show all tickets (including ended/cancelled where user won)
+  const activeUserTickets = userTickets; // Show ALL tickets, not just active ones
+  const filteredMyTickets = activeUserTickets
+    .filter(ticket =>
+      ticket.raffleName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    // Sort by raffleId in descending order (newest first)
+    .sort((a, b) => b.raffleId - a.raffleId);
 
   const totalMyTicketsPages = Math.ceil(filteredMyTickets.length / itemsPerPage);
   const paginatedMyTickets = filteredMyTickets.slice(
@@ -824,329 +1286,261 @@ export default function DashboardContent() {
     );
   }
 
-  if (loadingLinks || loadingRaffles) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+  // Remove the global loading state - render UI immediately with skeleton loaders
+
+  // Skeleton loader component for stats cards
+  const StatsCardSkeleton = () => (
+    <div className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700">
+      <div className="flex items-center">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-dark-700 rounded-lg animate-pulse"></div>
+        <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse mb-2"></div>
+          <div className="h-6 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-20"></div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const stats = getTotalStats();
+  // Skeleton loader for table rows
+  const TableRowSkeleton = () => (
+    <div className="bg-white dark:bg-dark-800 p-6 rounded-xl border border-gray-200 dark:border-dark-700 mb-4">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="h-5 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-48 mb-2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-64 mb-1"></div>
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-32"></div>
+        </div>
+        <div className="flex space-x-2 ml-4">
+          <div className="h-8 w-16 bg-gray-200 dark:bg-dark-700 rounded animate-pulse"></div>
+          <div className="h-8 w-20 bg-gray-200 dark:bg-dark-700 rounded animate-pulse"></div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100 dark:border-dark-700">
+        <div>
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-16 mb-1"></div>
+          <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-20"></div>
+        </div>
+        <div>
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-16 mb-1"></div>
+          <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-20"></div>
+        </div>
+        <div>
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-16 mb-1"></div>
+          <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-20"></div>
+        </div>
+        <div>
+          <div className="h-3 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-16 mb-1"></div>
+          <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-20"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Only calculate stats when we have payment links data loaded
+  const stats = loadingLinks ? {
+    totalEarned: 0,
+    totalSales: 0,
+    totalBuyers: 0,
+    raffleEarned: 0,
+    totalTicketsSold: 0,
+    totalParticipants: 0,
+    activeRaffles: 0
+  } : getTotalStats();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* NadPay Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <Link2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                  NadPay Dashboard
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
-                  Manage your payment links and track earnings on Monad
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <a 
-                  href="/" 
-                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-                >
-                  Home
-                </a>
-                <a 
-                  href="/nadpay" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadPay
-                </a>
-                <a 
-                  href="/nadswap" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadSwap
-                </a>
-                <a 
-                  href="/rafflehouse" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  RaffleHouse
-                </a>
-              </div>
-              
-              {/* Theme Toggle */}
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
-                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                )}
-              </button>
-              
-              {/* Custom Wallet Button */}
-              {isConnected ? (
-                <div className="relative">
-                  <ConnectKitButton.Custom>
-                    {({ show, truncatedAddress, ensName }) => (
-                      <button
-                        onClick={show}
-                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold">
-                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium hidden sm:inline">
-                          {ensName || truncatedAddress}
-                        </span>
-                      </button>
-                    )}
-                  </ConnectKitButton.Custom>
-                </div>
-              ) : (
-                <ConnectKitButton.Custom>
-                  {({ show }) => (
-                    <button
-                      onClick={show}
-                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-                    >
-                      Connect Wallet
-                    </button>
-                  )}
-                </ConnectKitButton.Custom>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar showTicketsButton={false} />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Twitter Profile Section */}
+        {/* Error Message Banner */}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+          >
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                  Twitter Connection Error
+                </p>
+                <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                  {errorMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 ml-3"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Success Message Banner */}
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+          >
+            <div className="flex items-start">
+              <div className="w-5 h-5 text-green-600 dark:text-green-400 mr-3 mt-0.5 flex-shrink-0">
+                ✓
+              </div>
+              <div className="flex-1">
+                <p className="text-green-800 dark:text-green-200 text-sm font-medium">
+                  Success
+                </p>
+                <p className="text-green-700 dark:text-green-300 text-sm mt-1">
+                  {successMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-3"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Combined Profile & Stats Section */}
         <div className="mb-8">
-          <TwitterProfile />
+          <TwitterProfile 
+            showStats={true}
+            userPoints={userPoints}
+            userRank={userRank}
+            loadingStats={loadingStats}
+            onRefreshStats={fetchUserPoints}
+            formatStatsPoints={formatStatsPoints}
+          />
         </div>
 
-        {/* NadPay Stats Overview */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">NadPay Overview</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Earned</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                                          {stats.totalEarned.toFixed(4)} (Multi-Token)
-                </p>
-              </div>
-            </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {stats.totalSales}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Buyers</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {stats.totalBuyers}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                <Link2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div className="ml-3 sm:ml-4 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Links</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {paymentLinks.filter((link: PaymentLinkData) => getLinkStatus(link) === 'Active').length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-          </div>
-        </div>
-
-        {/* NadRaffle Stats Overview */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">NadRaffle Overview</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Raffle Earned</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                                            {stats.raffleEarned.toFixed(4)} (Multi-Token)
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                  <span className="text-lg sm:text-xl">🎫</span>
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Tickets Sold</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {stats.totalTicketsSold}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Participants</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {stats.totalParticipants}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-              className="bg-white dark:bg-dark-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-dark-700"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                  <span className="text-lg sm:text-xl">🏆</span>
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Raffles</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {stats.activeRaffles}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-gray-100 dark:bg-dark-700 p-1 rounded-lg mb-8">
-          <button
-            onClick={() => setActiveTab('payment-links')}
-            className={`flex-1 px-6 py-3 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'payment-links'
-                ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Link2 className="w-4 h-4" />
-              <span>Payment Links ({paymentLinks.length})</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('raffles')}
-            className={`flex-1 px-6 py-3 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'raffles'
-                ? 'bg-white dark:bg-dark-800 text-purple-600 dark:text-purple-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <span className="text-lg">🎫</span>
-              <span>Raffles ({raffles.length})</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('my-tickets')}
-            className={`flex-1 px-6 py-3 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'my-tickets'
-                ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <span className="text-lg">🎟️</span>
-              <span>My Tickets ({activeUserTickets.length})</span>
-            </div>
-          </button>
+        <div className="mb-8">
+          {/* Desktop - Single Row */}
+          <div className="hidden sm:flex space-x-1 bg-gray-100 dark:bg-dark-700 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('payment-links')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'payment-links'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Link2 className="w-4 h-4" />
+                <span>Payment Links ({paymentLinks.length})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('my-payments')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'my-payments'
+                  ? 'bg-white dark:bg-dark-800 text-green-600 dark:text-green-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <ShoppingCart className="w-4 h-4" />
+                <span>My Payments ({myPurchases.length})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('raffles')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'raffles'
+                  ? 'bg-white dark:bg-dark-800 text-purple-600 dark:text-purple-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span className="text-lg">🎫</span>
+                <span>Raffles ({raffles.length})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('my-tickets')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'my-tickets'
+                  ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span className="text-lg">🎟️</span>
+                <span>My Tickets ({activeUserTickets.length})</span>
+              </div>
+            </button>
+          </div>
+          
+          {/* Mobile - 2x2 Grid */}
+          <div className="sm:hidden grid grid-cols-2 gap-1 bg-gray-100 dark:bg-dark-700 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('payment-links')}
+              className={`px-3 py-4 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'payment-links'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <Link2 className="w-5 h-5 mx-auto mb-1" />
+              <div className="text-center">
+                <div>Payment</div>
+                <div>Links ({paymentLinks.length})</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('my-payments')}
+              className={`px-3 py-4 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'my-payments'
+                  ? 'bg-white dark:bg-dark-800 text-green-600 dark:text-green-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <ShoppingCart className="w-5 h-5 mx-auto mb-1" />
+              <div className="text-center">
+                <div>My</div>
+                <div>Payments ({myPurchases.length})</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('raffles')}
+              className={`px-3 py-4 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'raffles'
+                  ? 'bg-white dark:bg-dark-800 text-purple-600 dark:text-purple-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <span className="text-xl block mb-1">🎫</span>
+              <div className="text-center">
+                <div>Raffles</div>
+                <div>({raffles.length})</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('my-tickets')}
+              className={`px-3 py-4 text-xs font-medium rounded-md transition-colors ${
+                activeTab === 'my-tickets'
+                  ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <span className="text-xl block mb-1">🎟️</span>
+              <div className="text-center">
+                <div>My</div>
+                <div>Tickets ({activeUserTickets.length})</div>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -1216,7 +1610,19 @@ export default function DashboardContent() {
             )}
           </div>
 
-          {paymentLinks.length === 0 ? (
+          {loadingLinks ? (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+            </div>
+          ) : paymentLinks.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Link2 className="w-8 h-8 text-gray-400" />
@@ -1423,7 +1829,19 @@ export default function DashboardContent() {
               )}
             </div>
 
-            {raffles.length === 0 ? (
+            {loadingRaffles ? (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="p-6">
+                  <TableRowSkeleton />
+                </div>
+                <div className="p-6">
+                  <TableRowSkeleton />
+                </div>
+                <div className="p-6">
+                  <TableRowSkeleton />
+                </div>
+              </div>
+            ) : raffles.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">🎫</span>
@@ -1476,11 +1894,11 @@ export default function DashboardContent() {
                             {raffle.title}
                           </h3>
                           <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
-                            getRaffleStatus(raffle) === 'Active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : getRaffleStatus(raffle) === 'Ended'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                                          getRaffleStatus(raffle) === 'Active'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                : getRaffleStatus(raffle) === 'Finished'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                           }`}>
                             {getRaffleStatus(raffle)}
                           </span>
@@ -1505,7 +1923,19 @@ export default function DashboardContent() {
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Reward Amount</p>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {raffle.rewardAmount} {raffle.rewardType === 0 ? 'MON' : 'NFT'}
+                              {raffle.rewardAmount} {
+                              raffle.rewardType === 0 
+                                ? 'MON' 
+                                : raffle.rewardType === 1 
+                                ? (() => {
+                                    // Get token symbol from known tokens
+                                    const token = raffle.rewardTokenAddress 
+                                      ? getKnownToken(raffle.rewardTokenAddress.toLowerCase())
+                                      : null;
+                                    return token ? token.symbol : 'Tokens';
+                                  })()
+                                : '' // NFT info already included in rewardAmount
+                            }
                             </p>
                           </div>
                           <div>
@@ -1614,15 +2044,22 @@ export default function DashboardContent() {
             </div>
             {searchQuery && (
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Found {filteredMyTickets.length} of {activeUserTickets.length} active tickets
+                Found {filteredMyTickets.length} of {activeUserTickets.length} tickets
               </div>
             )}
           </div>
 
           {loadingUserTickets ? (
-            <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading your tickets...</p>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
             </div>
                         ) : activeUserTickets.length === 0 ? (
             <div className="p-12 text-center">
@@ -1684,14 +2121,14 @@ export default function DashboardContent() {
                         <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
                           ticket.status === 0
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                         }`}>
-                          {ticket.status === 0 ? 'Active' : 'Ended'}
+                          {ticket.status === 0 ? 'Active' : 'Finished'}
                         </span>
                       </div>
                       
                       {/* Ticket Stats */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Tickets Owned</p>
                           <p className="font-medium text-gray-900 dark:text-white">
@@ -1701,7 +2138,7 @@ export default function DashboardContent() {
                         <div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {ticket.status === 0 ? 'Active' : 'Ended'}
+                            {ticket.status === 0 ? 'Active' : 'Finished'}
                           </p>
                         </div>
                         <div>
@@ -1717,14 +2154,18 @@ export default function DashboardContent() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Reward Claimed</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Reward</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            <span className="text-primary-600 dark:text-primary-400">
+                              {formatRewardDisplay(ticket)}
+                            </span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Reward Status</p>
                           <p className="font-medium text-gray-900 dark:text-white">
                             {ticket.isWinner ? (
-                              ticket.rewardClaimed ? (
-                                <span className="text-green-600 dark:text-green-400">Yes ✅</span>
-                              ) : (
-                                <span className="text-orange-600 dark:text-orange-400">Pending ⏳</span>
-                              )
+                              <span className="text-green-600 dark:text-green-400">Sent ✅</span>
                             ) : (
                               <span className="text-gray-500 dark:text-gray-400">N/A</span>
                             )}
@@ -1733,18 +2174,10 @@ export default function DashboardContent() {
                       </div>
 
                       {/* Special Messages */}
-                      {ticket.isWinner && !ticket.rewardClaimed && (
-                        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
-                            🎉 Congratulations! You won this raffle. Don't forget to claim your reward!
-                          </p>
-                        </div>
-                      )}
-
-                      {ticket.isWinner && ticket.rewardClaimed && (
-                        <div className="mb-4 inline-flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      {ticket.isWinner && (
+                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                           <p className="text-green-800 dark:text-green-300 text-sm font-medium">
-                            ✅ Reward successfully claimed!
+                            🎉 Congratulations! You won this raffle. Reward sent automatically!
                           </p>
                         </div>
                       )}
@@ -1758,16 +2191,6 @@ export default function DashboardContent() {
                           <ExternalLink className="w-4 h-4 mr-1" />
                           View Raffle
                         </a>
-                        
-                        {ticket.isWinner && !ticket.rewardClaimed && (
-                          <a
-                            href={`/raffle/${createPredictableSecureRaffleId(ticket.raffleId)}`}
-                            className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
-                          >
-                            <span className="w-4 h-4 mr-1">🎁</span>
-                            Claim Reward
-                          </a>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1783,6 +2206,271 @@ export default function DashboardContent() {
               totalPages={totalMyTicketsPages}
               onPageChange={setMyTicketsPage}
             />
+          )}
+          </motion.div>
+        )}
+
+        {/* My Payments */}
+        {activeTab === 'my-payments' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700"
+        >
+          <div className="p-6 border-b border-gray-200 dark:border-dark-700">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  My Payments
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Payment links you've purchased from
+                </p>
+              </div>
+              {myPurchases.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                  <button
+                    onClick={exportPurchasesToCSV}
+                    className="inline-flex items-center justify-center px-3 py-2 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Export CSV
+                  </button>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search payments..."
+                      value={purchaseSearchQuery}
+                      onChange={(e) => setPurchaseSearchQuery(e.target.value)}
+                      className="block w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Date Filter */}
+            {myPurchases.length > 0 && (
+              <div className="flex items-center space-x-2 mb-4">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Filter by date:</span>
+                <div className="flex space-x-1">
+                  {[
+                    { key: 'all', label: 'All' },
+                    { key: '7days', label: '7 days' },
+                    { key: '30days', label: '30 days' },
+                    { key: '90days', label: '90 days' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setDateFilter(filter.key as any)}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                        dateFilter === filter.key
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(purchaseSearchQuery || dateFilter !== 'all') && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Found {filteredPurchases.length} of {myPurchases.length} purchases
+              </div>
+            )}
+          </div>
+
+          {loadingPurchases ? (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+              <div className="p-6">
+                <TableRowSkeleton />
+              </div>
+            </div>
+          ) : filteredPurchases.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                {myPurchases.length === 0 ? 'No payments yet' : 'No matching purchases'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {myPurchases.length === 0 
+                  ? "You haven't purchased from any payment links yet. Browse available payment links!"
+                  : "No purchases match your current filters. Try adjusting your search or date filter."
+                }
+              </p>
+              {myPurchases.length === 0 && (
+                <a
+                  href="/nadpay"
+                  className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Browse Payment Links
+                </a>
+              )}
+            </div>
+          ) : (
+            <div>
+              {/* Purchase Statistics */}
+              <div className="p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 border-b border-gray-200 dark:border-dark-700">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {filteredPurchases.length}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Purchases</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {(() => {
+                        const total = filteredPurchases.reduce((sum, p) => sum + parseFloat(p.totalPaid), 0);
+                        return total.toFixed(4);
+                      })()}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Spent (MON)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {(() => {
+                        const avg = filteredPurchases.reduce((sum, p) => sum + parseFloat(p.totalPaid), 0) / filteredPurchases.length;
+                        return avg.toFixed(4);
+                      })()}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Average Spent</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                      {new Set(filteredPurchases.map(p => p.creatorAddress)).size}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Unique Creators</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Purchase List */}
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {paginatedPurchases.map((purchase: PurchaseData, index: number) => (
+                <motion.div
+                  key={purchase._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
+                  className="p-6"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {purchase.linkTitle}
+                        </h3>
+                        <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+                          purchase.linkStatus === 'active'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : purchase.linkStatus === 'expired'
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        }`}>
+                          {purchase.linkStatus === 'active' ? 'Active' : purchase.linkStatus === 'expired' ? 'Expired' : 'Inactive'}
+                        </span>
+                      </div>
+                      {purchase.linkDescription && (
+                        <p className="text-gray-600 dark:text-gray-400 mb-3">
+                          {purchase.linkDescription}
+                        </p>
+                      )}
+                      
+                      {/* Purchase Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {purchase.price} {purchase.paymentTokenSymbol || 'MON'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Quantity</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {purchase.quantity}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Total Paid</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {purchase.totalPaid} {purchase.paymentTokenSymbol || 'MON'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Purchase Date</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {new Date(purchase.purchaseDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Creator</p>
+                          <p className="font-medium text-gray-900 dark:text-white font-mono text-sm">
+                            {purchase.creatorAddress.slice(0, 6)}...{purchase.creatorAddress.slice(-4)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={`/pay/${purchase.linkId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View Link
+                        </a>
+                        <a
+                          href={`https://monad-testnet.g.alchemy.com/tx/${purchase.transactionHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View Transaction
+                        </a>
+                        <button
+                          onClick={() => copyLink(purchase.transactionHash)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy TX Hash
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              </div>
+
+              {/* Pagination for My Purchases */}
+              {totalPurchasesPages > 1 && (
+                <div className="p-6 border-t border-gray-200 dark:border-dark-700">
+                  <PaginationControls
+                    currentPage={purchasePage}
+                    totalPages={totalPurchasesPages}
+                    onPageChange={setPurchasePage}
+                  />
+                </div>
+              )}
+            </div>
           )}
           </motion.div>
         )}

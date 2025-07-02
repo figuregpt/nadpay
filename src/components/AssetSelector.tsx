@@ -238,24 +238,13 @@ export function AssetSelector({
         const hasBalance = token.balance !== '0' && token.formattedBalance !== '0';
         const isNotLoading = !token.isLoading;
         const isRateLimited = token.formattedBalance === 'Rate Limited';
-        // Show important tokens (MON and CHOG) always when connected, even if rate limited or zero balance
+        const isLoadingText = token.formattedBalance === 'Loading...';
+        // Show important tokens (MON and CHOG) always when connected
         const isImportantToken = token.symbol === 'MON' || token.symbol === 'CHOG';
-        const shouldShow = (hasBalance && isNotLoading) || (isImportantToken && address && isNotLoading) || (isRateLimited && isImportantToken);
-        
-        if (token.symbol === 'CHOG' || token.symbol === 'MON') {
-          console.log(`🔍 ${token.symbol} token filter check:`, {
-            symbol: token.symbol,
-            balance: token.balance,
-            formattedBalance: token.formattedBalance,
-            hasBalance,
-            isNotLoading,
-            isRateLimited,
-            isImportantToken,
-            shouldShow,
-            userAddress: address,
-            tokenAddress: token.address
-          });
-        }
+        const shouldShow = (hasBalance && isNotLoading) || 
+                          (isImportantToken && address) || // Always show MON and CHOG when connected
+                          (isRateLimited && isImportantToken) ||
+                          (isLoadingText && isImportantToken);
         
         return shouldShow;
       })
@@ -280,6 +269,15 @@ export function AssetSelector({
         return categoryTokens.some(catToken => catToken.symbol === token.symbol);
       })
     : ownedTokens;
+  
+  // Sort tokens to always show MON and CHOG first
+  const sortedTokens = [...filteredTokens].sort((a, b) => {
+    if (a.symbol === 'MON') return -1;
+    if (b.symbol === 'MON') return 1;
+    if (a.symbol === 'CHOG') return -1;
+    if (b.symbol === 'CHOG') return 1;
+    return 0;
+  });
 
   const filteredNFTs = useMemo(() => {
     if (!showOnlyOwned) {
@@ -401,43 +399,37 @@ export function AssetSelector({
                   }`} />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-medium text-gray-900 dark:text-white truncate">{getDisplayName(selectedAsset)}</span>
-                    {selectedAsset.type === 'token' && isKnownToken(selectedAsset.data) && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
-                        ({selectedAsset.data.symbol})
-                      </span>
-                    )}
-                  </div>
-                  {/* Show balance for selected asset */}
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-900 dark:text-white truncate">{getDisplayName(selectedAsset)}</span>
+                  {selectedAsset.type === 'token' && isKnownToken(selectedAsset.data) && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+                      ({selectedAsset.data.symbol})
+                    </span>
+                  )}
+                </div>
+                {/* Show balance/description on second line */}
+                <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {selectedAsset.type === 'token' && (() => {
                     const tokenBalance = tokenBalances.find(t => 
                       t.address.toLowerCase() === selectedAsset.data.address.toLowerCase()
                     );
-                    return tokenBalance && (
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex-shrink-0 ml-2">
-                        {tokenBalance.formattedBalance} {tokenBalance.symbol}
-                      </span>
-                    );
+                    if (tokenBalance) {
+                      return `${tokenBalance.formattedBalance} ${tokenBalance.symbol} • ${getDisplayDescription(selectedAsset) || 'Token'}`;
+                    }
+                    return getDisplayDescription(selectedAsset);
                   })()}
                   {selectedAsset.type === 'nft' && (() => {
                     const nftBalance = nftBalances.find(n => 
                       n.address.toLowerCase() === selectedAsset.data.address.toLowerCase()
                     );
-                    return nftBalance && (
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex-shrink-0 ml-2">
-                        {nftBalance.totalOwned} owned
-                      </span>
-                    );
+                    if (nftBalance) {
+                      return `${nftBalance.totalOwned} owned • ${getDisplayDescription(selectedAsset) || 'NFT Collection'}`;
+                    }
+                    return getDisplayDescription(selectedAsset);
                   })()}
+                  {selectedAsset.type === 'individual_nft' && getDisplayDescription(selectedAsset)}
                 </div>
-                {getDisplayDescription(selectedAsset) && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                    {getDisplayDescription(selectedAsset)}
-                  </div>
-                )}
               </div>
             </>
           ) : (
@@ -501,14 +493,9 @@ export function AssetSelector({
 
             {/* Content */}
             <div className="max-h-64 overflow-y-auto">
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  <p className="mt-2">Loading balances...</p>
-                </div>
-              ) : activeTab === 'token' ? (
+              {activeTab === 'token' ? (
                 <div className="p-2">
-                  {filteredTokens.length === 0 ? (
+                  {sortedTokens.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <Coins className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                       <p>{showOnlyOwned ? 'No owned tokens found' : 'No tokens found'}</p>
@@ -518,7 +505,7 @@ export function AssetSelector({
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      {filteredTokens.map((token) => (
+                      {sortedTokens.map((token) => (
                         <button
                           key={token.address}
                           onClick={() => handleAssetClick(token, 'token')}

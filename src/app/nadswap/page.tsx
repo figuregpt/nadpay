@@ -21,6 +21,7 @@ import {
 import { useNadSwapV3Contract } from '@/hooks/useNadSwapV3Contract';
 import SwapProposalForm from './SwapProposalForm';
 import SwapProposalCard from './SwapProposalCard';
+import Navbar from '@/components/Navbar';
 
 export default function NadSwapPage() {
   const { isConnected, address } = useAccount();
@@ -50,6 +51,29 @@ export default function NadSwapPage() {
   useEffect(() => {
     document.title = 'NadSwap - Trade NFTs on Monad';
   }, []);
+
+  // Auto-refresh proposals every 30 seconds
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing proposals...');
+      setRefreshTrigger(prev => prev + 1);
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  // Refresh when totalProposals changes (someone created a new proposal)
+  useEffect(() => {
+    if (totalProposals > 0) {
+      console.log('📊 Total proposals changed:', totalProposals);
+      setRefreshTrigger(prev => prev + 1);
+    }
+  }, [totalProposals]);
+
+  // Manual refresh trigger
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch proposals when tab changes or proposal IDs change
   useEffect(() => {
@@ -101,7 +125,7 @@ export default function NadSwapPage() {
     // Add a small delay to prevent rapid successive calls
     const timeoutId = setTimeout(fetchProposals, 200);
     return () => clearTimeout(timeoutId);
-  }, [activeTab, userProposalIds.length, userReceivedProposalIds.length, isConnected]);
+  }, [activeTab, userProposalIds.length, userReceivedProposalIds.length, isConnected, refreshTrigger]);
 
   const handleAcceptProposal = useCallback(async (proposalId: number) => {
     try {
@@ -147,50 +171,42 @@ export default function NadSwapPage() {
     }
   }, [cancelSwapProposal, activeTab, userProposalIds, getMultipleProposals]);
 
+  // Handler for when a new proposal is created
+  const handleProposalCreated = useCallback(() => {
+    console.log('🔄 New proposal created, switching to sent tab and refreshing...');
+    // Switch to sent tab to show the new proposal
+    setActiveTab('sent');
+    // Trigger a refresh
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ArrowLeftRight className="w-8 h-8 text-primary-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Connect Your Wallet
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Connect your wallet to start trading NFTs with other users.
-          </p>
-          <ConnectKitButton.Custom>
-            {({ show }) => (
-              <button
-                onClick={show}
-                className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
-              >
-                Connect Wallet
-              </button>
-            )}
-          </ConnectKitButton.Custom>
-          <div className="mt-6 flex flex-col items-center space-y-4">
-            <a 
-              href="/"
-              className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Home
-            </a>
-            
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              ) : (
-                <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
+        <Navbar 
+          showTicketsButton={false}
+        />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ArrowLeftRight className="w-8 h-8 text-primary-500" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Connect Your Wallet
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Connect your wallet to start trading NFTs with other users.
+            </p>
+            <ConnectKitButton.Custom>
+              {({ show }) => (
+                <button
+                  onClick={show}
+                  className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                >
+                  Connect Wallet
+                </button>
               )}
-            </button>
+            </ConnectKitButton.Custom>
           </div>
         </div>
       </div>
@@ -199,103 +215,9 @@ export default function NadSwapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <ArrowLeftRight className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                  NadSwap
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                  Trade NFTs directly with other users
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <a 
-                  href="/" 
-                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-                >
-                  Home
-                </a>
-                <a 
-                  href="/app/dashboard" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  Dashboard
-                </a>
-                <a 
-                  href="/nadpay" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadPay
-                </a>
-                <a 
-                  href="/rafflehouse" 
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  RaffleHouse
-                </a>
-              </div>
-              
-              {/* Theme Toggle */}
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
-                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                )}
-              </button>
-              
-              {/* Custom Wallet Button with Dropdown */}
-              {isConnected ? (
-                <div className="relative">
-                  <ConnectKitButton.Custom>
-                    {({ show, truncatedAddress, ensName }) => (
-                      <button
-                        onClick={show}
-                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold">
-                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium hidden sm:inline">
-                          {ensName || truncatedAddress}
-                        </span>
-                      </button>
-                    )}
-                  </ConnectKitButton.Custom>
-                </div>
-              ) : (
-                <ConnectKitButton.Custom>
-                  {({ show }) => (
-                    <button
-                      onClick={show}
-                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-                    >
-                      Connect Wallet
-                    </button>
-                  )}
-                </ConnectKitButton.Custom>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar 
+        showTicketsButton={false}
+      />
 
       {/* Navigation Tabs */}
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
@@ -334,7 +256,7 @@ export default function NadSwapPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <SwapProposalForm />
+            <SwapProposalForm onProposalCreated={handleProposalCreated} />
           </motion.div>
         )}
 

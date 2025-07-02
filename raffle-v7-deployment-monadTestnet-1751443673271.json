@@ -1,0 +1,15 @@
+{
+  "network": "monadTestnet",
+  "contractName": "NadRaffleV7",
+  "contractAddress": "0xBd32ce277D91b6beD459454C7964528f54A54f75",
+  "deployer": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+  "deploymentTx": "0xdd67511f04c0a9a9261d1d5dcd2b042c40aa34ff9cc04fe0a648726fddb5ac2b",
+  "deploymentTime": "2025-07-02T08:07:53.268Z",
+  "parameters": {
+    "feeAddress": "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460",
+    "creationFee": "0.1",
+    "platformFeePercentage": "2.5%",
+    "minDuration": "1 hours",
+    "maxDuration": "24 hours"
+  }
+}

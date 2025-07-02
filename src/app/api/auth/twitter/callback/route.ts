@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
 
     if (!code || !state) {
-      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=auth_failed`);
+      return NextResponse.redirect(`${baseUrl}/dashboard?error=auth_failed`);
     }
 
     // Decode state to get wallet address
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=token_failed`);
+              return NextResponse.redirect(`${baseUrl}/dashboard?error=token_failed`);
     }
 
     // Get user info from Twitter
@@ -69,13 +69,23 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
 
     if (!userData.data) {
-      return NextResponse.redirect(`${baseUrl}/app/dashboard?error=user_failed`);
+              return NextResponse.redirect(`${baseUrl}/dashboard?error=user_failed`);
     }
 
     // Save to MongoDB
     const mongoClient = await getMongoClient();
     const db = mongoClient.db('nadpay');
     const collection = db.collection('user_profiles');
+
+    // Check if this Twitter account is already connected to another wallet
+    const existingTwitterProfile = await collection.findOne({
+      twitterId: userData.data.id
+    });
+
+    if (existingTwitterProfile && existingTwitterProfile.walletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      // Twitter account is already connected to a different wallet
+              return NextResponse.redirect(`${baseUrl}/dashboard?error=twitter_already_connected&handle=${userData.data.username}`);
+    }
 
     const userProfile = {
       walletAddress: walletAddress.toLowerCase(),
@@ -95,10 +105,10 @@ export async function GET(request: NextRequest) {
       { upsert: true }
     );
 
-    return NextResponse.redirect(`${baseUrl}/app/dashboard?success=twitter_connected`);
+          return NextResponse.redirect(`${baseUrl}/dashboard?success=twitter_connected`);
   } catch (error) {
     console.error('Twitter callback error:', error);
     const baseUrl = getBaseUrl(request);
-    return NextResponse.redirect(`${baseUrl}/app/dashboard?error=callback_failed`);
+          return NextResponse.redirect(`${baseUrl}/dashboard?error=callback_failed`);
   }
 } 

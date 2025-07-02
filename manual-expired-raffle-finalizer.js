@@ -2,8 +2,8 @@ const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  console.log("🚀 Manual Expired Raffle Finalizer");
-  console.log("This script will manually finalize expired raffles in the current contract");
+  //console.log("🚀 Manual Expired Raffle Finalizer");
+  //console.log("This script will manually finalize expired raffles in the current contract");
   
   // Use Monad testnet provider
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
@@ -22,18 +22,18 @@ async function main() {
   
   const contract = new ethers.Contract(contractAddress, abi, wallet);
   
-  console.log("👤 Using wallet:", wallet.address);
+  //console.log("👤 Using wallet:", wallet.address);
   
   // Check wallet balance
   const balance = await provider.getBalance(wallet.address);
-  console.log("💰 Wallet Balance:", ethers.formatEther(balance), "MON");
+  //console.log("💰 Wallet Balance:", ethers.formatEther(balance), "MON");
   
   if (balance < ethers.parseEther("0.01")) {
     throw new Error("❌ Insufficient balance");
   }
   
   // Get expired raffles
-  console.log("\n🔍 Finding expired raffles...");
+  //console.log("\n🔍 Finding expired raffles...");
   const activeRaffleIds = await contract.getActiveRaffles();
   const currentTime = Math.floor(Date.now() / 1000);
   const expiredRaffles = [];
@@ -76,70 +76,70 @@ async function main() {
         }
       }
     } catch (error) {
-      console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
+      //console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
     }
   }
   
   if (expiredRaffles.length === 0) {
-    console.log("✅ No expired raffles found");
+    //console.log("✅ No expired raffles found");
     return;
   }
   
-  console.log(`\n🎯 Found ${expiredRaffles.length} expired raffles:`);
+  //console.log(`\n🎯 Found ${expiredRaffles.length} expired raffles:`);
   expiredRaffles.forEach(raffle => {
     const expiredDate = new Date(raffle.expirationTime * 1000).toLocaleString();
     const status = raffle.hasCommitment ? "HAS COMMITMENT" : "NEEDS COMMITMENT";
-    console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${raffle.ticketsSold}/${raffle.maxTickets} tickets, expired: ${expiredDate}) [${status}]`);
+    //console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${raffle.ticketsSold}/${raffle.maxTickets} tickets, expired: ${expiredDate}) [${status}]`);
   });
   
   // Process each expired raffle
   for (const raffle of expiredRaffles) {
-    console.log(`\n🔄 Processing raffle #${raffle.id}: "${raffle.title}"`);
+    //console.log(`\n🔄 Processing raffle #${raffle.id}: "${raffle.title}"`);
     
     try {
       // Step 1: Commit randomness if not already committed
       if (!raffle.hasCommitment) {
-        console.log("🎲 Committing randomness...");
+        //console.log("🎲 Committing randomness...");
         
         // Generate a manual commitment
         const nonce = Math.floor(Math.random() * 1000000000);
         const commitment = ethers.keccak256(ethers.toUtf8Bytes(nonce.toString()));
         
-        console.log(`  - Generated nonce: ${nonce}`);
-        console.log(`  - Commitment: ${commitment}`);
+        //console.log(`  - Generated nonce: ${nonce}`);
+        //console.log(`  - Commitment: ${commitment}`);
         
         const gasEstimate = await contract.commitRandomness.estimateGas(raffle.id, commitment);
         const tx = await contract.commitRandomness(raffle.id, commitment, {
           gasLimit: gasEstimate * BigInt(120) / BigInt(100)
         });
         
-        console.log(`📤 Commitment transaction: ${tx.hash}`);
+        //console.log(`📤 Commitment transaction: ${tx.hash}`);
         const receipt = await tx.wait();
-        console.log(`✅ Randomness committed! Gas used: ${receipt.gasUsed.toString()}`);
+        //console.log(`✅ Randomness committed! Gas used: ${receipt.gasUsed.toString()}`);
         
         // Wait 3 minutes for reveal deadline to pass (contract has 2-minute window)
-        console.log("⏳ Waiting 3 minutes for reveal deadline to pass...");
+        //console.log("⏳ Waiting 3 minutes for reveal deadline to pass...");
         await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes
         
       } else if (!raffle.revealed && currentTime > raffle.revealDeadline) {
-        console.log("✅ Randomness already committed, reveal deadline passed");
+        //console.log("✅ Randomness already committed, reveal deadline passed");
       } else if (!raffle.revealed) {
         const remainingTime = raffle.revealDeadline - currentTime;
-        console.log(`⏳ Waiting ${Math.ceil(remainingTime / 60)} minutes for reveal deadline...`);
+        //console.log(`⏳ Waiting ${Math.ceil(remainingTime / 60)} minutes for reveal deadline...`);
         await new Promise(resolve => setTimeout(resolve, (remainingTime + 10) * 1000));
       }
       
       // Step 2: Emergency select winner
-      console.log("🎯 Selecting winner via emergency selection...");
+      //console.log("🎯 Selecting winner via emergency selection...");
       
       const gasEstimate = await contract.emergencySelectWinner.estimateGas(raffle.id);
       const tx = await contract.emergencySelectWinner(raffle.id, {
         gasLimit: gasEstimate * BigInt(120) / BigInt(100)
       });
       
-      console.log(`📤 Emergency selection transaction: ${tx.hash}`);
+      //console.log(`📤 Emergency selection transaction: ${tx.hash}`);
       const receipt = await tx.wait();
-      console.log(`✅ Winner selected! Gas used: ${receipt.gasUsed.toString()}`);
+      //console.log(`✅ Winner selected! Gas used: ${receipt.gasUsed.toString()}`);
       
       // Parse events to get winner
       const raffleEndedEvents = receipt.logs.filter(log => {
@@ -153,31 +153,31 @@ async function main() {
       
       if (raffleEndedEvents.length > 0) {
         const parsed = contract.interface.parseLog(raffleEndedEvents[0]);
-        console.log(`🎉 Winner: ${parsed.args.winner}`);
-        console.log(`🎫 Winning Ticket: ${parsed.args.winningTicketNumber}`);
+        //console.log(`🎉 Winner: ${parsed.args.winner}`);
+        //console.log(`🎫 Winning Ticket: ${parsed.args.winningTicketNumber}`);
       }
       
-      console.log(`✅ Raffle #${raffle.id} successfully finalized!`);
+      //console.log(`✅ Raffle #${raffle.id} successfully finalized!`);
       
       // Add delay between raffles
       if (expiredRaffles.indexOf(raffle) < expiredRaffles.length - 1) {
-        console.log("⏱️  Waiting 10 seconds before next raffle...");
+        //console.log("⏱️  Waiting 10 seconds before next raffle...");
         await new Promise(resolve => setTimeout(resolve, 10000));
       }
       
     } catch (error) {
-      console.error(`❌ Error processing raffle ${raffle.id}:`, error.message);
-      console.log("Continuing with next raffle...");
+      //console.error(`❌ Error processing raffle ${raffle.id}:`, error.message);
+      //console.log("Continuing with next raffle...");
     }
   }
   
-  console.log("\n🎊 All expired raffles processed!");
-  console.log("The winners have been selected and rewards should be distributed automatically.");
+  //console.log("\n🎊 All expired raffles processed!");
+  //console.log("The winners have been selected and rewards should be distributed automatically.");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Script failed:", error);
+    //console.error("❌ Script failed:", error);
     process.exit(1);
   }); 

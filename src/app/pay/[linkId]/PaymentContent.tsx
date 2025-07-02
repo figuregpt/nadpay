@@ -17,6 +17,7 @@ import {
   PaymentLinkV2 
 } from "@/hooks/useNadPayV2Contract";
 import { getKnownToken } from "@/lib/knownAssets";
+import { usePointsTracker } from "@/hooks/usePointsTracker";
 
 export default function PaymentContent() {
   const params = useParams();
@@ -70,10 +71,13 @@ export default function PaymentContent() {
     chainId: 10143, // Monad Testnet
   });
   
+  // Points tracking
+  const { trackNadPayPurchase } = usePointsTracker();
+  
   // Contract hooks
   const { data: contractLink, isLoading: loadingLink, error: contractError, refetch: refetchLink } = usePaymentLinkV2(internalLinkId || -1);
   const { data: userPurchaseCount, refetch: refetchUserCount } = useUserPurchaseCountV2(internalLinkId || -1, address);
-  const { purchase, isPending: purchasing, isConfirming, isConfirmed, error: purchaseError } = usePurchaseV2();
+  const { purchase, isPending: purchasing, isConfirming, isConfirmed, error: purchaseError, hash: purchaseHash } = usePurchaseV2();
   
   // Get token balance if payment is not native MON
   const { data: tokenBalance, refetch: refetchTokenBalance } = useBalance({
@@ -144,19 +148,36 @@ export default function PaymentContent() {
 
   // Handle successful purchase
   useEffect(() => {
-    if (isConfirmed) {
+    if (isConfirmed && purchaseHash && paymentLink) {
       setPurchaseSuccess(true);
+      
+      // Track points for buyer
+      const totalAmount = (parseFloat(paymentLink.price) * quantity).toString();
+      console.log('🎯 Tracking NadPay purchase points:', {
+        buyer: address,
+        amount: totalAmount,
+        linkId: linkId,
+        txHash: purchaseHash
+      });
+      
+      trackNadPayPurchase(purchaseHash, totalAmount, linkId).catch(error => {
+        console.error('❌ Failed to track buyer points:', error);
+      });
+      
+      // NadPay sellers don't get points (removed by user request)
+      
       // Refetch data to update UI
       refetchLink();
       refetchUserCount();
       refetchBalance();
       refetchTokenBalance();
+      
       // Hide success message after 5 seconds
       setTimeout(() => {
         setPurchaseSuccess(false);
       }, 5000);
     }
-  }, [isConfirmed, refetchLink, refetchUserCount, refetchBalance, refetchTokenBalance]);
+  }, [isConfirmed, purchaseHash, paymentLink, quantity, address, linkId, trackNadPayPurchase, refetchLink, refetchUserCount, refetchBalance, refetchTokenBalance]);
 
   // Handle successful approval - automatically proceed to purchase
   useEffect(() => {

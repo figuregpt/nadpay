@@ -37,7 +37,19 @@ export async function GET(
       return NextResponse.json({ profile: null });
     }
 
-    return NextResponse.json({ profile });
+    // Transform profile to expected format
+    const transformedProfile = {
+      ...profile,
+      twitter: profile.twitterHandle ? {
+        id: profile.twitterId,
+        username: profile.twitterHandle,
+        name: profile.twitterName,
+        verified: profile.isVerified,
+        profile_image_url: profile.twitterAvatarUrl
+      } : null
+    };
+
+    return NextResponse.json({ profile: transformedProfile });
   } catch (error) {
     console.error('Profile fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });

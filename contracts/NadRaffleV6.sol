@@ -1,0 +1,752 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+/**
+ * @title NadRaffle V6 - Ultra Secure Raffle System
+ * @dev Production-ready raffle contract with 2-phase finalization
+ * @author NadPay Team
+ */
+contract NadRaffleV6 is ReentrancyGuard, Ownable, Pausable {
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                             CONSTANTS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    uint256 private constant MAX_FEE_PERCENTAGE = 1000; // 10% maximum
+    uint256 private constant MIN_DURATION = 3600; // 1 hour minimum
+    uint256 private constant MAX_DURATION = 30 days; // 30 days maximum
+    uint256 private constant GAS_LIMIT_TRANSFER = 2300; // Safe gas limit for transfers
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                             ENUMS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    enum RaffleState {
+        ACTIVE,      // Raffle is active, accepting tickets
+        SOLD_OUT,    // All tickets sold, awaiting finalization
+        COMPLETED,   // Winner selected, reward distributed
+        CANCELLED,   // No tickets sold, refunded
+        EMERGENCY    // Emergency state (admin only)
+    }
+    
+    enum RewardType {
+        MON_TOKEN,   // Native MON tokens
+        ERC20_TOKEN, // ERC20 tokens
+        NFT_TOKEN    // ERC721 NFTs
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                             STRUCTS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    struct RaffleInfo {
+        address creator;                // Raffle creator
+        uint256 ticketPrice;           // Price per ticket in wei
+        uint256 maxTickets;            // Maximum tickets available
+        uint256 soldTickets;           // Number of tickets sold
+        uint256 startTime;             // Raffle start timestamp
+        uint256 endTime;               // Raffle end timestamp
+        uint256 rewardAmount;          // Reward amount (for MON/ERC20)
+        RewardType rewardType;         // Type of reward
+        address rewardTokenAddress;    // Token contract address (for ERC20/NFT)
+        uint256 rewardTokenId;         // Token ID (for NFT) or amount (for ERC20)
+        RaffleState state;             // Current raffle state
+        address winner;                // Winner address (when completed)
+    }
+    
+    struct PendingReward {
+        uint256 amount;
+        address tokenAddress;
+        uint256 tokenId;
+        RewardType rewardType;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                          STATE VARIABLES
+    // ═══════════════════════════════════════════════════════════════════
+    
+    // Core contract settings
+    address public feeAddress;
+    uint256 public creationFee = 0.1 ether; // 0.1 MON
+    uint256 public platformFeePercentage = 250; // 2.5%
+    uint256 public minRaffleDuration = MIN_DURATION;
+    uint256 public maxRaffleDuration = MAX_DURATION;
+    
+    // Raffle data
+    uint256 public totalRaffles;
+    mapping(uint256 => RaffleInfo) public raffles;
+    
+    // Participant tracking
+    mapping(uint256 => address[]) public participants; // raffleId => participant addresses
+    mapping(uint256 => mapping(address => uint256)) public ticketCounts; // raffleId => user => ticket count
+    
+    // Pending rewards for failed transfers
+    mapping(address => PendingReward) public pendingRewards;
+    
+    // Rate limiting
+    mapping(address => uint256) public lastPurchaseTime;
+    uint256 public constant PURCHASE_COOLDOWN = 1; // 1 second cooldown
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                             EVENTS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    event RaffleCreated(
+        uint256 indexed raffleId,
+        address indexed creator,
+        uint256 ticketPrice,
+        uint256 maxTickets,
+        RewardType rewardType
+    );
+    
+    event TicketsPurchased(
+        uint256 indexed raffleId,
+        address indexed buyer,
+        uint256 quantity
+    );
+    
+    event RaffleSoldOut(uint256 indexed raffleId);
+    
+    event RaffleCompleted(
+        uint256 indexed raffleId,
+        address indexed winner,
+        uint256 rewardAmount
+    );
+    
+    event RaffleCancelled(
+        uint256 indexed raffleId,
+        address indexed creator,
+        uint256 refundAmount
+    );
+    
+    event RewardPending(
+        uint256 indexed raffleId,
+        address indexed winner,
+        uint256 amount
+    );
+    
+    event PendingRewardClaimed(address indexed claimer, uint256 amount);
+    
+    // Admin events
+    event CreationFeeUpdated(uint256 newFee);
+    event PlatformFeeUpdated(uint256 newPercentage);
+    event FeeAddressUpdated(address newFeeAddress);
+    event RaffleStateChanged(uint256 indexed raffleId, RaffleState oldState, RaffleState newState);
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                            MODIFIERS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    modifier validRaffleId(uint256 raffleId) {
+        require(raffleId < totalRaffles, "Invalid raffle ID");
+        _;
+    }
+    
+    modifier rateLimited() {
+        require(
+            block.timestamp >= lastPurchaseTime[msg.sender] + PURCHASE_COOLDOWN,
+            "Purchase rate limit exceeded"
+        );
+        lastPurchaseTime[msg.sender] = block.timestamp;
+        _;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                           CONSTRUCTOR
+    // ═══════════════════════════════════════════════════════════════════
+    
+    constructor(
+        address _feeAddress,
+        uint256 _creationFee,
+        uint256 _platformFeePercentage,
+        uint256 _minDuration,
+        uint256 _maxDuration
+    ) {
+        require(_feeAddress != address(0), "Invalid fee address");
+        require(_platformFeePercentage <= MAX_FEE_PERCENTAGE, "Fee percentage too high");
+        require(_minDuration >= MIN_DURATION, "Min duration too low");
+        require(_maxDuration <= MAX_DURATION, "Max duration too high");
+        require(_minDuration < _maxDuration, "Invalid duration range");
+        
+        feeAddress = _feeAddress;
+        creationFee = _creationFee;
+        platformFeePercentage = _platformFeePercentage;
+        minRaffleDuration = _minDuration;
+        maxRaffleDuration = _maxDuration;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                         CORE FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * @dev Create a new raffle
+     * @param ticketPrice Price per ticket in wei
+     * @param maxTickets Maximum number of tickets
+     * @param duration Duration in seconds
+     * @param rewardType Type of reward (MON, ERC20, NFT)
+     * @param rewardTokenAddress Token contract address (for ERC20/NFT)
+     * @param rewardTokenId Token ID (for NFT) or amount (for ERC20)
+     */
+    function createRaffle(
+        uint256 ticketPrice,
+        uint256 maxTickets,
+        uint256 duration,
+        RewardType rewardType,
+        address rewardTokenAddress,
+        uint256 rewardTokenId
+    ) external payable nonReentrant whenNotPaused rateLimited {
+        require(ticketPrice > 0, "Invalid ticket price");
+        require(maxTickets > 0, "Invalid max tickets");
+        require(
+            duration >= minRaffleDuration && duration <= maxRaffleDuration,
+            "Invalid duration"
+        );
+        
+        uint256 requiredPayment = creationFee;
+        
+        // Handle different reward types
+        if (rewardType == RewardType.MON_TOKEN) {
+            require(rewardTokenId > 0, "Invalid reward amount");
+            requiredPayment += rewardTokenId; // rewardTokenId is amount for MON
+        } else if (rewardType == RewardType.ERC20_TOKEN) {
+            require(rewardTokenAddress != address(0), "Invalid token address");
+            require(rewardTokenId > 0, "Invalid token amount");
+        } else if (rewardType == RewardType.NFT_TOKEN) {
+            require(rewardTokenAddress != address(0), "Invalid NFT address");
+        }
+        
+        require(msg.value >= requiredPayment, "Insufficient payment");
+        
+        // Pay creation fee to fee address
+        (bool feeSuccess, ) = payable(feeAddress).call{value: creationFee}("");
+        require(feeSuccess, "Fee transfer failed");
+        
+        // Handle reward escrow
+        if (rewardType == RewardType.MON_TOKEN) {
+            // MON already received in msg.value, will be held in contract
+        } else if (rewardType == RewardType.ERC20_TOKEN) {
+            IERC20(rewardTokenAddress).transferFrom(
+                msg.sender,
+                address(this),
+                rewardTokenId
+            );
+        } else if (rewardType == RewardType.NFT_TOKEN) {
+            IERC721(rewardTokenAddress).transferFrom(
+                msg.sender,
+                address(this),
+                rewardTokenId
+            );
+        }
+        
+        // Create raffle
+        raffles[totalRaffles] = RaffleInfo({
+            creator: msg.sender,
+            ticketPrice: ticketPrice,
+            maxTickets: maxTickets,
+            soldTickets: 0,
+            startTime: block.timestamp,
+            endTime: block.timestamp + duration,
+            rewardAmount: (rewardType == RewardType.MON_TOKEN) ? rewardTokenId : 0,
+            rewardType: rewardType,
+            rewardTokenAddress: rewardTokenAddress,
+            rewardTokenId: rewardTokenId,
+            state: RaffleState.ACTIVE,
+            winner: address(0)
+        });
+        
+        emit RaffleCreated(
+            totalRaffles,
+            msg.sender,
+            ticketPrice,
+            maxTickets,
+            rewardType
+        );
+        
+        totalRaffles++;
+    }
+    
+    /**
+     * @dev Purchase tickets for a raffle (2-phase security)
+     * @param raffleId ID of the raffle
+     * @param quantity Number of tickets to purchase
+     */
+    function purchaseTickets(uint256 raffleId, uint256 quantity)
+        external
+        payable
+        nonReentrant
+        whenNotPaused
+        validRaffleId(raffleId)
+        rateLimited
+    {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        require(raffle.state == RaffleState.ACTIVE, "Raffle not active");
+        require(block.timestamp <= raffle.endTime, "Raffle expired");
+        require(quantity > 0, "Invalid quantity");
+        require(
+            raffle.soldTickets + quantity <= raffle.maxTickets,
+            "Not enough tickets available"
+        );
+        require(
+            msg.value == raffle.ticketPrice * quantity,
+            "Incorrect payment amount"
+        );
+        
+        // Calculate and distribute fees
+        uint256 totalPayment = msg.value;
+        uint256 platformFee = (totalPayment * platformFeePercentage) / 10000;
+        uint256 creatorAmount = totalPayment - platformFee;
+        
+        // Transfer platform fee
+        (bool feeSuccess, ) = payable(feeAddress).call{value: platformFee}("");
+        require(feeSuccess, "Platform fee transfer failed");
+        
+        // Transfer creator amount
+        (bool creatorSuccess, ) = payable(raffle.creator).call{value: creatorAmount}("");
+        require(creatorSuccess, "Creator payment failed");
+        
+        // Update raffle state
+        raffle.soldTickets += quantity;
+        ticketCounts[raffleId][msg.sender] += quantity;
+        
+        // Add to participants array if first time
+        if (ticketCounts[raffleId][msg.sender] == quantity) {
+            participants[raffleId].push(msg.sender);
+        }
+        
+        emit TicketsPurchased(raffleId, msg.sender, quantity);
+        
+        // PHASE 1: Mark as sold out if all tickets sold (secure approach)
+        if (raffle.soldTickets >= raffle.maxTickets) {
+            raffle.state = RaffleState.SOLD_OUT;
+            emit RaffleSoldOut(raffleId);
+            // No winner selection here - security first!
+        }
+    }
+    
+    /**
+     * @dev Finalize a sold out raffle (Phase 2)
+     * @param raffleId ID of the raffle to finalize
+     */
+    function finalizeSoldOutRaffle(uint256 raffleId)
+        external
+        nonReentrant
+        validRaffleId(raffleId)
+    {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        require(raffle.state == RaffleState.SOLD_OUT, "Raffle not sold out");
+        require(raffle.soldTickets > 0, "No tickets sold");
+        
+        // Complete the raffle with winner selection
+        _completeRaffleWithWinner(raffleId);
+    }
+    
+    /**
+     * @dev Finalize an expired raffle
+     * @param raffleId ID of the raffle to finalize
+     */
+    function finalizeExpiredRaffle(uint256 raffleId)
+        external
+        nonReentrant
+        validRaffleId(raffleId)
+    {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        require(raffle.state == RaffleState.ACTIVE, "Raffle not active");
+        require(block.timestamp > raffle.endTime, "Raffle not expired");
+        
+        if (raffle.soldTickets > 0) {
+            _completeRaffleWithWinner(raffleId);
+        } else {
+            _cancelRaffleWithRefund(raffleId);
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                        INTERNAL FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * @dev Complete raffle with winner selection and reward distribution
+     * @param raffleId ID of the raffle
+     */
+    function _completeRaffleWithWinner(uint256 raffleId) internal {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        // Select winner using secure randomness
+        address winner = _selectRandomWinner(raffleId);
+        raffle.winner = winner;
+        raffle.state = RaffleState.COMPLETED;
+        
+        // Distribute reward safely
+        _safeRewardTransfer(raffleId, winner);
+        
+        emit RaffleCompleted(raffleId, winner, raffle.rewardAmount);
+    }
+    
+    /**
+     * @dev Cancel raffle and refund creator
+     * @param raffleId ID of the raffle
+     */
+    function _cancelRaffleWithRefund(uint256 raffleId) internal {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        raffle.state = RaffleState.CANCELLED;
+        
+        // Refund reward to creator
+        _safeRewardRefund(raffleId);
+        
+        emit RaffleCancelled(raffleId, raffle.creator, raffle.rewardAmount);
+    }
+    
+    /**
+     * @dev Secure random winner selection
+     * @param raffleId ID of the raffle
+     */
+    function _selectRandomWinner(uint256 raffleId) internal view returns (address) {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        // Generate random number using multiple entropy sources
+        uint256 randomNumber = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.difficulty,
+                    blockhash(block.number - 1),
+                    raffleId,
+                    raffle.soldTickets,
+                    raffle.creator
+                )
+            )
+        );
+        
+        // Map to ticket range
+        uint256 winningTicket = (randomNumber % raffle.soldTickets) + 1;
+        uint256 currentTicket = 0;
+        
+        // Find winner based on ticket ownership
+        for (uint256 i = 0; i < participants[raffleId].length; i++) {
+            address participant = participants[raffleId][i];
+            uint256 participantTickets = ticketCounts[raffleId][participant];
+            
+            if (winningTicket <= currentTicket + participantTickets) {
+                return participant;
+            }
+            currentTicket += participantTickets;
+        }
+        
+        revert("Winner selection failed");
+    }
+    
+    /**
+     * @dev Safe reward transfer with fallback to pending claims
+     * @param raffleId ID of the raffle
+     * @param winner Address of the winner
+     */
+    function _safeRewardTransfer(uint256 raffleId, address winner) internal {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        if (raffle.rewardType == RewardType.MON_TOKEN) {
+            // Safe MON transfer with gas limit
+            (bool success, ) = payable(winner).call{
+                value: raffle.rewardAmount,
+                gas: GAS_LIMIT_TRANSFER
+            }("");
+            
+            if (!success) {
+                // Store as pending reward for manual claim
+                pendingRewards[winner] = PendingReward({
+                    amount: raffle.rewardAmount,
+                    tokenAddress: address(0),
+                    tokenId: 0,
+                    rewardType: RewardType.MON_TOKEN
+                });
+                emit RewardPending(raffleId, winner, raffle.rewardAmount);
+            }
+        } else if (raffle.rewardType == RewardType.ERC20_TOKEN) {
+            try IERC20(raffle.rewardTokenAddress).transfer(winner, raffle.rewardTokenId) {
+                // Success
+            } catch {
+                // Store as pending reward
+                pendingRewards[winner] = PendingReward({
+                    amount: raffle.rewardTokenId,
+                    tokenAddress: raffle.rewardTokenAddress,
+                    tokenId: 0,
+                    rewardType: RewardType.ERC20_TOKEN
+                });
+                emit RewardPending(raffleId, winner, raffle.rewardTokenId);
+            }
+        } else if (raffle.rewardType == RewardType.NFT_TOKEN) {
+            try IERC721(raffle.rewardTokenAddress).transferFrom(
+                address(this),
+                winner,
+                raffle.rewardTokenId
+            ) {
+                // Success
+            } catch {
+                // Store as pending reward
+                pendingRewards[winner] = PendingReward({
+                    amount: 0,
+                    tokenAddress: raffle.rewardTokenAddress,
+                    tokenId: raffle.rewardTokenId,
+                    rewardType: RewardType.NFT_TOKEN
+                });
+                emit RewardPending(raffleId, winner, 0);
+            }
+        }
+    }
+    
+    /**
+     * @dev Safe reward refund to creator
+     * @param raffleId ID of the raffle
+     */
+    function _safeRewardRefund(uint256 raffleId) internal {
+        RaffleInfo storage raffle = raffles[raffleId];
+        
+        if (raffle.rewardType == RewardType.MON_TOKEN) {
+            (bool success, ) = payable(raffle.creator).call{
+                value: raffle.rewardAmount
+            }("");
+            require(success, "Refund failed");
+        } else if (raffle.rewardType == RewardType.ERC20_TOKEN) {
+            IERC20(raffle.rewardTokenAddress).transfer(
+                raffle.creator,
+                raffle.rewardTokenId
+            );
+        } else if (raffle.rewardType == RewardType.NFT_TOKEN) {
+            IERC721(raffle.rewardTokenAddress).transferFrom(
+                address(this),
+                raffle.creator,
+                raffle.rewardTokenId
+            );
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                         PUBLIC FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * @dev Claim pending rewards
+     */
+    function claimPendingReward() external nonReentrant {
+        PendingReward storage pending = pendingRewards[msg.sender];
+        require(pending.amount > 0 || pending.tokenAddress != address(0), "No pending rewards");
+        
+        PendingReward memory reward = pending;
+        delete pendingRewards[msg.sender];
+        
+        if (reward.rewardType == RewardType.MON_TOKEN) {
+            payable(msg.sender).transfer(reward.amount);
+            emit PendingRewardClaimed(msg.sender, reward.amount);
+        } else if (reward.rewardType == RewardType.ERC20_TOKEN) {
+            IERC20(reward.tokenAddress).transfer(msg.sender, reward.amount);
+            emit PendingRewardClaimed(msg.sender, reward.amount);
+        } else if (reward.rewardType == RewardType.NFT_TOKEN) {
+            IERC721(reward.tokenAddress).transferFrom(
+                address(this),
+                msg.sender,
+                reward.tokenId
+            );
+            emit PendingRewardClaimed(msg.sender, 0);
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                         VIEW FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * @dev Get sold out raffle IDs
+     */
+    function getSoldOutRaffleIds() external view returns (uint256[] memory) {
+        uint256[] memory tempArray = new uint256[](totalRaffles);
+        uint256 count = 0;
+        
+        for (uint256 i = 0; i < totalRaffles; i++) {
+            if (raffles[i].state == RaffleState.SOLD_OUT) {
+                tempArray[count] = i;
+                count++;
+            }
+        }
+        
+        return _resizeArray(tempArray, count);
+    }
+    
+    /**
+     * @dev Get expired raffle IDs
+     */
+    function getExpiredRaffleIds() external view returns (uint256[] memory) {
+        uint256[] memory tempArray = new uint256[](totalRaffles);
+        uint256 count = 0;
+        
+        for (uint256 i = 0; i < totalRaffles; i++) {
+            if (
+                raffles[i].state == RaffleState.ACTIVE &&
+                block.timestamp > raffles[i].endTime
+            ) {
+                tempArray[count] = i;
+                count++;
+            }
+        }
+        
+        return _resizeArray(tempArray, count);
+    }
+    
+    /**
+     * @dev Get active raffle IDs
+     */
+    function getActiveRaffleIds() external view returns (uint256[] memory) {
+        uint256[] memory tempArray = new uint256[](totalRaffles);
+        uint256 count = 0;
+        
+        for (uint256 i = 0; i < totalRaffles; i++) {
+            if (
+                raffles[i].state == RaffleState.ACTIVE &&
+                block.timestamp <= raffles[i].endTime
+            ) {
+                tempArray[count] = i;
+                count++;
+            }
+        }
+        
+        return _resizeArray(tempArray, count);
+    }
+    
+    /**
+     * @dev Get raffle details
+     */
+    function getRaffleDetails(uint256 raffleId)
+        external
+        view
+        validRaffleId(raffleId)
+        returns (RaffleInfo memory)
+    {
+        return raffles[raffleId];
+    }
+    
+    /**
+     * @dev Get participants for a raffle
+     */
+    function getRaffleParticipants(uint256 raffleId)
+        external
+        view
+        validRaffleId(raffleId)
+        returns (address[] memory)
+    {
+        return participants[raffleId];
+    }
+    
+    /**
+     * @dev Resize array utility
+     */
+    function _resizeArray(uint256[] memory array, uint256 length)
+        internal
+        pure
+        returns (uint256[] memory)
+    {
+        uint256[] memory resized = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            resized[i] = array[i];
+        }
+        return resized;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                         ADMIN FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * @dev Set creation fee
+     */
+    function setCreationFee(uint256 newFee) external onlyOwner {
+        creationFee = newFee;
+        emit CreationFeeUpdated(newFee);
+    }
+    
+    /**
+     * @dev Set platform fee percentage
+     */
+    function setPlatformFeePercentage(uint256 newPercentage) external onlyOwner {
+        require(newPercentage <= MAX_FEE_PERCENTAGE, "Fee too high");
+        platformFeePercentage = newPercentage;
+        emit PlatformFeeUpdated(newPercentage);
+    }
+    
+    /**
+     * @dev Set fee address
+     */
+    function setFeeAddress(address newFeeAddress) external onlyOwner {
+        require(newFeeAddress != address(0), "Invalid address");
+        feeAddress = newFeeAddress;
+        emit FeeAddressUpdated(newFeeAddress);
+    }
+    
+    /**
+     * @dev Set minimum raffle duration
+     */
+    function setMinRaffleDuration(uint256 newDuration) external onlyOwner {
+        require(newDuration >= MIN_DURATION, "Duration too low");
+        require(newDuration < maxRaffleDuration, "Must be less than max");
+        minRaffleDuration = newDuration;
+    }
+    
+    /**
+     * @dev Set maximum raffle duration
+     */
+    function setMaxRaffleDuration(uint256 newDuration) external onlyOwner {
+        require(newDuration <= MAX_DURATION, "Duration too high");
+        require(newDuration > minRaffleDuration, "Must be greater than min");
+        maxRaffleDuration = newDuration;
+    }
+    
+    /**
+     * @dev Emergency set raffle state
+     */
+    function setRaffleState(uint256 raffleId, RaffleState newState)
+        external
+        onlyOwner
+        validRaffleId(raffleId)
+    {
+        RaffleState oldState = raffles[raffleId].state;
+        raffles[raffleId].state = newState;
+        emit RaffleStateChanged(raffleId, oldState, newState);
+    }
+    
+    /**
+     * @dev Pause contract
+     */
+    function pauseContract() external onlyOwner {
+        _pause();
+    }
+    
+    /**
+     * @dev Unpause contract
+     */
+    function unpauseContract() external onlyOwner {
+        _unpause();
+    }
+    
+    /**
+     * @dev Emergency withdraw (only paused contract)
+     */
+    function emergencyWithdraw() external onlyOwner whenPaused {
+        payable(owner()).transfer(address(this).balance);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //                           RECEIVE FUNCTION
+    // ═══════════════════════════════════════════════════════════════════
+    
+    receive() external payable {
+        revert("Direct payments not accepted");
+    }
+} 

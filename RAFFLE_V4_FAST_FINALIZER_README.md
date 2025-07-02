@@ -141,7 +141,7 @@ CMD ["node", "scripts/raffle-v4-fast-finalizer.js"]
 ```bash
 # Solution: Add more MON to finalizer wallet
 # Check balance:
-node -e "console.log(await ethers.provider.getBalance('YOUR_WALLET_ADDRESS'))"
+node -e "//console.log(await ethers.provider.getBalance('YOUR_WALLET_ADDRESS'))"
 ```
 
 #### 2. "Nonce expired"

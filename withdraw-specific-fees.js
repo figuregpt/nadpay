@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 require("dotenv").config({ path: './nadpay/.env' });
 
 async function main() {
-  console.log("💸 Withdrawing Platform Fees from Specific Contract");
+  //console.log("💸 Withdrawing Platform Fees from Specific Contract");
   
   // Use Monad testnet directly
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
@@ -15,8 +15,8 @@ async function main() {
   
   const wallet = new ethers.Wallet(privateKey, provider);
   
-  console.log("👤 Using wallet:", wallet.address);
-  console.log("🌐 Network: Monad Testnet");
+  //console.log("👤 Using wallet:", wallet.address);
+  //console.log("🌐 Network: Monad Testnet");
   
   // All known contracts
   const contracts = [
@@ -32,9 +32,9 @@ async function main() {
     "function platformFeePercentage() external view returns (uint256)"
   ];
   
-  console.log("\n💰 Available contracts for withdrawal:");
+  //console.log("\n💰 Available contracts for withdrawal:");
   contracts.forEach((contract, index) => {
-    console.log(`${index + 1}. ${contract.name}: ${contract.address}`);
+    //console.log(`${index + 1}. ${contract.name}: ${contract.address}`);
   });
   
   // Get contract index from command line argument or default to all
@@ -45,10 +45,10 @@ async function main() {
     if (selectedContract) {
       await withdrawFromContract(selectedContract, provider, wallet);
     } else {
-      console.log("❌ Invalid contract index");
+      //console.log("❌ Invalid contract index");
     }
   } else {
-    console.log("\n🔄 Checking and withdrawing from ALL contracts...");
+    //console.log("\n🔄 Checking and withdrawing from ALL contracts...");
     for (const contractInfo of contracts) {
       await withdrawFromContract(contractInfo, provider, wallet);
       // Wait between withdrawals
@@ -58,7 +58,7 @@ async function main() {
 }
 
 async function withdrawFromContract(contractInfo, provider, wallet) {
-  console.log(`\n🔍 Processing ${contractInfo.name}: ${contractInfo.address}`);
+  //console.log(`\n🔍 Processing ${contractInfo.name}: ${contractInfo.address}`);
   
   try {
     const contract = new ethers.Contract(contractInfo.address, [
@@ -69,40 +69,40 @@ async function withdrawFromContract(contractInfo, provider, wallet) {
     
     // Check contract balance BEFORE
     const balanceBefore = await provider.getBalance(contractInfo.address);
-    console.log(`💰 Contract balance: ${ethers.formatEther(balanceBefore)} MON`);
+    //console.log(`💰 Contract balance: ${ethers.formatEther(balanceBefore)} MON`);
     
     if (balanceBefore <= ethers.parseEther("0.001")) {
-      console.log(`📭 No significant balance to withdraw`);
+      //console.log(`📭 No significant balance to withdraw`);
       return;
     }
     
     // Check if we are the owner
     try {
       const owner = await contract.owner();
-      console.log(`👑 Contract Owner: ${owner}`);
+      //console.log(`👑 Contract Owner: ${owner}`);
       
       if (owner.toLowerCase() !== wallet.address.toLowerCase()) {
-        console.log(`❌ You are NOT the owner. Cannot withdraw.`);
+        //console.log(`❌ You are NOT the owner. Cannot withdraw.`);
         return;
       }
       
-      console.log(`✅ You are the owner! Proceeding with withdrawal...`);
+      //console.log(`✅ You are the owner! Proceeding with withdrawal...`);
     } catch (e) {
-      console.log(`⚠️  Could not verify ownership:`, e.message);
-      console.log(`🔄 Attempting withdrawal anyway...`);
+      //console.log(`⚠️  Could not verify ownership:`, e.message);
+      //console.log(`🔄 Attempting withdrawal anyway...`);
     }
     
     // Check our balance BEFORE
     const ourBalanceBefore = await provider.getBalance(wallet.address);
-    console.log(`💳 Your balance before: ${ethers.formatEther(ourBalanceBefore)} MON`);
+    //console.log(`💳 Your balance before: ${ethers.formatEther(ourBalanceBefore)} MON`);
     
     // Attempt withdrawal
-    console.log(`🏦 Attempting to withdraw platform fees...`);
+    //console.log(`🏦 Attempting to withdraw platform fees...`);
     
     try {
       // Estimate gas first
       const gasEstimate = await contract.withdrawPlatformFees.estimateGas();
-      console.log(`⛽ Estimated gas: ${gasEstimate.toString()}`);
+      //console.log(`⛽ Estimated gas: ${gasEstimate.toString()}`);
       
       // Execute withdrawal
       const tx = await contract.withdrawPlatformFees({
@@ -110,11 +110,11 @@ async function withdrawFromContract(contractInfo, provider, wallet) {
         gasPrice: ethers.parseUnits("50", "gwei") // Explicit gas price
       });
       
-      console.log(`📤 Withdrawal transaction: ${tx.hash}`);
+      //console.log(`📤 Withdrawal transaction: ${tx.hash}`);
       
       // Wait for confirmation
       const receipt = await tx.wait();
-      console.log(`✅ Transaction confirmed! Gas used: ${receipt.gasUsed.toString()}`);
+      //console.log(`✅ Transaction confirmed! Gas used: ${receipt.gasUsed.toString()}`);
       
       // Check balances AFTER
       const balanceAfter = await provider.getBalance(contractInfo.address);
@@ -123,39 +123,39 @@ async function withdrawFromContract(contractInfo, provider, wallet) {
       const withdrawn = ourBalanceAfter - ourBalanceBefore;
       const contractReduction = balanceBefore - balanceAfter;
       
-      console.log(`📊 RESULTS:`);
-      console.log(`   Contract balance after: ${ethers.formatEther(balanceAfter)} MON`);
-      console.log(`   Contract reduction: ${ethers.formatEther(contractReduction)} MON`);
-      console.log(`   Your balance after: ${ethers.formatEther(ourBalanceAfter)} MON`);
-      console.log(`   Net received: ${ethers.formatEther(withdrawn)} MON`);
+      //console.log(`📊 RESULTS:`);
+      //console.log(`   Contract balance after: ${ethers.formatEther(balanceAfter)} MON`);
+      //console.log(`   Contract reduction: ${ethers.formatEther(contractReduction)} MON`);
+      //console.log(`   Your balance after: ${ethers.formatEther(ourBalanceAfter)} MON`);
+      //console.log(`   Net received: ${ethers.formatEther(withdrawn)} MON`);
       
       if (withdrawn > 0) {
-        console.log(`🎉 SUCCESS! Withdrew ${ethers.formatEther(withdrawn)} MON`);
+        //console.log(`🎉 SUCCESS! Withdrew ${ethers.formatEther(withdrawn)} MON`);
       } else {
-        console.log(`⚠️  Withdrawal executed but no funds received (gas cost: ${ethers.formatEther(ourBalanceBefore - ourBalanceAfter)} MON)`);
+        //console.log(`⚠️  Withdrawal executed but no funds received (gas cost: ${ethers.formatEther(ourBalanceBefore - ourBalanceAfter)} MON)`);
       }
       
     } catch (txError) {
-      console.error(`❌ Withdrawal transaction failed:`, txError.message);
+      //console.error(`❌ Withdrawal transaction failed:`, txError.message);
       
       // Check if it's a known error
       if (txError.message.includes("revert")) {
-        console.log(`💡 Possible reasons:`);
-        console.log(`   1. No platform fees accumulated yet`);
-        console.log(`   2. Fees already withdrawn`);
-        console.log(`   3. Contract paused or restricted`);
-        console.log(`   4. Different withdrawal function name`);
+        //console.log(`💡 Possible reasons:`);
+        //console.log(`   1. No platform fees accumulated yet`);
+        //console.log(`   2. Fees already withdrawn`);
+        //console.log(`   3. Contract paused or restricted`);
+        //console.log(`   4. Different withdrawal function name`);
       }
     }
     
   } catch (error) {
-    console.log(`❌ Error processing ${contractInfo.name}:`, error.message);
+    //console.log(`❌ Error processing ${contractInfo.name}:`, error.message);
   }
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Script failed:", error);
+    //console.error("❌ Script failed:", error);
     process.exit(1);
   });

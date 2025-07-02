@@ -1,7 +1,7 @@
 const { ethers } = require('ethers');
 
 async function main() {
-  console.log("🔍 Testing Ultra-Secure Contract with Correct RPC...");
+  //console.log("🔍 Testing Ultra-Secure Contract with Correct RPC...");
   
   const contractAddress = "0x755c6402938a039828fe3b6c7C54A07Ea7115C42";
   const yourAddress = "0x00D3a6670a1E5226d6b5dc524e3243e7741C8460";
@@ -19,72 +19,72 @@ async function main() {
   try {
     const contract = new ethers.Contract(contractAddress, testAbi, provider);
     
-    console.log("📊 Contract Address:", contractAddress);
-    console.log("🌐 RPC URL: https://testnet1.monad.xyz");
-    console.log("👤 Your Address:", yourAddress);
+    //console.log("📊 Contract Address:", contractAddress);
+    //console.log("🌐 RPC URL: https://testnet1.monad.xyz");
+    //console.log("👤 Your Address:", yourAddress);
     
     // Check if contract exists
     const code = await provider.getCode(contractAddress);
-    console.log("📝 Contract Code Length:", code.length);
+    //console.log("📝 Contract Code Length:", code.length);
     
     if (code === "0x") {
-      console.log("❌ CONTRACT NOT FOUND AT THIS ADDRESS!");
-      console.log("🔍 The contract may not be deployed or address is wrong.");
+      //console.log("❌ CONTRACT NOT FOUND AT THIS ADDRESS!");
+      //console.log("🔍 The contract may not be deployed or address is wrong.");
       return;
     } else {
-      console.log("✅ Contract exists at this address");
+      //console.log("✅ Contract exists at this address");
     }
     
     // Check owner
     try {
       const owner = await contract.owner();
-      console.log("👑 Contract Owner:", owner);
-      console.log("🎯 Is Your Address Owner:", owner.toLowerCase() === yourAddress.toLowerCase());
+      //console.log("👑 Contract Owner:", owner);
+      //console.log("🎯 Is Your Address Owner:", owner.toLowerCase() === yourAddress.toLowerCase());
     } catch (error) {
-      console.log("❌ Owner check failed:", error.message);
+      //console.log("❌ Owner check failed:", error.message);
     }
     
     // Check total raffles
     try {
       const totalRaffles = await contract.getTotalRaffles();
-      console.log("📈 Total Raffles:", totalRaffles.toString());
+      //console.log("📈 Total Raffles:", totalRaffles.toString());
       
       if (totalRaffles > 0) {
-        console.log("\n🎫 Checking each raffle:");
+        //console.log("\n🎫 Checking each raffle:");
         
         for (let i = 0; i < Math.min(totalRaffles, 5); i++) { // Max 5 raffles
           try {
             const raffle = await contract.getRaffle(i);
-            console.log(`\n--- Raffle ID ${i} ---`);
-            console.log("Title:", raffle.title || "(empty)");
-            console.log("Creator:", raffle.creator);
-            console.log("Reward Type:", raffle.rewardType.toString());
-            console.log("Reward Amount:", raffle.rewardAmount.toString());
-            console.log("Ticket Price:", raffle.ticketPrice.toString());
-            console.log("Max Tickets:", raffle.maxTickets.toString());
-            console.log("Tickets Sold:", raffle.ticketsSold.toString());
-            console.log("Status:", raffle.status.toString());
+            //console.log(`\n--- Raffle ID ${i} ---`);
+            //console.log("Title:", raffle.title || "(empty)");
+            //console.log("Creator:", raffle.creator);
+            //console.log("Reward Type:", raffle.rewardType.toString());
+            //console.log("Reward Amount:", raffle.rewardAmount.toString());
+            //console.log("Ticket Price:", raffle.ticketPrice.toString());
+            //console.log("Max Tickets:", raffle.maxTickets.toString());
+            //console.log("Tickets Sold:", raffle.ticketsSold.toString());
+            //console.log("Status:", raffle.status.toString());
             
             if (raffle.title && raffle.title !== "") {
-              console.log("✅ This raffle has data!");
+              //console.log("✅ This raffle has data!");
             } else {
-              console.log("❌ This raffle is empty");
+              //console.log("❌ This raffle is empty");
             }
           } catch (error) {
-            console.log(`❌ Error reading raffle ${i}:`, error.message);
+            //console.log(`❌ Error reading raffle ${i}:`, error.message);
           }
         }
       } else {
-        console.log("❌ No raffles found in contract!");
-        console.log("💡 You may need to create a raffle first.");
+        //console.log("❌ No raffles found in contract!");
+        //console.log("💡 You may need to create a raffle first.");
       }
     } catch (error) {
-      console.log("❌ getTotalRaffles failed:", error.message);
+      //console.log("❌ getTotalRaffles failed:", error.message);
     }
     
   } catch (error) {
-    console.error("❌ Contract test failed:", error.message);
+    //console.error("❌ Contract test failed:", error.message);
   }
 }
 
-main().catch(console.error); 
+main().catch(//console.error); 

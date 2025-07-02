@@ -2,18 +2,18 @@ const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  console.log("💸 EMERGENCY MANUAL PAYOUT - Resolving Stuck Raffles");
+  //console.log("💸 EMERGENCY MANUAL PAYOUT - Resolving Stuck Raffles");
   
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   
-  console.log("👤 Using wallet:", wallet.address);
+  //console.log("👤 Using wallet:", wallet.address);
   
   const balance = await provider.getBalance(wallet.address);
-  console.log("💰 Available balance:", ethers.formatEther(balance), "MON");
+  //console.log("💰 Available balance:", ethers.formatEther(balance), "MON");
   
   if (balance < ethers.parseEther("50")) {
-    console.log("⚠️  Warning: Low balance for payouts");
+    //console.log("⚠️  Warning: Low balance for payouts");
   }
   
   // STUCK RAFFLE DATA (from emergency analysis)
@@ -59,42 +59,42 @@ async function main() {
     }
   ];
   
-  console.log("\n📋 EMERGENCY PAYOUT PLAN:");
-  console.log("- Raffle #7: NFT reward compensation + ticket refunds");
-  console.log("- Raffle #8: Winner gets reward + entry back");
-  console.log("- Raffle #9: Winner gets 10 MON reward + entry back, others get entries back");
-  console.log("- All amounts include 30% bonus for inconvenience");
+  //console.log("\n📋 EMERGENCY PAYOUT PLAN:");
+  //console.log("- Raffle #7: NFT reward compensation + ticket refunds");
+  //console.log("- Raffle #8: Winner gets reward + entry back");
+  //console.log("- Raffle #9: Winner gets 10 MON reward + entry back, others get entries back");
+  //console.log("- All amounts include 30% bonus for inconvenience");
   
   let totalPayout = ethers.parseEther("0");
   
   // Calculate total needed
   for (const raffle of stuckRaffles) {
-    console.log(`\n💰 Raffle #${raffle.id} - "${raffle.title}":`);
+    //console.log(`\n💰 Raffle #${raffle.id} - "${raffle.title}":`);
     for (const participant of raffle.participants) {
       const amount = ethers.parseEther(participant.refund);
       totalPayout = totalPayout + amount;
       const status = participant.winner ? " 🎉 WINNER" : "";
-      console.log(`  ${participant.address}: ${participant.refund} MON (${participant.tickets} tickets)${status}`);
+      //console.log(`  ${participant.address}: ${participant.refund} MON (${participant.tickets} tickets)${status}`);
     }
   }
   
-  console.log(`\n💸 TOTAL PAYOUT NEEDED: ${ethers.formatEther(totalPayout)} MON`);
+  //console.log(`\n💸 TOTAL PAYOUT NEEDED: ${ethers.formatEther(totalPayout)} MON`);
   
   if (balance < totalPayout) {
-    console.log("❌ Insufficient balance for full payout!");
+    //console.log("❌ Insufficient balance for full payout!");
     return;
   }
   
-  console.log("\n🚀 EXECUTING EMERGENCY PAYOUTS...");
+  //console.log("\n🚀 EXECUTING EMERGENCY PAYOUTS...");
   
   for (const raffle of stuckRaffles) {
-    console.log(`\n💸 Processing Raffle #${raffle.id}...`);
+    //console.log(`\n💸 Processing Raffle #${raffle.id}...`);
     
     for (const participant of raffle.participants) {
       try {
         const amount = ethers.parseEther(participant.refund);
         
-        console.log(`📤 Sending ${participant.refund} MON to ${participant.address}...`);
+        //console.log(`📤 Sending ${participant.refund} MON to ${participant.address}...`);
         
         const tx = await wallet.sendTransaction({
           to: participant.address,
@@ -102,31 +102,31 @@ async function main() {
           gasLimit: 21000
         });
         
-        console.log(`✅ Transaction sent: ${tx.hash}`);
+        //console.log(`✅ Transaction sent: ${tx.hash}`);
         await tx.wait();
-        console.log(`✅ Confirmed! ${participant.refund} MON sent successfully`);
+        //console.log(`✅ Confirmed! ${participant.refund} MON sent successfully`);
         
         // Small delay between transactions
         await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (error) {
-        console.error(`❌ Failed to send to ${participant.address}:`, error.message);
+        //console.error(`❌ Failed to send to ${participant.address}:`, error.message);
       }
     }
   }
   
-  console.log("\n🎊 EMERGENCY PAYOUT COMPLETED!");
-  console.log("All stuck raffle participants have been compensated");
-  console.log("Winners received their rewards + entries back");
-  console.log("Others received entries back + 30% bonus for inconvenience");
+  //console.log("\n🎊 EMERGENCY PAYOUT COMPLETED!");
+  //console.log("All stuck raffle participants have been compensated");
+  //console.log("Winners received their rewards + entries back");
+  //console.log("Others received entries back + 30% bonus for inconvenience");
   
   const finalBalance = await provider.getBalance(wallet.address);
-  console.log(`\n💰 Final balance: ${ethers.formatEther(finalBalance)} MON`);
+  //console.log(`\n💰 Final balance: ${ethers.formatEther(finalBalance)} MON`);
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Emergency payout failed:", error);
+    //console.error("❌ Emergency payout failed:", error);
     process.exit(1);
   }); 

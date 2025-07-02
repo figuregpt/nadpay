@@ -488,6 +488,51 @@ export function useNadSwapV3Contract() {
       });
       console.log('✅ Accept proposal transaction confirmed on blockchain');
       
+      // Award points to both participants
+      try {
+        console.log('🎯 Awarding points for successful swap...');
+        
+        // Points for the proposer
+        await fetch('/api/points/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: proposal.proposer,
+            type: 'nadswap',
+            amount: 1, // Not relevant for swaps
+            txHash: txHash,
+            metadata: {
+              proposalId,
+              targetAddress: address,
+              role: 'proposer'
+            }
+          })
+        });
+        console.log('✅ Points awarded to proposer:', proposal.proposer);
+        
+        // Points for the acceptor (current user)
+        await fetch('/api/points/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: address,
+            type: 'nadswap',
+            amount: 1, // Not relevant for swaps
+            txHash: `${txHash}_acceptor`, // Make unique for acceptor
+            metadata: {
+              proposalId,
+              proposerAddress: proposal.proposer,
+              role: 'acceptor'
+            }
+          })
+        });
+        console.log('✅ Points awarded to acceptor:', address);
+        
+      } catch (pointsError) {
+        console.error('❌ Error awarding points:', pointsError);
+        // Don't fail the swap if points fail
+      }
+      
       // Refresh proposals after successful acceptance
       console.log('🔄 Refreshing proposals after acceptance...');
       setTimeout(() => {
@@ -773,7 +818,7 @@ export function useNadSwapV3Contract() {
     if (!address || !publicClient) return;
     
     try {
-      // Refresh user proposals
+      // Refresh user proposals (sent)
       const result = await publicClient.readContract({
         address: NADSWAP_V3_CONTRACT.address,
         abi: NADSWAP_V3_CONTRACT.abi,
@@ -783,8 +828,44 @@ export function useNadSwapV3Contract() {
       
       const proposalIds = (result as any).proposalIds || (result as any)[0] || [];
       setUserProposalIds(proposalIds.map((id: any) => Number(id)));
+      
+      // Also refresh received proposals
+      const totalCount = await publicClient.readContract({
+        address: NADSWAP_V3_CONTRACT.address,
+        abi: NADSWAP_V3_CONTRACT.abi,
+        functionName: 'proposalCounter',
+        args: []
+      });
+      
+      const receivedIds: number[] = [];
+      const total = Number(totalCount);
+      
+      // Check last 50 proposals for ones targeting this user
+      const startId = Math.max(1, total - 49);
+      
+      for (let i = startId; i <= total; i++) {
+        try {
+          const proposal = await publicClient.readContract({
+            address: NADSWAP_V3_CONTRACT.address,
+            abi: NADSWAP_V3_CONTRACT.abi,
+            functionName: 'getProposal',
+            args: [BigInt(i)]
+          });
+          
+          const proposalData = proposal as any;
+          
+          if (proposalData[2]?.toLowerCase() === address.toLowerCase()) {
+            receivedIds.push(i);
+          }
+        } catch (error) {
+          // Skip failed proposals
+          continue;
+        }
+      }
+      
+      setUserReceivedProposalIds(receivedIds);
     } catch (error) {
-      console.error('Error refreshing user proposals:', error);
+      console.error('Error refreshing proposals:', error);
     }
   }, [address, publicClient]);
 

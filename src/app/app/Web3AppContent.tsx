@@ -641,7 +641,7 @@ export default function Web3AppContent() {
                 Create Another Link
             </button>
               <a
-                href="/app/dashboard"
+                href="/dashboard"
                 className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors"
               >
                 Go to Dashboard

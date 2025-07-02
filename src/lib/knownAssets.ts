@@ -31,7 +31,7 @@ export const NATIVE_MON: KnownToken = {
   symbol: "MON",
   decimals: 18,
   logo: "/monad-logo.svg",
-  description: "Native Monad token - gas and payment currency",
+  description: "",
   verified: true
 };
 

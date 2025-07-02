@@ -6,18 +6,24 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useAccount, useSwitchChain, usePublicClient, useWalletClient } from "wagmi";
 import { ConnectKitButton } from "connectkit";
-import { useNadRaffleV4FastContract, NADRAFFLE_V4_FAST_CONTRACT } from "@/hooks/useNadRaffleV4FastContract";
+import { useNadRaffleV7Contract, NADRAFFLE_V7_CONTRACT, useCreationFeeV7 } from "@/hooks/useNadRaffleV7Contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { AssetSelector, SelectedAsset } from "@/components/AssetSelector";
 import { KnownToken, KnownNFT } from "@/lib/knownAssets";
 import { NFTWithMetadata } from "@/hooks/useNFTMetadata";
 import { useBlockchainTime } from "@/hooks/useBlockchainTime";
+import { formatEther } from "viem";
+import Navbar from "@/components/Navbar";
+import { useAssetBalances } from "@/hooks/useAssetBalances";
 
 export default function CreateRaffleContent() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  
+  // Preload asset balances as soon as component mounts
+  useAssetBalances();
   
   // Use blockchain time instead of local time for security
   const {
@@ -30,10 +36,8 @@ export default function CreateRaffleContent() {
     isLoading: isBlockchainTimeLoading
   } = useBlockchainTime();
   
-  // Raffle form state
+  // Raffle form state - V7 has NO title/description but supports multi-token payments
   const [raffleFormData, setRaffleFormData] = useState({
-    title: '',
-    description: '',
     imageHash: '',
     rewardType: 'TOKEN' as 'TOKEN' | 'NFT',
     rewardTokenAddress: '',
@@ -67,7 +71,10 @@ export default function CreateRaffleContent() {
     isConfirmed: isRaffleConfirmed,
     error: raffleError,
     hash: raffleHash
-  } = useNadRaffleV4FastContract();
+  } = useNadRaffleV7Contract();
+
+  // Get V7 creation fee from contract
+  const { data: creationFeeData } = useCreationFeeV7();
 
   const handleRaffleInputChange = (field: string, value: string | number | boolean) => {
     setRaffleFormData(prev => ({
@@ -200,18 +207,23 @@ export default function CreateRaffleContent() {
       return;
     }
 
-    if (!selectedTicketPaymentAsset) {
+    if (!selectedTicketPaymentAsset || !selectedTicketPaymentAsset.data.address) {
       alert('Please select a ticket payment asset');
       return;
     }
 
-    if (!raffleFormData.title || !raffleFormData.description || !raffleFormData.rewardAmount || !raffleFormData.expirationDateTime) {
+    if (!raffleFormData.rewardAmount || !raffleFormData.expirationDateTime) {
       alert('Please fill in all required fields');
       return;
     }
 
     if (!publicClient || !walletClient) {
       alert('Wallet client not ready. Please try again.');
+      return;
+    }
+    
+    if (isBlockchainTimeLoading) {
+      alert('Please wait a moment while we sync with the blockchain...');
       return;
     }
 
@@ -228,7 +240,7 @@ export default function CreateRaffleContent() {
         const currentAllowance = await checkERC20Allowance(
           rewardTokenAddress,
           address as string,
-          NADRAFFLE_V4_FAST_CONTRACT.address
+          NADRAFFLE_V7_CONTRACT.address
         );
         needsRewardTokenApproval = currentAllowance < rewardAmount;
       }
@@ -236,7 +248,7 @@ export default function CreateRaffleContent() {
 
     // Check if NFT approval is needed
     if (raffleFormData.rewardType === 'NFT' && selectedRewardAsset) {
-      const contractAddress = NADRAFFLE_V4_FAST_CONTRACT.address;
+      const contractAddress = NADRAFFLE_V7_CONTRACT.address;
       const tokenId = BigInt(raffleFormData.rewardAmount);
       const nftAddress = selectedRewardAsset.data.address as `0x${string}`;
 
@@ -296,13 +308,13 @@ export default function CreateRaffleContent() {
         const rewardAmount = BigInt(parseFloat(raffleFormData.rewardAmount.toString()) * 1e18);
         
         console.log('Approving reward token...');
-        await approveERC20Token(rewardTokenAddress, NADRAFFLE_V4_FAST_CONTRACT.address, rewardAmount);
+        await approveERC20Token(rewardTokenAddress, NADRAFFLE_V7_CONTRACT.address, rewardAmount);
         
         // Verify approval
         const newAllowance = await checkERC20Allowance(
           rewardTokenAddress,
           address as string,
-          NADRAFFLE_V4_FAST_CONTRACT.address
+          NADRAFFLE_V7_CONTRACT.address
         );
         
         if (newAllowance < rewardAmount) {
@@ -316,7 +328,7 @@ export default function CreateRaffleContent() {
       if (needsNFTApproval && raffleFormData.rewardType === 'NFT' && selectedRewardAsset) {
         setTransactionState(prev => ({ ...prev, currentStep: 'Approving NFT' }));
         
-        const contractAddress = NADRAFFLE_V4_FAST_CONTRACT.address;
+        const contractAddress = NADRAFFLE_V7_CONTRACT.address;
         const tokenId = BigInt(raffleFormData.rewardAmount);
         const nftAddress = selectedRewardAsset.data.address as `0x${string}`;
 
@@ -382,7 +394,14 @@ export default function CreateRaffleContent() {
       
       // Convert expirationTime to duration (seconds from now)
       const currentTime = Math.floor(Date.now() / 1000);
-      const duration = Math.max(expirationTime - currentTime, 300); // Minimum 5 minutes (for testing)
+      let duration = expirationTime - currentTime;
+      
+      // Ensure minimum duration is met (V7 contract requires 3600 seconds minimum)
+      const MIN_DURATION = 3600; // 1 hour in seconds
+      if (duration < MIN_DURATION) {
+        console.log(`⚠️ Duration ${duration}s is less than minimum ${MIN_DURATION}s, adjusting...`);
+        duration = MIN_DURATION;
+      }
       
       console.log('🎫 Creating raffle with data:', {
         ...raffleFormData,
@@ -392,18 +411,33 @@ export default function CreateRaffleContent() {
         ticketPaymentToken: selectedTicketPaymentAsset.data.address
       });
 
-      await createRaffle({
-        title: raffleFormData.title,
-        description: raffleFormData.description,
-        rewardType: raffleFormData.rewardType,
-        rewardTokenAddress: selectedRewardAsset.data.address,
-        rewardAmount: raffleFormData.rewardAmount,
-        ticketPrice: raffleFormData.ticketPrice,
-        ticketPaymentToken: selectedTicketPaymentAsset.data.address,
-        maxTickets: parseInt(raffleFormData.maxTickets) || 1,
-        duration: duration,
-        autoDistributeOnSoldOut: raffleFormData.autoDistributeOnSoldOut,
-      });
+      // Map V4 rewardType to V7 rewardType
+      let v7RewardType: number;
+      if (raffleFormData.rewardType === 'NFT') {
+        v7RewardType = 2; // V7 NFT_TOKEN
+      } else {
+        // Check if it's MON or ERC20
+        if (selectedRewardAsset.data.address === '0x0000000000000000000000000000000000000000') {
+          v7RewardType = 0; // V7 MON_TOKEN
+        } else {
+          v7RewardType = 1; // V7 ERC20_TOKEN
+        }
+      }
+
+      // V7 contract requires creation fee - get from contract
+      const creationFee = creationFeeData ? formatEther(creationFeeData as bigint) : '0.001';
+
+      // V7 createRaffle(ticketPrice, ticketPaymentToken, maxTickets, duration, rewardType, rewardTokenAddress, rewardTokenId, creationFee)
+      await createRaffle(
+        raffleFormData.ticketPrice,
+        selectedTicketPaymentAsset.data.address, // New parameter for V7
+        parseInt(raffleFormData.maxTickets) || 1,
+        duration,
+        v7RewardType,
+        selectedRewardAsset.data.address,
+        raffleFormData.rewardAmount,
+        creationFee
+      );
 
       // Reset transaction state on success
       setTransactionState({
@@ -424,14 +458,14 @@ export default function CreateRaffleContent() {
       
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('Raffle duration must be at least 13 minutes')) {
-        alert('⏰ Contract requires raffle duration to be at least 13 minutes from current blockchain time. Please select a later time and try again.');
-      } else if (errorMessage.includes('Raffle duration must be at least 15 minutes')) {
-        alert('⏰ Contract requires raffle duration to be at least 15 minutes from current blockchain time. Please select a later time and try again.');
+      if (errorMessage.includes('Invalid duration')) {
+        alert('⏰ The raffle duration must be at least 1 hour. Please use the quick duration buttons or wait a moment before trying again.');
+      } else if (errorMessage.includes('Raffle duration must be at least')) {
+        alert('⏰ The selected duration is too short. Please select a longer duration and try again.');
       } else if (errorMessage.includes('approval')) {
         alert('Failed to approve NFT transfer. Please try again.');
       } else {
-        alert('Failed to create raffle. Please try again.');
+        alert(`Failed to create raffle: ${errorMessage}. Please try again.`);
       }
     }
   };
@@ -440,92 +474,23 @@ export default function CreateRaffleContent() {
   if (generatedRaffleLink) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-        {/* Header */}
-        <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-          <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                  <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                    Raffle Created!
-                  </h1>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                    RaffleHouse
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                {/* Navigation Links */}
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <Link 
-                    href="/"
-                    className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-                  >
-                    Home
-                  </Link>
-                  <Link 
-                    href="/app/dashboard"
-                    className="px-2 lg:px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    href="/nadpay"
-                    className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                  >
-                    NadPay
-                  </Link>
-                  <Link 
-                    href="/nadswap"
-                    className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                  >
-                    NadSwap
-                  </Link>
-                </div>
-                
-                {/* Custom Wallet Button */}
-                <div className="relative">
-                  {isConnected ? (
-                    <ConnectKitButton.Custom>
-                      {({ show, truncatedAddress, ensName }) => (
-                        <button
-                          onClick={show}
-                          className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                        >
-                          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-bold">
-                              {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                            </span>
-                          </div>
-                          <span className="text-sm font-medium hidden sm:inline">
-                            {ensName || truncatedAddress}
-                          </span>
-                        </button>
-                      )}
-                    </ConnectKitButton.Custom>
-                  ) : (
-                    <ConnectKitButton.Custom>
-                      {({ show }) => (
-                        <button
-                          onClick={show}
-                          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-                        >
-                          Connect Wallet
-                        </button>
-                      )}
-                    </ConnectKitButton.Custom>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Navbar
+          brand={{
+            name: "Back to RaffleHouse",
+            href: "/rafflehouse",
+            logo: <ArrowLeft className="w-5 h-5 text-white" />
+          }}
+        />
 
         <div className="container mx-auto px-4 py-8">
+          {/* Success Page Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Raffle Created!</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Your raffle has been successfully created and is ready to share
+            </p>
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -536,9 +501,6 @@ export default function CreateRaffleContent() {
               <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Trophy className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Raffle Created!
-              </h2>
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Share this raffle link to let people participate
               </p>
@@ -591,95 +553,25 @@ export default function CreateRaffleContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <Link href="/rafflehouse" className="flex items-center space-x-2">
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              </Link>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                  Create Raffle
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                  RaffleHouse
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <Link 
-                  href="/"
-                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-                >
-                  Home
-                </Link>
-                <Link 
-                  href="/app/dashboard"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/nadpay"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadPay
-                </Link>
-                <Link 
-                  href="/nadswap"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadSwap
-                </Link>
-              </div>
-              
-              {/* Custom Wallet Button */}
-              <div className="relative">
-                {isConnected ? (
-                  <ConnectKitButton.Custom>
-                    {({ show, truncatedAddress, ensName }) => (
-                      <button
-                        onClick={show}
-                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold">
-                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium hidden sm:inline">
-                          {ensName || truncatedAddress}
-                        </span>
-                      </button>
-                    )}
-                  </ConnectKitButton.Custom>
-                ) : (
-                  <ConnectKitButton.Custom>
-                    {({ show }) => (
-                      <button
-                        onClick={show}
-                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-                      >
-                        Connect Wallet
-                      </button>
-                    )}
-                  </ConnectKitButton.Custom>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              <Navbar
+          brand={{
+            name: "Back to RaffleHouse",
+            href: "/rafflehouse",
+            logo: <ArrowLeft className="w-5 h-5 text-white" />
+          }}
+        />
 
       <div className="container mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <Link href="/rafflehouse" className="mr-4 p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create Raffle</h1>
+          </div>
+        </div>
+
         {/* Raffle Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -695,19 +587,6 @@ export default function CreateRaffleContent() {
             >
               <X className="w-5 h-5" />
             </Link>
-            
-            {/* Header - now perfectly centered */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Trophy className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Create Raffle
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                Set up your raffle with NFT or token rewards
-              </p>
-            </div>
 
             {!isConnected ? (
               <div className="text-center py-8">
@@ -739,33 +618,7 @@ export default function CreateRaffleContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Raffle Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={raffleFormData.title}
-                    onChange={(e) => handleRaffleInputChange('title', e.target.value)}
-                    placeholder="e.g., Win a Rare NFT!"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
-                  />
-                </div>
 
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    value={raffleFormData.description}
-                    onChange={(e) => handleRaffleInputChange('description', e.target.value)}
-                    placeholder="Describe your raffle and the reward..."
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
-                  />
-                </div>
 
                 {/* Reward Configuration */}
                 <div>
@@ -878,16 +731,16 @@ export default function CreateRaffleContent() {
                 </div>
 
                 {/* Ticket Configuration */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Ticket Payment Asset *
+                      Ticket Payment Asset
                     </label>
                     <AssetSelector
                       selectedAsset={selectedTicketPaymentAsset}
                       onAssetSelect={(asset) => {
                         setSelectedTicketPaymentAsset(asset);
-                        // V1 contract only supports MON, so we store for future V2 compatibility
+                        // Store for V7 contract
                         setRaffleFormData(prev => ({
                           ...prev,
                           ticketPaymentToken: asset?.data.address || ''
@@ -953,11 +806,11 @@ export default function CreateRaffleContent() {
                   {/* Quick Duration Buttons */}
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
                     {[
-                      { label: '1H', minutes: 60 },
-                      { label: '2H', minutes: 120 },
-                      { label: '4H', minutes: 240 },
-                      { label: '12H', minutes: 720 },
-                      { label: '24H', minutes: 1440 }
+                      { label: '1H', minutes: 61 }, // Minimum duration, with 1 minute buffer
+                      { label: '2H', minutes: 121 }, // Add 1 minute buffer
+                      { label: '4H', minutes: 241 }, // Add 1 minute buffer
+                      { label: '12H', minutes: 721 }, // Add 1 minute buffer
+                      { label: '24H', minutes: 1441 } // Add 1 minute buffer
                     ].map((duration) => (
                       <button
                         key={duration.label}
@@ -992,8 +845,8 @@ export default function CreateRaffleContent() {
                         🕐 Current blockchain time: {new Date(getCurrentBlockchainTime() * 1000).toLocaleString()}
                       </span>
                     )}
-                    <span className="block mt-1 text-green-600 dark:text-green-400 text-xs">
-                      ✅ System includes automatic buffer for blockchain sync differences
+                    <span className="block mt-1 text-yellow-600 dark:text-yellow-400 text-xs">
+                      ⚠️ Quick buttons include a small buffer to ensure minimum duration is met
                     </span>
                   </p>
                 </div>
@@ -1008,7 +861,7 @@ export default function CreateRaffleContent() {
                   </Link>
                   <button
                     onClick={handleCreateRaffle}
-                    disabled={isRaffleCreating || isRaffleConfirming || transactionState.isProcessing}
+                    disabled={isRaffleCreating || isRaffleConfirming || transactionState.isProcessing || (isRaffleConfirmed && !generatedRaffleLink)}
                     className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {transactionState.isProcessing ? (
@@ -1025,6 +878,11 @@ export default function CreateRaffleContent() {
                       <div className="flex items-center justify-center space-x-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <span>Confirming...</span>
+                      </div>
+                    ) : (isRaffleConfirmed && !generatedRaffleLink) ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Generating Link...</span>
                       </div>
                     ) : (
                       'Create Raffle'
@@ -1067,6 +925,30 @@ export default function CreateRaffleContent() {
                 )}
               </div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Terms & Conditions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="max-w-2xl mx-auto mt-6"
+        >
+          <div className="bg-gray-50 dark:bg-dark-800/50 border border-gray-200 dark:border-dark-700 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Terms & Conditions</h3>
+            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+              <li>• If your raffle sells zero tickets, the rewards are returned to you.</li>
+              <li>• Creating a raffle incurs a 0.1 MON fee, paid at the time of creation.</li>
+              <li>• You choose the raffle duration when setting it up; the minimum is 1 hour.</li>
+              <li>• NadPay takes a 2.5% commission from ticket sales.</li>
+              <li>• Once the raffle is created, it can't be edited, cancelled, or ended early — it will run until the scheduled end time.</li>
+            </ul>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-600">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-medium">Program ID:</span> {NADRAFFLE_V7_CONTRACT.address}
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>

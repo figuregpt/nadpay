@@ -2,13 +2,13 @@ const { ethers } = require("hardhat");
 require("dotenv").config({ path: './nadpay/.env' });
 
 async function main() {
-  console.log("🌈 Checking Multi-Token Fees Across Contracts");
+  //console.log("🌈 Checking Multi-Token Fees Across Contracts");
   
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
   const privateKey = process.env.PRIVATE_KEY;
   const wallet = new ethers.Wallet(privateKey, provider);
   
-  console.log("👤 Checking wallet:", wallet.address);
+  //console.log("👤 Checking wallet:", wallet.address);
   
   // Supported tokens from knownAssets.ts
   const supportedTokens = [
@@ -70,13 +70,13 @@ async function main() {
     "function decimals() view returns (uint8)"
   ];
   
-  console.log("\n💰 Checking Token Balances in Contracts...\n");
+  //console.log("\n💰 Checking Token Balances in Contracts...\n");
   
   let totalFeesFound = false;
   
   for (const contract of contracts) {
-    console.log(`🏠 Contract: ${contract.name}`);
-    console.log(`📍 Address: ${contract.address}`);
+    //console.log(`🏠 Contract: ${contract.name}`);
+    //console.log(`📍 Address: ${contract.address}`);
     
     let contractHasFees = false;
     
@@ -97,40 +97,40 @@ async function main() {
         const balanceNum = parseFloat(formattedBalance);
         
         if (balanceNum > 0) {
-          console.log(`   💰 ${token.symbol}: ${formattedBalance} ${token.symbol}`);
+          //console.log(`   💰 ${token.symbol}: ${formattedBalance} ${token.symbol}`);
           contractHasFees = true;
           totalFeesFound = true;
         }
         
       } catch (error) {
-        console.log(`   ❌ ${token.symbol}: Error checking balance - ${error.message}`);
+        //console.log(`   ❌ ${token.symbol}: Error checking balance - ${error.message}`);
       }
     }
     
     if (!contractHasFees) {
-      console.log(`   ✅ No token balances found`);
+      //console.log(`   ✅ No token balances found`);
     }
     
-    console.log("");
+    //console.log("");
   }
   
   if (totalFeesFound) {
-    console.log("🎯 SUMMARY: Found accumulated fees in some contracts!");
-    console.log("💡 Create withdrawal scripts for non-zero balances");
+    //console.log("🎯 SUMMARY: Found accumulated fees in some contracts!");
+    //console.log("💡 Create withdrawal scripts for non-zero balances");
   } else {
-    console.log("🎯 SUMMARY: No accumulated fees found in any supported tokens");
-    console.log("✅ All contracts are clean!");
+    //console.log("🎯 SUMMARY: No accumulated fees found in any supported tokens");
+    //console.log("✅ All contracts are clean!");
   }
   
-  console.log("\n📋 Supported Tokens Checked:");
+  //console.log("\n📋 Supported Tokens Checked:");
   supportedTokens.forEach(token => {
-    console.log(`   • ${token.symbol} (${token.address === "0x0000000000000000000000000000000000000000" ? "Native" : token.address})`);
+    //console.log(`   • ${token.symbol} (${token.address === "0x0000000000000000000000000000000000000000" ? "Native" : token.address})`);
   });
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Script failed:", error);
+    //console.error("❌ Script failed:", error);
     process.exit(1);
   }); 

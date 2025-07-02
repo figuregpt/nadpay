@@ -1,0 +1,27 @@
+module.exports = {
+  apps: [
+    {
+      name: 'nadpay-web',
+      script: 'npm',
+      args: 'start',
+      cwd: '/app',
+      env: {
+        NODE_ENV: 'production',
+        PORT: process.env.PORT || 3000,
+        HOSTNAME: '0.0.0.0'
+      }
+    },
+    {
+      name: 'raffle-finalizer',
+      script: 'npm',
+      args: 'run finalizer:fast',
+      cwd: '/app',
+      env: {
+        NODE_ENV: 'production'
+      },
+      restart_delay: 15000,
+      max_restarts: 5,
+      min_uptime: '30s'
+    }
+  ]
+}; 

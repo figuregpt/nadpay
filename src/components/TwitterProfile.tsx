@@ -1,15 +1,30 @@
 "use client";
 
 import { useTwitterProfile } from '@/hooks/useTwitterProfile';
-import { CheckCircle, X, ExternalLink } from 'lucide-react';
+import { ExternalLink, RefreshCw, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface TwitterProfileProps {
   showFullProfile?: boolean;
   className?: string;
+  showStats?: boolean;
+  userPoints?: any;
+  userRank?: number | null;
+  loadingStats?: boolean;
+  onRefreshStats?: () => Promise<void>;
+  formatStatsPoints?: (points: number) => string;
 }
 
-export default function TwitterProfile({ showFullProfile = true, className = "" }: TwitterProfileProps) {
+export default function TwitterProfile({ 
+  showFullProfile = true, 
+  className = "", 
+  showStats = false,
+  userPoints,
+  userRank,
+  loadingStats = false,
+  onRefreshStats,
+  formatStatsPoints
+}: TwitterProfileProps) {
   const { profile, isLoading, error, connectTwitter, disconnectTwitter } = useTwitterProfile();
 
   if (isLoading) {
@@ -73,15 +88,11 @@ export default function TwitterProfile({ showFullProfile = true, className = "" 
   if (!showFullProfile) {
     return (
       <div className={`flex items-center space-x-2 ${className}`}>
-        <div className="relative">
-          <img
-            src={profile.twitterAvatarUrl || '/placeholder-avatar.png'}
-            alt={profile.twitterName}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-          {/* Always show verified badge if Twitter profile exists */}
-          <CheckCircle className="absolute -bottom-1 -right-1 w-4 h-4 text-blue-500 bg-white rounded-full" />
-        </div>
+        <img
+          src={profile.twitterAvatarUrl || '/placeholder-avatar.png'}
+          alt={profile.twitterName}
+          className="w-8 h-8 rounded-full object-cover"
+        />
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {profile.twitterName}
@@ -101,27 +112,18 @@ export default function TwitterProfile({ showFullProfile = true, className = "" 
       animate={{ opacity: 1, y: 0 }}
       className={`bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-6 ${className}`}
     >
-      <div className="flex items-start justify-between">
+      {/* Profile Header */}
+      <div className="flex items-start justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <div className="relative">
-            <img
-              src={profile.twitterAvatarUrl || '/placeholder-avatar.png'}
-              alt={profile.twitterName}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-            {/* Always show verified badge if Twitter profile exists */}
-            <CheckCircle className="absolute -bottom-1 -right-1 w-6 h-6 text-blue-500 bg-white rounded-full" />
-          </div>
+          <img
+            src={profile.twitterAvatarUrl || '/placeholder-avatar.png'}
+            alt={profile.twitterName}
+            className="w-16 h-16 rounded-full object-cover"
+          />
           <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {profile.twitterName}
-              </h3>
-              {/* Always show verified badge if Twitter profile exists */}
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
-                Verified
-              </span>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              {profile.twitterName}
+            </h3>
             <p className="text-gray-600 dark:text-gray-400">
               @{profile.twitterHandle}
             </p>
@@ -132,19 +134,89 @@ export default function TwitterProfile({ showFullProfile = true, className = "" 
               className="text-blue-500 hover:text-blue-600 text-sm inline-flex items-center mt-1"
             >
               View on X
-                             <ExternalLink className="w-3 h-3 ml-1" />
+              <ExternalLink className="w-3 h-3 ml-1" />
             </a>
           </div>
         </div>
         <button
           onClick={disconnectTwitter}
           disabled={isLoading}
-          className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-          title="Disconnect X account"
+          className="px-3 py-1 text-sm bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
         >
-          <X className="w-5 h-5" />
+          Disconnect
         </button>
       </div>
+
+      {/* Stats Section */}
+      {showStats && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Your Leaderboard Stats</h4>
+            {onRefreshStats && (
+              <button
+                onClick={onRefreshStats}
+                disabled={loadingStats}
+                className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50"
+                title="Refresh stats"
+              >
+                <RefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${loadingStats ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+          </div>
+
+          {loadingStats ? (
+            <div className="grid md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-xl p-4 animate-pulse">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : userPoints && formatStatsPoints ? (
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 shadow-sm">
+                <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{formatStatsPoints(userPoints.totalPoints)}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Total Points</div>
+                {userRank && (
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">Rank #{userRank}</div>
+                )}
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4 shadow-sm">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{formatStatsPoints(userPoints.pointsBreakdown.nadswap)}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">NadSwap Points</div>
+                <div className="text-xs text-green-600 dark:text-green-400">4pts per swap</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 shadow-sm">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatStatsPoints(userPoints.pointsBreakdown.nadpay)}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">NadPay Points</div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">4pts per 0.1 MON</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700 rounded-xl p-4 shadow-sm">
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{formatStatsPoints(userPoints.pointsBreakdown.nadraffle)}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">NadRaffle Points</div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">4pts per 0.1 MON</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Start Earning Points</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Use NadPay, NadSwap, and NadRaffle to earn points!</p>
+              <div className="flex justify-center space-x-2">
+                <a href="/leaderboard" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
+                  View Leaderboard →
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 } 

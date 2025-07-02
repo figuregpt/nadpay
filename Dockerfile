@@ -21,6 +21,9 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
+# Create log directory for finalizer
+RUN mkdir -p /app/logs
+
 # Expose port (Railway will set PORT dynamically)
 EXPOSE ${PORT:-3000}
 

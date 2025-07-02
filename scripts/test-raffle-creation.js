@@ -1,10 +1,10 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  console.log("🧪 Testing Raffle Creation...");
+  //console.log("🧪 Testing Raffle Creation...");
   
   const [deployer] = await ethers.getSigners();
-  console.log("Deployer address:", deployer.address);
+  //console.log("Deployer address:", deployer.address);
   
   // Contract addresses
   const RAFFLE_V2_ADDRESS = "0x136bC59567f12a49F8485f3E76CbAd13f3bB56cF";
@@ -14,7 +14,7 @@ async function main() {
   
   // Check deployer balance
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("Deployer balance:", ethers.formatEther(balance), "MON");
+  //console.log("Deployer balance:", ethers.formatEther(balance), "MON");
   
   // Test parameters - similar to what UI is sending
   const testParams = {
@@ -32,7 +32,7 @@ async function main() {
     autoDistributeOnSoldOut: true
   };
   
-  console.log("Test parameters:", {
+  //console.log("Test parameters:", {
     ...testParams,
     rewardAmount: testParams.rewardAmount.toString(),
     ticketPrice: testParams.ticketPrice.toString(),
@@ -43,14 +43,14 @@ async function main() {
     // Check if we have enough balance for reward + creation fee
     const totalRequired = testParams.rewardAmount + ethers.parseEther("0.001");
     if (balance < totalRequired) {
-      console.error("❌ Insufficient balance!");
-      console.log("Required:", ethers.formatEther(totalRequired), "MON");
-      console.log("Available:", ethers.formatEther(balance), "MON");
+      //console.error("❌ Insufficient balance!");
+      //console.log("Required:", ethers.formatEther(totalRequired), "MON");
+      //console.log("Available:", ethers.formatEther(balance), "MON");
       return;
     }
     
     // Try to create raffle
-    console.log("Creating raffle...");
+    //console.log("Creating raffle...");
     const tx = await NadRaffleV2.createRaffle(
       testParams.title,
       testParams.description,
@@ -67,26 +67,26 @@ async function main() {
       { value: ethers.parseEther("0.001") } // Creation fee
     );
     
-    console.log("Transaction sent:", tx.hash);
+    //console.log("Transaction sent:", tx.hash);
     const receipt = await tx.wait();
-    console.log("✅ Raffle created successfully!");
-    console.log("Gas used:", receipt.gasUsed.toString());
+    //console.log("✅ Raffle created successfully!");
+    //console.log("Gas used:", receipt.gasUsed.toString());
     
     // Check total raffles
     const totalRaffles = await NadRaffleV2.getTotalRaffles();
-    console.log("Total raffles now:", totalRaffles.toString());
+    //console.log("Total raffles now:", totalRaffles.toString());
     
   } catch (error) {
-    console.error("❌ Error creating raffle:", error.message);
+    //console.error("❌ Error creating raffle:", error.message);
     
     // Try to get more details about the error
     if (error.data) {
-      console.log("Error data:", error.data);
+      //console.log("Error data:", error.data);
     }
     
     // Check if it's a revert with reason
     if (error.reason) {
-      console.log("Revert reason:", error.reason);
+      //console.log("Revert reason:", error.reason);
     }
   }
 }
@@ -94,6 +94,6 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
+    //console.error(error);
     process.exit(1);
   }); 

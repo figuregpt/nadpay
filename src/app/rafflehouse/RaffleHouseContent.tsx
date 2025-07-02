@@ -1,21 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Trophy, Search, Clock, Users, Coins, ArrowLeft, Plus, Moon, Sun, Link2, Bell, Ticket, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useAccount, useReadContract, usePublicClient } from "wagmi";
-import { ConnectKitButton } from "connectkit";
-import { NADRAFFLE_V4_FAST_CONTRACT } from "@/hooks/useNadRaffleV4FastContract";
+import { NADRAFFLE_V7_CONTRACT, useActiveRaffleIdsV7, useTotalRafflesV7, useRaffleV7, formatRaffleV7, formatPriceV7 } from "@/hooks/useNadRaffleV7Contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
-import { formatRaffleV3, formatPriceV3Raffle } from "@/hooks/useNadRaffleV4FastContract";
-import { getKnownToken } from "@/lib/knownAssets";
+import { getKnownToken, getKnownNFT, isKnownToken, isKnownNFT } from "@/lib/knownAssets";
 import { useNFTMetadata } from "@/hooks/useNFTMetadata";
 import { useUserRaffles } from "@/hooks/useUserRaffles";
 import TwitterProfile from "@/components/TwitterProfile";
 import CreatorProfile from "@/components/CreatorProfile";
 import { useCreatorProfile, preloadCreatorProfiles } from "@/hooks/useCreatorProfile";
+import Navbar from "@/components/Navbar";
 
 interface RaffleItem {
   id: string;
@@ -45,10 +43,10 @@ type FilterOption = 'all' | 'active' | 'ended' | 'token-rewards' | 'nft-rewards'
 // NFT-aware reward section component
 function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
   // For NFT, we need the raw tokenId (BigInt converted to string)
-  const tokenId = raffle.rewardType === 1 ? raffle.rawRewardAmount.toString() : '';
+  const tokenId = raffle.rewardType === 2 ? raffle.rawRewardAmount.toString() : '';
   
   const { metadata, isLoading: nftLoading } = useNFTMetadata(
-    raffle.rewardType === 1 ? raffle.rewardTokenAddress : '',
+    raffle.rewardType === 2 ? raffle.rewardTokenAddress : '',
     tokenId
   );
 
@@ -56,7 +54,7 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
   const { profile: creatorProfile } = useCreatorProfile(raffle.creator);
 
   const getRewardImage = () => {
-    if (raffle.rewardType === 1) {
+    if (raffle.rewardType === 2) {
       // NFT reward
       if (metadata?.image) {
         return metadata.image;
@@ -75,16 +73,29 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
   };
 
   const getRewardDisplayText = () => {
-    if (raffle.rewardType === 1) {
-      return '1 NFT';
+    // Check if reward has a token address (non-native token)
+    if (raffle.rewardTokenAddress && raffle.rewardTokenAddress !== '0x0000000000000000000000000000000000000000') {
+      const knownToken = getKnownToken(raffle.rewardTokenAddress);
+      const knownNFT = getKnownNFT(raffle.rewardTokenAddress);
+      
+      if (knownToken) {
+        // It's a known ERC-20 token - use rawRewardAmount for amount
+        return `${formatPriceV7(raffle.rawRewardAmount)} ${knownToken.symbol}`;
+      } else if (knownNFT || raffle.rewardType === 2) {
+        // It's a known NFT collection or NFT type
+        return '1 NFT';
+      } else {
+        // Unknown token - use rawRewardAmount for amount
+        return `${formatPriceV7(raffle.rawRewardAmount)} TOKEN`;
+      }
     } else {
-      const token = getKnownToken(raffle.rewardTokenAddress);
-      return `${raffle.rewardAmount} ${token?.symbol || 'TOKEN'}`;
+      // Native MON token - use rewardAmount field
+      return `${raffle.rewardAmount} MON`;
     }
   };
 
   const getNFTDisplayName = (raffle: RaffleItem) => {
-    if (raffle.rewardType === 1) {
+    if (raffle.rewardType === 2) {
       // For NFT, try to extract name from description or use title
       if (raffle.description) {
         // Look for common NFT patterns like "Collection Name #123"
@@ -116,7 +127,7 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
       {/* Reward Image - Square with Hover Overlay and Verified Badge */}
       <div className="mb-4 relative group">
         <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-700 flex items-center justify-center relative">
-          {raffle.rewardType === 1 && nftLoading ? (
+          {raffle.rewardType === 2 && nftLoading ? (
             // NFT Loading state with standard spinner
             <div className="flex flex-col items-center justify-center space-y-3">
               <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -125,12 +136,12 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
           ) : (
             <img 
               src={getRewardImage()} 
-              alt={raffle.rewardType === 1 ? 'NFT Reward' : 'Token Reward'}
+              alt={raffle.rewardType === 2 ? 'NFT Reward' : 'Token Reward'}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = createPlaceholderSVG(
-                  raffle.rewardType === 1 ? 'NFT' : 'TOKEN', 
+                  raffle.rewardType === 2 ? 'NFT' : 'TOKEN', 
                   '#6B7280', 
                   '#FFFFFF'
                 );
@@ -147,8 +158,8 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
             </div>
           )}
 
-          {/* Winner Badge - Bottom of Image (if raffle ended and has winner) */}
-          {raffle.winner && (raffle.timeRemaining === 'Ended' || raffle.status === 1) && (
+          {/* Winner Badge - Bottom of Image (if raffle has winner) */}
+          {raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-green-600 to-green-500 text-white p-2 z-20">
               <div className="flex items-center justify-center space-x-1">
                 <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -193,7 +204,6 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
 }
 
 export default function RaffleHouseContent() {
-  const { theme, setTheme } = useTheme();
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   
@@ -228,11 +238,7 @@ export default function RaffleHouseContent() {
     clearNotification 
   } = useUserRaffles(address);
 
-  const { data: totalRaffles } = useReadContract({
-    address: NADRAFFLE_V4_FAST_CONTRACT.address,
-    abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
-    functionName: 'getTotalRaffles',
-  });
+  const { data: totalRaffles } = useTotalRafflesV7();
 
   // Helper functions
   const getTimeRemaining = (ms: number): string => {
@@ -257,18 +263,29 @@ export default function RaffleHouseContent() {
   };
 
   const getRewardDisplay = (raffle: RaffleItem) => {
-    if (raffle.rewardType === 1) {
-      // NFT reward - always show "1 NFT"
-      return "1 NFT";
+    // Check if reward has a token address (non-native token)
+    if (raffle.rewardTokenAddress && raffle.rewardTokenAddress !== '0x0000000000000000000000000000000000000000') {
+      const knownToken = getKnownToken(raffle.rewardTokenAddress);
+      const knownNFT = getKnownNFT(raffle.rewardTokenAddress);
+      
+      if (knownToken) {
+        // It's a known ERC-20 token - use rawRewardAmount for amount (which is rewardTokenId in contract)
+        return `${formatPriceV7(raffle.rawRewardAmount)} ${knownToken.symbol}`;
+      } else if (knownNFT || raffle.rewardType === 2) {
+        // It's a known NFT collection or NFT type
+        return "1 NFT";
+      } else {
+        // Unknown token - use rawRewardAmount for amount
+        return `${formatPriceV7(raffle.rawRewardAmount)} TOKEN`;
+      }
     } else {
-      // Token reward - show amount and symbol
-      const token = getRewardToken(raffle);
-      return `${raffle.rewardAmount} ${token.symbol}`;
+      // Native MON token - use rewardAmount field
+      return `${raffle.rewardAmount} MON`;
     }
   };
 
   const getNFTDisplayName = (raffle: RaffleItem) => {
-    if (raffle.rewardType === 1) {
+    if (raffle.rewardType === 2) {
       // For NFT, try to extract name from description or use title
       if (raffle.description) {
         // Look for common NFT patterns like "Collection Name #123"
@@ -294,7 +311,7 @@ export default function RaffleHouseContent() {
   };
 
   const getRewardImage = (raffle: RaffleItem) => {
-    if (raffle.rewardType === 1) {
+    if (raffle.rewardType === 2) {
       // NFT - try to use IPFS hash if available, otherwise use NFT placeholder
       if (raffle.description && raffle.description.includes('ipfs://')) {
         const ipfsMatch = raffle.description.match(/ipfs:\/\/([a-zA-Z0-9]+)/);
@@ -384,8 +401,8 @@ export default function RaffleHouseContent() {
     };
   };
 
-  // Fetch raffles with pagination
-  const fetchRafflesPage = async (page = 0, append = false) => {
+  // Fetch raffles with pagination - wrapped in useCallback for dependencies
+  const fetchRafflesPage = useCallback(async (page = 0, append = false) => {
     if (page === 0) setLoading(true);
     else setLoadingMore(true);
     
@@ -409,9 +426,9 @@ export default function RaffleHouseContent() {
       // Load in smaller batches to avoid overwhelming the RPC
       for (let i = startIndex; i >= endIndex; i--) {
         const promise = publicClient?.readContract({
-          address: NADRAFFLE_V4_FAST_CONTRACT.address as `0x${string}`,
-          abi: NADRAFFLE_V4_FAST_CONTRACT.abi,
-          functionName: 'getRaffle',
+                  address: NADRAFFLE_V7_CONTRACT.address as `0x${string}`,
+        abi: NADRAFFLE_V7_CONTRACT.abi,
+          functionName: 'getRaffleDetails',
           args: [BigInt(i)],
         });
         rafflePromises.push(promise);
@@ -419,34 +436,65 @@ export default function RaffleHouseContent() {
 
       const raffleResults = await Promise.all(rafflePromises);
       const formattedRaffles = raffleResults
-        .map((result: any, index) => {
+        .map((result: any, index: number) => {
           if (!result) return null;
           
           const raffleId = startIndex - index;
-          const expirationTimeMs = Number(result.expirationTime) * 1000;
+          const expirationTimeMs = Number(result.endTime) * 1000;
           const now = Date.now();
           const timeLeft = expirationTimeMs - now;
           
+          // V7 contract returns: [creator, ticketPrice, ticketPaymentToken, maxTickets, soldTickets, startTime, endTime, rewardAmount, rewardType, rewardTokenAddress, rewardTokenId, state, winner]
+          
+          // Auto-generate title and description for V7
+          const rewardType = Number(result.rewardType);
+          
+          // Smart reward display based on known assets
+          let autoTitle = "";
+          if (result.rewardTokenAddress && result.rewardTokenAddress !== '0x0000000000000000000000000000000000000000') {
+            const knownToken = getKnownToken(result.rewardTokenAddress);
+            const knownNFT = getKnownNFT(result.rewardTokenAddress);
+            
+            if (knownToken) {
+              // It's a known ERC-20 token - use rewardTokenId for amount
+              autoTitle = `Win ${formatPriceV7(result.rewardTokenId)} ${knownToken.symbol}`;
+            } else if (knownNFT || rewardType === 2) {
+              // It's a known NFT collection or NFT type
+              autoTitle = `Win NFT #${result.rewardTokenId?.toString() || '???'}`;
+            } else {
+              // Unknown token - use rewardTokenId for amount
+              autoTitle = `Win ${formatPriceV7(result.rewardTokenId)} TOKEN`;
+            }
+          } else {
+            // Native MON token - use rewardAmount
+            autoTitle = `Win ${formatPriceV7(result.rewardAmount)} MON`;
+          }
+          
+          const autoDescription = `V7 Multi-Token Raffle - ${autoTitle}`;
+          
+          const secureId = createPredictableSecureRaffleId(raffleId);
+          console.log(`🔗 V7 Raffle ${raffleId} -> Secure ID: ${secureId}`);
+          
           return {
-            id: createPredictableSecureRaffleId(raffleId),
+            id: secureId,
             internalId: raffleId,
             creator: result.creator,
-            title: result.title,
-            description: result.description,
-            rewardType: Number(result.rewardType),
+            title: autoTitle,
+            description: autoDescription,
+            rewardType: rewardType,
             rewardTokenAddress: result.rewardTokenAddress,
-            rewardAmount: formatPriceV3Raffle(result.rewardAmount),
-            rawRewardAmount: result.rewardAmount,
-            ticketPaymentToken: result.ticketPaymentToken,
-            ticketPrice: formatPriceV3Raffle(result.ticketPrice),
+            rewardAmount: formatPriceV7(result.rewardAmount),
+            rawRewardAmount: result.rewardTokenId, // Use rewardTokenId for ERC20 amount / NFT tokenId
+            ticketPaymentToken: result.ticketPaymentToken || '0x0000000000000000000000000000000000000000', // V7 supports any token
+            ticketPrice: formatPriceV7(result.ticketPrice),
             maxTickets: Number(result.maxTickets),
-            ticketsSold: Number(result.ticketsSold),
-            status: Number(result.status),
-            expirationTime: Number(result.expirationTime),
-            createdAt: Number(result.createdAt),
+            ticketsSold: Number(result.soldTickets),
+            status: Number(result.state),
+            expirationTime: Number(result.endTime),
+            createdAt: Number(result.startTime),
             winner: result.winner !== '0x0000000000000000000000000000000000000000' ? result.winner : undefined,
             timeRemaining: timeLeft > 0 ? getTimeRemaining(timeLeft) : 'Ended',
-            participantCount: Number(result.ticketsSold),
+            participantCount: Number(result.soldTickets),
           };
         })
         .filter(raffle => raffle !== null) as RaffleItem[];
@@ -477,7 +525,7 @@ export default function RaffleHouseContent() {
       if (page === 0) setLoading(false);
       else setLoadingMore(false);
     }
-  };
+  }, [publicClient, totalRaffles]);
 
   // Load more raffles function
   const loadMoreRaffles = () => {
@@ -492,16 +540,23 @@ export default function RaffleHouseContent() {
     if (publicClient && totalRaffles) {
       fetchRafflesPage(0, false);
     }
-  }, [publicClient, totalRaffles]);
+  }, [publicClient, totalRaffles, fetchRafflesPage]);
 
-  // Optimized timer - update less frequently
+  // Optimized timer with raffle auto-refresh
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
-    }, 5000); // Update every 5 seconds instead of 1 second
+      
+      // Auto-refresh raffle data every 30 seconds (6 cycles)
+      const shouldRefreshRaffles = Date.now() % 30000 < 5000; // Every 30 seconds
+      if (shouldRefreshRaffles && publicClient && totalRaffles && !loading) {
+        console.log('🔄 Auto-refreshing raffles for winner updates...');
+        fetchRafflesPage(0, false);
+      }
+    }, 5000); // Update every 5 seconds
 
     return () => clearInterval(timer);
-  }, []);
+  }, [publicClient, totalRaffles, loading, fetchRafflesPage]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -555,7 +610,7 @@ export default function RaffleHouseContent() {
         filtered = filtered.filter(raffle => raffle.rewardType === 0);
         break;
       case 'nft-rewards':
-        filtered = filtered.filter(raffle => raffle.rewardType === 1);
+        filtered = filtered.filter(raffle => raffle.rewardType === 2);
         break;
       // 'all' - no additional filtering
     }
@@ -594,137 +649,10 @@ export default function RaffleHouseContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                  RaffleHouse
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                  Win tokens, NFTs, and exclusive rewards
-                </p>
-            </div>
-          </div>
-          
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-1 sm:space-x-2">
-            <Link 
-                  href="/"
-                  className="hidden sm:block px-2 lg:px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-            >
-                  Home
-            </Link>
-              <Link 
-                href="/app/dashboard"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-              >
-                Dashboard
-              </Link>
-                <Link 
-                  href="/nadpay"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadPay
-                </Link>
-                <Link 
-                  href="/nadswap"
-                  className="px-2 lg:px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
-                >
-                  NadSwap
-                </Link>
-              </div>
-            
-            {/* My Tickets Button */}
-            {isConnected && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowMyTickets(!showMyTickets)}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors relative"
-                >
-                  <Ticket className="w-4 h-4" />
-                  {userTickets.filter(ticket => ticket.status === 0).length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {userTickets.filter(ticket => ticket.status === 0).length}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-            
-            {/* Notifications Button */}
-            {isConnected && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors relative"
-                >
-                  <Bell className="w-4 h-4" />
-                  {getUnreadCount() > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {getUnreadCount()}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-            
-              {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg border border-gray-200 dark:border-dark-700 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
-                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            >
-                {theme === "dark" ? (
-                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                )}
-            </button>
-            
-              {/* Custom Wallet Button */}
-              {isConnected ? (
-                <div className="relative">
-                  <ConnectKitButton.Custom>
-                    {({ show, truncatedAddress, ensName }) => (
-                      <button
-                        onClick={show}
-                        className="flex items-center space-x-2 px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold">
-                            {ensName ? ensName.slice(0, 2) : address?.slice(2, 4).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium hidden sm:inline">
-                          {ensName || truncatedAddress}
-                        </span>
-                      </button>
-                    )}
-                  </ConnectKitButton.Custom>
-                </div>
-              ) : (
-                <ConnectKitButton.Custom>
-                  {({ show }) => (
-                    <button
-                      onClick={show}
-                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-                    >
-                      Connect Wallet
-                    </button>
-                  )}
-                </ConnectKitButton.Custom>
-              )}
-          </div>
-        </div>
-        </div>
-      </div>
+      {/* Navigation */}
+      <Navbar 
+        userTickets={userTickets} 
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -735,7 +663,7 @@ export default function RaffleHouseContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-          >
+                      >
             <h1 className="text-display-lg md:text-display-xl font-inter text-gray-900 dark:text-white mb-4">
               Welcome to <span className="bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">RaffleHouse</span>
             </h1>
@@ -746,7 +674,7 @@ export default function RaffleHouseContent() {
             <div className="flex justify-center">
               <Link
                 href="/rafflehouse/create"
-                className="px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center"
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition-opacity text-body-lg font-inter font-semibold flex items-center justify-center shadow-lg"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Raffle
@@ -853,14 +781,14 @@ export default function RaffleHouseContent() {
                 >
                   <div className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-dark-700 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-700 transition-all duration-200 group h-full flex flex-col">
                     {/* Clickable area for raffle details */}
-                    <Link href={`/raffle/${raffle.id}`} className="flex flex-col h-full cursor-pointer">
+                    <Link href={`/raffle/${createPredictableSecureRaffleId(raffle.internalId)}`} className="flex flex-col h-full cursor-pointer">
                       <NFTAwareRewardSection raffle={raffle} />
 
                       {/* Reward Display - Main Focus */}
                       <div className="mb-3 text-center">
                         <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Prize</div>
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                          {raffle.rewardType === 1 ? (
+                          {raffle.rewardType === 2 ? (
                             <div>
                               <div className="text-2xl font-bold">
                                 {(() => {
@@ -902,7 +830,7 @@ export default function RaffleHouseContent() {
                             </div>
                           ) : (
                             <div>
-                              <div className="text-2xl font-bold">{raffle.rewardAmount} {getRewardToken(raffle).symbol}</div>
+                              <div className="text-2xl font-bold">{getRewardDisplay(raffle)}</div>
                               <div className="text-sm text-gray-600 dark:text-gray-400 font-normal">
                                 Token Reward
                               </div>
@@ -976,7 +904,7 @@ export default function RaffleHouseContent() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.location.href = `/raffle/${raffle.id}`;
+                                  window.location.href = `/raffle/${createPredictableSecureRaffleId(raffle.internalId)}`;
                                 }}
                                 className="px-2 py-1 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded font-medium transition-colors"
                               >
@@ -1196,7 +1124,7 @@ export default function RaffleHouseContent() {
             
             {/* View All Link */}
             <Link
-              href="/app/dashboard"
+              href="/dashboard"
               className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
               onClick={() => setShowMyTickets(false)}
             >
@@ -1263,10 +1191,10 @@ export default function RaffleHouseContent() {
                             </span>
                           </div>
                           
-                          {ticket.isWinner && !ticket.rewardClaimed && (
+                          {ticket.isWinner && (
                             <div className="mb-2">
-                              <span className="text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 px-2 py-1 rounded">
-                                Reward not claimed yet
+                              <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded">
+                                Reward sent ✅
                               </span>
                             </div>
                           )}
@@ -1289,7 +1217,7 @@ export default function RaffleHouseContent() {
                         Showing 20 of {filteredTickets.length} {ticketFilter} tickets
                       </p>
                       <Link
-                        href="/app/dashboard"
+                        href="/dashboard"
                         className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
                         onClick={() => setShowMyTickets(false)}
                       >

@@ -20,12 +20,26 @@ import {
   Settings,
   CreditCard,
   Users,
-  Globe
+  Globe,
+  Trophy,
+  ArrowLeftRight,
+  Sparkles,
+  Twitter,
+  Star,
+  Award,
+  Target,
+  DollarSign,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Home,
+  BarChart3
 } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("introduction");
-  const [expandedSections, setExpandedSections] = useState<string[]>(["getting-started"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["getting-started", "points-system"]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -54,6 +68,18 @@ export default function DocsPage() {
       ]
     },
     {
+      id: "points-system",
+      title: "Points & Leaderboard",
+      icon: Trophy,
+      subsections: [
+        { id: "points-overview", title: "Points System Overview" },
+        { id: "earning-points", title: "How to Earn Points" },
+        { id: "twitter-integration", title: "Twitter Integration" },
+        { id: "leaderboard", title: "Leaderboard" },
+        { id: "dashboard", title: "Dashboard" }
+      ]
+    },
+    {
       id: "nadpay",
       title: "NadPay - Payment Links",
       icon: CreditCard,
@@ -61,29 +87,29 @@ export default function DocsPage() {
         { id: "nadpay-overview", title: "Overview" },
         { id: "creating-links", title: "Creating Payment Links" },
         { id: "payment-process", title: "Payment Process" },
-        { id: "nadpay-dashboard", title: "Dashboard" }
+        { id: "nadpay-features", title: "Advanced Features" }
       ]
     },
     {
       id: "rafflehouse",
-      title: "RaffleHouse - V4 Fast Raffles",
+      title: "RaffleHouse - V6 Raffles",
       icon: Globe,
       subsections: [
         { id: "raffle-overview", title: "Overview" },
         { id: "creating-raffles", title: "Creating Raffles" },
-        { id: "v4-fast-features", title: "V4 Fast Features" },
+        { id: "v6-features", title: "V6 Features" },
         { id: "raffle-participation", title: "Participating in Raffles" }
       ]
     },
     {
       id: "nadswap",
-      title: "NadSwap - Decentralized Trading",
-      icon: ArrowLeft,
+      title: "NadSwap - V3 Trading",
+      icon: ArrowLeftRight,
       subsections: [
         { id: "swap-overview", title: "Overview" },
         { id: "creating-swaps", title: "Creating Swap Proposals" },
         { id: "swap-process", title: "Swap Process" },
-        { id: "escrow-security", title: "Escrow Security" }
+        { id: "v3-features", title: "V3 Features" }
       ]
     },
     {
@@ -94,16 +120,6 @@ export default function DocsPage() {
         { id: "contract-overview", title: "Contract Overview" },
         { id: "contract-addresses", title: "Contract Addresses" },
         { id: "security-features", title: "Security Features" }
-      ]
-    },
-    {
-      id: "advanced",
-      title: "Advanced Features",
-      icon: Settings,
-      subsections: [
-        { id: "multi-token-support", title: "Multi-Token Support" },
-        { id: "nft-integration", title: "NFT Integration" },
-        { id: "rate-limiting", title: "Rate Limiting" }
       ]
     }
   ];
@@ -118,7 +134,7 @@ export default function DocsPage() {
                 Welcome to NadPay Ecosystem
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                The complete decentralized commerce platform built on Monad blockchain.
+                The complete DeFi suite on Monad blockchain with integrated points system and social features.
               </p>
             </div>
 
@@ -127,59 +143,89 @@ export default function DocsPage() {
                 What is NadPay Ecosystem?
               </h3>
               <p className="text-primary-700 dark:text-primary-300">
-                NadPay is a comprehensive decentralized commerce platform featuring three main applications: 
-                NadPay for payment links, RaffleHouse for V4 Fast raffles, and NadSwap for secure asset trading. 
-                All built with ultra-secure smart contracts on Monad blockchain.
+                NadPay is a comprehensive DeFi platform featuring NadPay for payment links, RaffleHouse V6 for ultra-fast raffles, 
+                and NadSwap V3 for secure asset trading. Connect your Twitter account to earn points for every activity and 
+                compete on the leaderboard. All built with ultra-secure smart contracts on Monad blockchain.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <CreditCard className="w-8 h-8 text-blue-500 mb-4" />
+                <CreditCard className="w-8 h-8 text-green-500 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  NadPay
+                  NadPay V2
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Create secure payment links for digital products and services. Multi-token support with advanced analytics.
+                  Create secure payment links with multi-token support. Earn 4 points per 0.1 MON in transactions.
                 </p>
                 <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                  <li>• Payment link creation</li>
-                  <li>• Multi-token support</li>
-                  <li>• Real-time analytics</li>
-                  <li>• Image compression</li>
+                  <li>• Multi-token payments (MON, USDC, USDT)</li>
+                  <li>• Real-time analytics dashboard</li>
+                  <li>• Image compression & IPFS storage</li>
+                  <li>• Purchase history tracking</li>
                 </ul>
               </div>
 
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <Globe className="w-8 h-8 text-purple-500 mb-4" />
+                <Trophy className="w-8 h-8 text-purple-500 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  RaffleHouse
+                  RaffleHouse V6
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  V4 Fast raffle system with 2-minute reveal windows. Ultra-secure randomness and instant winner selection.
+                  Ultra-secure raffle system with instant finalization. Earn 4 points per 0.1 MON in raffle activity.
                 </p>
                 <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                  <li>• V4 Fast 2-minute reveals</li>
+                  <li>• 2-phase finalization system</li>
                   <li>• Token & NFT rewards</li>
-                  <li>• Ultra-secure randomness</li>
-                  <li>• Emergency selection</li>
+                  <li>• Ultra-fast finalizer bot</li>
+                  <li>• Emergency winner selection</li>
                 </ul>
               </div>
 
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
-                <ArrowLeft className="w-8 h-8 text-green-500 mb-4" />
+                <ArrowLeftRight className="w-8 h-8 text-blue-500 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  NadSwap
+                  NadSwap V3
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Decentralized asset trading with escrow security. Swap tokens and NFTs safely with smart contracts.
+                  Decentralized asset trading with enhanced security. Earn 4 points per swap transaction.
                 </p>
                 <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                  <li>• Escrow-based swaps</li>
-                  <li>• Token & NFT support</li>
-                  <li>• Proposal system</li>
-                  <li>• Zero counterparty risk</li>
+                  <li>• Escrow-based trading</li>
+                  <li>• Multi-asset support (MON, ERC20, NFTs)</li>
+                  <li>• 1-hour auto-expiration</li>
+                  <li>• Emergency withdrawal system</li>
                 </ul>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-8">
+              <div className="flex items-center mb-4">
+                <Twitter className="w-6 h-6 text-yellow-600 mr-3" />
+                <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                  Twitter Integration Required
+                </h3>
+              </div>
+              <p className="text-yellow-700 dark:text-yellow-300 mb-4">
+                To earn points and participate in the leaderboard, you must connect your Twitter account. 
+                This ensures fair competition and prevents multiple wallet connections.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">4pts</div>
+                  <div className="text-sm text-yellow-600 dark:text-yellow-400">per 0.1 MON</div>
+                  <div className="text-xs text-yellow-500">NadPay & RaffleHouse</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">4pts</div>
+                  <div className="text-sm text-yellow-600 dark:text-yellow-400">per swap</div>
+                  <div className="text-xs text-yellow-500">NadSwap trading</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">∞</div>
+                  <div className="text-sm text-yellow-600 dark:text-yellow-400">activities</div>
+                  <div className="text-xs text-yellow-500">No daily limits</div>
+                </div>
               </div>
             </div>
 
@@ -187,18 +233,518 @@ export default function DocsPage() {
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                 <Zap className="w-6 h-6 text-yellow-600 mb-2" />
                 <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Lightning Fast</h4>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">Optimized for Monad's 0.5s block time</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">Optimized for Monad's sub-second finality</p>
               </div>
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                 <Shield className="w-6 h-6 text-green-600 mb-2" />
                 <h4 className="font-semibold text-green-800 dark:text-green-200">Ultra-Secure</h4>
-                <p className="text-sm text-green-700 dark:text-green-300">All contracts are Ultra-Secure versions</p>
+                <p className="text-sm text-green-700 dark:text-green-300">All contracts audited with reentrancy protection</p>
               </div>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <Users className="w-6 h-6 text-blue-600 mb-2" />
-                <h4 className="font-semibold text-blue-800 dark:text-blue-200">User-Friendly</h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300">Intuitive interface for all skill levels</p>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Social DeFi</h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Points, leaderboards, and Twitter integration</p>
               </div>
+            </div>
+          </div>
+        );
+
+      case "points-overview":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Points System Overview
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Earn points for every activity and compete on the leaderboard. Twitter connection required.
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Trophy className="w-8 h-8 text-yellow-600 mr-4" />
+                <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                  How Points Work
+                </h3>
+              </div>
+              <p className="text-yellow-700 dark:text-yellow-300 mb-4">
+                The points system rewards active users across all NadPay services. Connect your Twitter account 
+                to start earning points and climbing the leaderboard. Points are awarded automatically for verified transactions.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">NadRaffle</h3>
+                    <p className="text-purple-600 dark:text-purple-400 font-semibold">4pts per 0.1 MON</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Earn points for creating raffles, buying tickets, and selling raffle tickets.
+                </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                  <li>• Creating raffles: Points based on ticket sales</li>
+                  <li>• Buying tickets: 4pts per 0.1 MON spent</li>
+                  <li>• No limits on earning potential</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                    <ArrowLeftRight className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">NadSwap</h3>
+                    <p className="text-blue-600 dark:text-blue-400 font-semibold">4pts per swap</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Earn points for every completed swap transaction, regardless of asset value.
+                </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                  <li>• Fixed 4 points per successful swap</li>
+                  <li>• Points awarded to both parties</li>
+                  <li>• Includes all asset types (MON, ERC20, NFTs)</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">NadPay</h3>
+                    <p className="text-green-600 dark:text-green-400 font-semibold">4pts per 0.1 MON</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Earn points for both creating payment links and making purchases.
+                </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                  <li>• Buyers: 4pts per 0.1 MON spent</li>
+                  <li>• Sellers: Points from customer purchases</li>
+                  <li>• Multi-token support included</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Twitter className="w-8 h-8 text-red-600 mr-4" />
+                <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
+                  Twitter Connection Required
+                </h3>
+              </div>
+              <p className="text-red-700 dark:text-red-300 mb-4">
+                <strong>Important:</strong> You must connect your Twitter account to earn points. Users without 
+                Twitter connections receive 0 points for all activities. This ensures fair competition and prevents gaming.
+              </p>
+              <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  <strong>Security Note:</strong> Each Twitter account can only be connected to one wallet address. 
+                  If you try to connect an already-used Twitter account, the connection will fail.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "earning-points":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                How to Earn Points
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Step-by-step guide to start earning points across all NadPay services.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Step 1: Connect Twitter
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Go to Dashboard</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Visit <a href="/dashboard" className="text-blue-500 hover:text-blue-600">/dashboard</a> or click the profile button in the navbar
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Click "Connect Twitter"</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Authorize the application to link your Twitter account
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Start Earning</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Your points will be tracked automatically for all future activities
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Step 2: Start Activities
+                </h3>
+                <div className="space-y-4">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">NadRaffle Activities</h4>
+                    <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1">
+                      <li>• Create raffles (earn from ticket sales)</li>
+                      <li>• Buy raffle tickets (4pts per 0.1 MON)</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">NadSwap Activities</h4>
+                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                      <li>• Create swap proposals (4pts when accepted)</li>
+                      <li>• Accept swap proposals (4pts per swap)</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">NadPay Activities</h4>
+                    <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                      <li>• Create payment links (earn from sales)</li>
+                      <li>• Make purchases (4pts per 0.1 MON)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "twitter-integration":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Twitter Integration
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Connect your Twitter account to unlock points and leaderboard features.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Twitter className="w-8 h-8 text-blue-600 mr-4" />
+                <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                  Why Twitter Integration?
+                </h3>
+              </div>
+              <p className="text-blue-700 dark:text-blue-300">
+                Twitter integration ensures fair competition by preventing users from connecting multiple wallets 
+                to farm points. It also adds a social element to the platform and enables future social features.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Security Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">One-to-One Mapping</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Each Twitter account can only be connected to one wallet
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Connection Verification</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Backend validates Twitter connection before awarding points
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Duplicate Prevention</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        System prevents connecting already-used Twitter accounts
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Connection Process
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Visit Dashboard</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Go to /dashboard</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Click Connect Twitter</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Authorize application</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                      ✓
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Start Earning Points</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Points tracked automatically</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "leaderboard":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Leaderboard
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Compete with other users and track your ranking across all activities.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Award className="w-8 h-8 text-yellow-600 mr-4" />
+                <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                  How Rankings Work
+                </h3>
+              </div>
+              <p className="text-yellow-700 dark:text-yellow-300">
+                The leaderboard ranks users by total points earned across all NadPay services. 
+                Rankings are updated in real-time as users earn points from verified transactions.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Leaderboard Features
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <Star className="w-5 h-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Real-time Rankings</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        See your rank update instantly as you earn points
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Users className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Twitter Profiles</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        View Twitter profiles and usernames of top users
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <TrendingUp className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Activity Breakdown</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        See points earned from different services
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Visit Leaderboard
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Check your current ranking and see how you compare to other users.
+                </p>
+                <a
+                  href="/leaderboard"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:opacity-90 transition-opacity font-medium"
+                >
+                  <Trophy className="w-5 h-5 mr-2" />
+                  View Leaderboard
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "dashboard":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Dashboard
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Your personal hub for managing Twitter integration, viewing stats, and tracking activities.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Twitter Profile Management
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <Twitter className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Connect Twitter</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Link your Twitter account to start earning points
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Users className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Profile Display</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        View your Twitter profile picture and username
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Disconnect Option</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Disconnect your Twitter account if needed
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Points & Statistics
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <BarChart3 className="w-5 h-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Total Points</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        See your overall points and current rank
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Target className="w-5 h-5 text-purple-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Service Breakdown</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Points from NadRaffle, NadSwap, and NadPay
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <TrendingUp className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Live Updates</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Stats refresh automatically with new activities
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Activity Tracking
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <Trophy className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200">My Tickets</h4>
+                  <p className="text-sm text-purple-600 dark:text-purple-400">
+                    View all your raffle tickets and winnings
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <CreditCard className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-green-800 dark:text-green-200">My Payments</h4>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Track your payment link purchases and history
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <ArrowLeftRight className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200">My Swaps</h4>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                    View your swap proposals and completed trades
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <a
+                href="/dashboard"
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:opacity-90 transition-opacity font-medium text-lg"
+              >
+                <Home className="w-5 h-5 mr-2" />
+                Go to Dashboard
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </a>
             </div>
           </div>
         );
@@ -1004,17 +1550,17 @@ export default function DocsPage() {
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
-                      0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25
+                      0x091f3ae2E54584BE7195E2A8C5eD3976d0851905
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25")}
+                      onClick={() => copyToClipboard("0x091f3ae2E54584BE7195E2A8C5eD3976d0851905")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
-                    Payment links with multi-token support and advanced analytics
+                    Multi-token payments (MON + ERC20), SafeERC20 integration, Emergency token withdrawal
                   </p>
               </div>
             </div>
@@ -1022,23 +1568,23 @@ export default function DocsPage() {
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
                 <div className="bg-purple-50 dark:bg-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
                   <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200">
-                    ⚡ NadRaffle V4 Fast
+                    🎯 NadRaffle V6 Ultra-Secure
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
-                      0xa874905B117242eC6c966E35B18985e9242Bb633
+                      0x51bA8C7AFA1bf51cCba0Abf0Da56f4e5c07D351A
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
+                      onClick={() => copyToClipboard("0x51bA8C7AFA1bf51cCba0Abf0Da56f4e5c07D351A")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
-                    Ultra-fast raffles with 2-minute reveal windows and emergency selection
+                    2-phase finalization system, Ultra-fast finalizer bot, Reentrancy protection, Safe transfers
                   </p>
                 </div>
               </div>
@@ -1046,23 +1592,23 @@ export default function DocsPage() {
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
                 <div className="bg-green-50 dark:bg-green-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
                   <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
-                    🔄 NadSwap V3
+                    🔄 NadSwap V3 Ultra-Secure
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
-                      0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f
+                      0x0ebDFAFbef16A22eA8ffaba4DdA051AC4df8f979
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f")}
+                      onClick={() => copyToClipboard("0x0ebDFAFbef16A22eA8ffaba4DdA051AC4df8f979")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
-                    Escrow-based asset trading with zero counterparty risk
+                    Escrow-based swaps, Native MON + ERC20/NFT support, 1-hour auto-expiration, Emergency withdrawal
                   </p>
                 </div>
               </div>
@@ -2413,44 +2959,21 @@ export default function DocsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
+      <Navbar showTicketsButton={false} />
+      
+      {/* Documentation Header */}
       <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <Book className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                  NadPay Documentation
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base hidden sm:block">
-                  Complete guide to using NadPay on Monad blockchain
-                </p>
-              </div>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Book className="w-8 h-8 text-white" />
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </button>
-              <a
-                href="/app"
-                className="inline-flex items-center px-3 py-2 sm:px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-sm"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Back to App</span>
-                <span className="sm:hidden">Back</span>
-              </a>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              NadPay Documentation
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400">
+              Complete guide to the NadPay ecosystem on Monad blockchain
+            </p>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 require("dotenv").config({ path: './nadpay/.env' });
 
 async function main() {
-  console.log("🎨 Comprehensive NFT Check in Contracts");
+  //console.log("🎨 Comprehensive NFT Check in Contracts");
   
   // Use Monad testnet directly
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
@@ -15,8 +15,8 @@ async function main() {
   
   const wallet = new ethers.Wallet(privateKey, provider);
   
-  console.log("👤 Using wallet:", wallet.address);
-  console.log("🌐 Network: Monad Testnet");
+  //console.log("👤 Using wallet:", wallet.address);
+  //console.log("🌐 Network: Monad Testnet");
   
   // All known contracts
   const contracts = [
@@ -39,7 +39,7 @@ async function main() {
   let withdrawableContracts = [];
   
   for (const contractInfo of contracts) {
-    console.log(`\n🎨 Checking ${contractInfo.name}: ${contractInfo.address}`);
+    //console.log(`\n🎨 Checking ${contractInfo.name}: ${contractInfo.address}`);
     
     try {
       const contract = new ethers.Contract(contractInfo.address, minimalRaffleABI, wallet);
@@ -49,9 +49,9 @@ async function main() {
       try {
         const owner = await contract.owner();
         isOwner = owner.toLowerCase() === wallet.address.toLowerCase();
-        console.log(`👑 Contract Owner: ${owner} ${isOwner ? '✅' : '❌'}`);
+        //console.log(`👑 Contract Owner: ${owner} ${isOwner ? '✅' : '❌'}`);
       } catch (e) {
-        console.log(`⚠️  Could not check owner`);
+        //console.log(`⚠️  Could not check owner`);
       }
       
       // Get total raffles if possible
@@ -59,13 +59,13 @@ async function main() {
       try {
         const total = await contract.totalRaffles();
         totalRaffles = Math.min(Number(total), 50); // Check max 50 raffles
-        console.log(`📊 Total Raffles: ${total.toString()}`);
+        //console.log(`📊 Total Raffles: ${total.toString()}`);
       } catch (e) {
-        console.log(`📊 Checking first 20 raffles...`);
+        //console.log(`📊 Checking first 20 raffles...`);
       }
       
       // Check for NFT rewards in raffles
-      console.log(`🔍 Scanning raffles for NFT rewards...`);
+      //console.log(`🔍 Scanning raffles for NFT rewards...`);
       let nftRewards = [];
       let stuckNFTRewards = [];
       let activeNFTRaffles = [];
@@ -97,10 +97,10 @@ async function main() {
               if (raffle.status == 0) { // Still ACTIVE
                 if (isExpired || isSoldOut) {
                   // This NFT is stuck!
-                  console.log(`   🚨 STUCK NFT in Raffle #${raffleId}: "${raffle.title}"`);
-                  console.log(`     NFT: ${raffle.rewardTokenAddress} #${raffle.rewardAmount.toString()}`);
-                  console.log(`     Status: ${isExpired ? 'EXPIRED' : 'SOLD OUT'} but still ACTIVE`);
-                  console.log(`     Tickets: ${raffle.ticketsSold}/${raffle.maxTickets}`);
+                  //console.log(`   🚨 STUCK NFT in Raffle #${raffleId}: "${raffle.title}"`);
+                  //console.log(`     NFT: ${raffle.rewardTokenAddress} #${raffle.rewardAmount.toString()}`);
+                  //console.log(`     Status: ${isExpired ? 'EXPIRED' : 'SOLD OUT'} but still ACTIVE`);
+                  //console.log(`     Tickets: ${raffle.ticketsSold}/${raffle.maxTickets}`);
                   
                   stuckNFTRewards.push({
                     raffleId: raffleId,
@@ -114,7 +114,7 @@ async function main() {
                 }
               } else if (raffle.status == 1 && !hasWinner) {
                 // Ended but no winner selected
-                console.log(`   ⚠️  NFT Raffle #${raffleId} ENDED but no winner: "${raffle.title}"`);
+                //console.log(`   ⚠️  NFT Raffle #${raffleId} ENDED but no winner: "${raffle.title}"`);
                 stuckNFTRewards.push({
                   raffleId: raffleId,
                   title: raffle.title,
@@ -131,20 +131,20 @@ async function main() {
       }
       
       // Summary for this contract
-      console.log(`\n   📊 NFT SUMMARY for ${contractInfo.name}:`);
-      console.log(`     🎨 Total NFT raffles found: ${nftRewards.length}`);
-      console.log(`     🚨 Stuck NFT rewards: ${stuckNFTRewards.length}`);
-      console.log(`     ✅ Active NFT raffles: ${activeNFTRaffles.length}`);
+      //console.log(`\n   📊 NFT SUMMARY for ${contractInfo.name}:`);
+      //console.log(`     🎨 Total NFT raffles found: ${nftRewards.length}`);
+      //console.log(`     🚨 Stuck NFT rewards: ${stuckNFTRewards.length}`);
+      //console.log(`     ✅ Active NFT raffles: ${activeNFTRaffles.length}`);
       
       if (stuckNFTRewards.length > 0) {
-        console.log(`     🎯 Recoverable NFTs:`);
+        //console.log(`     🎯 Recoverable NFTs:`);
         stuckNFTRewards.forEach((nft, index) => {
-          console.log(`       ${index + 1}. Raffle #${nft.raffleId}: "${nft.title}" (${nft.reason})`);
-          console.log(`          NFT: ${nft.nftContract} #${nft.tokenId}`);
+          //console.log(`       ${index + 1}. Raffle #${nft.raffleId}: "${nft.title}" (${nft.reason})`);
+          //console.log(`          NFT: ${nft.nftContract} #${nft.tokenId}`);
         });
         
         if (isOwner) {
-          console.log(`     ✅ You can recover these NFTs as contract owner!`);
+          //console.log(`     ✅ You can recover these NFTs as contract owner!`);
           withdrawableContracts.push({
             ...contractInfo,
             stuckNFTRewards: stuckNFTRewards
@@ -156,39 +156,39 @@ async function main() {
       totalStuckRewards += stuckNFTRewards.length;
       
     } catch (error) {
-      console.log(`   ❌ Error checking ${contractInfo.name}:`, error.message);
+      //console.log(`   ❌ Error checking ${contractInfo.name}:`, error.message);
     }
   }
   
-  console.log(`\n🎯 GLOBAL SUMMARY:`);
-  console.log(`🎨 Total NFT raffles found: ${totalNFTsFound}`);
-  console.log(`🚨 Total stuck NFT rewards: ${totalStuckRewards}`);
-  console.log(`🔐 Contracts with recoverable NFTs: ${withdrawableContracts.length}`);
+  //console.log(`\n🎯 GLOBAL SUMMARY:`);
+  //console.log(`🎨 Total NFT raffles found: ${totalNFTsFound}`);
+  //console.log(`🚨 Total stuck NFT rewards: ${totalStuckRewards}`);
+  //console.log(`🔐 Contracts with recoverable NFTs: ${withdrawableContracts.length}`);
   
   if (totalStuckRewards > 0) {
-    console.log(`\n💰 NFT RECOVERY OPTIONS:`);
-    console.log(`1. Use adminForceEndRaffle() to resolve stuck raffles`);
-    console.log(`2. Use emergencyWithdrawNFT() if available`);
-    console.log(`3. Manual intervention for complex cases`);
+    //console.log(`\n💰 NFT RECOVERY OPTIONS:`);
+    //console.log(`1. Use adminForceEndRaffle() to resolve stuck raffles`);
+    //console.log(`2. Use emergencyWithdrawNFT() if available`);
+    //console.log(`3. Manual intervention for complex cases`);
     
-    console.log(`\n🚀 To recover NFTs automatically, run:`);
-    console.log(`node recover-stuck-nfts.js`);
+    //console.log(`\n🚀 To recover NFTs automatically, run:`);
+    //console.log(`node recover-stuck-nfts.js`);
     
     withdrawableContracts.forEach((contract, index) => {
-      console.log(`\n${index + 1}. ${contract.name} (${contract.stuckNFTRewards.length} NFTs):`);
+      //console.log(`\n${index + 1}. ${contract.name} (${contract.stuckNFTRewards.length} NFTs):`);
       contract.stuckNFTRewards.forEach(nft => {
-        console.log(`   - Raffle #${nft.raffleId}: ${nft.reason}`);
+        //console.log(`   - Raffle #${nft.raffleId}: ${nft.reason}`);
       });
     });
   } else {
-    console.log(`\n✨ Good news! No stuck NFT rewards found.`);
-    console.log(`All NFT raffles appear to be properly resolved.`);
+    //console.log(`\n✨ Good news! No stuck NFT rewards found.`);
+    //console.log(`All NFT raffles appear to be properly resolved.`);
   }
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Script failed:", error);
+    //console.error("❌ Script failed:", error);
     process.exit(1);
   }); 

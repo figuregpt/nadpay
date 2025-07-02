@@ -6,7 +6,7 @@ async function main() {
   const artifactPath = path.join(__dirname, '../artifacts/contracts/NadPay.sol/NadPay.json');
   
   if (!fs.existsSync(artifactPath)) {
-    console.error('❌ Contract artifact not found. Please compile first with: npx hardhat compile');
+    //console.error('❌ Contract artifact not found. Please compile first with: npx hardhat compile');
     process.exit(1);
   }
   
@@ -60,9 +60,9 @@ export type Purchase = {
   
   fs.writeFileSync(contractConfigPath, contractConfigContent);
   
-  console.log('✅ Contract ABI generated successfully!');
-  console.log('📄 File created:', contractConfigPath);
-  console.log('🔧 Usage: import { NADPAY_CONTRACT } from "@/lib/contract"');
+  //console.log('✅ Contract ABI generated successfully!');
+  //console.log('📄 File created:', contractConfigPath);
+  //console.log('🔧 Usage: import { NADPAY_CONTRACT } from "@/lib/contract"');
   
   // Also create a pure ABI file for wagmi
   const abiPath = path.join(libDir, 'nadpay-abi.ts');
@@ -71,12 +71,12 @@ export const NADPAY_ABI = ${JSON.stringify(abi, null, 2)} as const;
 `;
   
   fs.writeFileSync(abiPath, abiContent);
-  console.log('📄 ABI file created:', abiPath);
+  //console.log('📄 ABI file created:', abiPath);
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
+    //console.error(error);
     process.exit(1);
   }); 

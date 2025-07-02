@@ -8,8 +8,8 @@ class RaffleV4FastFinalizer {
       throw new Error("❌ PRIVATE_KEY environment variable not found!");
     }
     
-    console.log("✅ Environment variables loaded");
-    console.log(`🔑 Wallet address: ${new ethers.Wallet(process.env.PRIVATE_KEY).address}`);
+    //console.log("✅ Environment variables loaded");
+    //console.log(`🔑 Wallet address: ${new ethers.Wallet(process.env.PRIVATE_KEY).address}`);
     
     // Use Monad testnet provider
     this.provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
@@ -45,10 +45,10 @@ class RaffleV4FastFinalizer {
     const balance = await this.provider.getBalance(this.wallet.address);
     const balanceInMON = ethers.formatEther(balance);
     
-    console.log(`💰 Wallet Balance: ${balanceInMON} MON`);
+    //console.log(`💰 Wallet Balance: ${balanceInMON} MON`);
     
     if (balance < ethers.parseEther("0.01")) {
-      console.log("⚠️  Low balance warning! Less than 0.01 MON remaining.");
+      //console.log("⚠️  Low balance warning! Less than 0.01 MON remaining.");
       return false;
     }
     
@@ -71,12 +71,12 @@ class RaffleV4FastFinalizer {
       const rafflesNeedingCommitment = [];
       const currentTime = Math.floor(Date.now() / 1000);
 
-      console.log(`🔍 Checking ${activeRaffleIds.length} active raffles for commitment needs...`);
+      //console.log(`🔍 Checking ${activeRaffleIds.length} active raffles for commitment needs...`);
 
       // Limit batch size for performance
       const raffleIdsToCheck = activeRaffleIds.slice(0, this.maxBatchSize);
       if (activeRaffleIds.length > this.maxBatchSize) {
-        console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${activeRaffleIds.length} total)`);
+        //console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${activeRaffleIds.length} total)`);
       }
 
       for (const raffleId of raffleIdsToCheck) {
@@ -87,7 +87,7 @@ class RaffleV4FastFinalizer {
           
           // ✅ Skip if raffle is already cancelled (status = 2)
           if (raffle.status === 2n) {
-            console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
+            //console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
             continue;
           }
           
@@ -128,13 +128,13 @@ class RaffleV4FastFinalizer {
             }
           }
         } catch (error) {
-          console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
+          //console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
         }
       }
 
       return rafflesNeedingCommitment;
     } catch (error) {
-      console.error("❌ Error getting raffles needing commitment:", error.message);
+      //console.error("❌ Error getting raffles needing commitment:", error.message);
       return [];
     }
   }
@@ -158,12 +158,12 @@ class RaffleV4FastFinalizer {
       const rafflesReadyForReveal = [];
       const currentTime = Math.floor(Date.now() / 1000);
 
-      console.log(`🔍 Checking ${allRaffleIds.length} raffles (${activeRaffleIds.length} active + recent) for reveal readiness...`);
+      //console.log(`🔍 Checking ${allRaffleIds.length} raffles (${activeRaffleIds.length} active + recent) for reveal readiness...`);
 
       // Limit batch size for performance
       const raffleIdsToCheck = allRaffleIds.slice(0, this.maxBatchSize);
       if (allRaffleIds.length > this.maxBatchSize) {
-        console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${allRaffleIds.length} total)`);
+        //console.log(`⚠️  Processing first ${this.maxBatchSize} raffles (${allRaffleIds.length} total)`);
       }
 
       for (const raffleId of raffleIdsToCheck) {
@@ -174,7 +174,7 @@ class RaffleV4FastFinalizer {
           
           // ✅ Skip if raffle is already cancelled (status = 2)
           if (raffle.status === 2n) {
-            console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
+            //console.log(`⏭️ Skipping cancelled raffle ${raffleId}: ${raffle.title}`);
             continue;
           }
           
@@ -185,7 +185,7 @@ class RaffleV4FastFinalizer {
             
             // Check expired raffles first, regardless of commitment status
             if (isExpired && Number(raffle.ticketsSold) > 0) {
-              console.log(`⏰ Raffle ${raffleId} is EXPIRED and has ${raffle.ticketsSold} tickets - needs emergency selection`);
+              //console.log(`⏰ Raffle ${raffleId} is EXPIRED and has ${raffle.ticketsSold} tickets - needs emergency selection`);
               
               rafflesReadyForReveal.push({
                 id: Number(raffleId),
@@ -205,7 +205,7 @@ class RaffleV4FastFinalizer {
               
               // Only proceed if reveal deadline has passed
               if (revealDeadline > 0 && currentTime > revealDeadline) {
-                console.log(`⏰ Raffle ${raffleId} reveal deadline passed (${new Date(revealDeadline * 1000).toLocaleString()})`);
+                //console.log(`⏰ Raffle ${raffleId} reveal deadline passed (${new Date(revealDeadline * 1000).toLocaleString()})`);
                 
                 rafflesReadyForReveal.push({
                   id: Number(raffleId),
@@ -219,13 +219,13 @@ class RaffleV4FastFinalizer {
                 const timeDisplay = remainingTime >= 60 
                   ? `${Math.ceil(remainingTime / 60)} minutes` 
                   : `${remainingTime} seconds`;
-                console.log(`⏳ Raffle ${raffleId} reveal window active, ${timeDisplay} remaining`);
+                //console.log(`⏳ Raffle ${raffleId} reveal window active, ${timeDisplay} remaining`);
               }
               
             } catch (commitError) {
               // No commitment found, check if we need emergency selection
               if (isSoldOut) {
-                console.log(`🚨 Raffle ${raffleId} is SOLD OUT and needs emergency selection`);
+                //console.log(`🚨 Raffle ${raffleId} is SOLD OUT and needs emergency selection`);
                 
                 rafflesReadyForReveal.push({
                   id: Number(raffleId),
@@ -238,13 +238,13 @@ class RaffleV4FastFinalizer {
             }
           }
         } catch (error) {
-          console.log(`❌ Error checking raffle ${raffleId} for reveal:`, error.message);
+          //console.log(`❌ Error checking raffle ${raffleId} for reveal:`, error.message);
         }
       }
 
       return rafflesReadyForReveal;
     } catch (error) {
-      console.error("❌ Error getting raffles ready for reveal:", error.message);
+      //console.error("❌ Error getting raffles ready for reveal:", error.message);
       return [];
     }
   }
@@ -253,12 +253,12 @@ class RaffleV4FastFinalizer {
     for (const raffle of raffles) {
       try {
         const status = raffle.isExpired ? "EXPIRED" : "SOLD OUT";
-        console.log(`🎲 Committing randomness for ${status} raffle #${raffle.id}: "${raffle.title}"`);
+        //console.log(`🎲 Committing randomness for ${status} raffle #${raffle.id}: "${raffle.title}"`);
         
         // Use different approach for expired vs sold out raffles
         if (raffle.isExpired) {
           // For expired raffles, use the dedicated function (no manual commitment needed)
-          console.log(`  - Using commitRandomnessForExpiredRaffle() for expired raffle`);
+          //console.log(`  - Using commitRandomnessForExpiredRaffle() for expired raffle`);
           
           try {
             const gasEstimate = await this.contract.commitRandomnessForExpiredRaffle.estimateGas(raffle.id);
@@ -266,12 +266,12 @@ class RaffleV4FastFinalizer {
               gasLimit: gasEstimate * BigInt(120) / BigInt(100)
             });
             
-            console.log(`📤 Expired raffle commitment transaction: ${tx.hash}`);
+            //console.log(`📤 Expired raffle commitment transaction: ${tx.hash}`);
             const receipt = await tx.wait();
-            console.log(`✅ Randomness committed for expired raffle! Gas used: ${receipt.gasUsed.toString()}`);
+            //console.log(`✅ Randomness committed for expired raffle! Gas used: ${receipt.gasUsed.toString()}`);
             
           } catch (expiredError) {
-            console.log(`❌ Failed to commit randomness for expired raffle: ${expiredError.message}`);
+            //console.log(`❌ Failed to commit randomness for expired raffle: ${expiredError.message}`);
             continue;
           }
           
@@ -283,8 +283,8 @@ class RaffleV4FastFinalizer {
           // Store our nonce for later reveal
           this.commitments.set(raffle.id, nonce);
           
-          console.log(`  - Nonce: ${nonce}`);
-          console.log(`  - Commitment: ${commitment}`);
+          //console.log(`  - Nonce: ${nonce}`);
+          //console.log(`  - Commitment: ${commitment}`);
           
           try {
             const gasEstimate = await this.contract.commitRandomness.estimateGas(raffle.id, commitment);
@@ -292,12 +292,12 @@ class RaffleV4FastFinalizer {
               gasLimit: gasEstimate * BigInt(120) / BigInt(100)
             });
             
-            console.log(`📤 Sold out raffle commitment transaction: ${tx.hash}`);
+            //console.log(`📤 Sold out raffle commitment transaction: ${tx.hash}`);
             const receipt = await tx.wait();
-            console.log(`✅ Randomness committed for sold out raffle! Gas used: ${receipt.gasUsed.toString()}`);
+            //console.log(`✅ Randomness committed for sold out raffle! Gas used: ${receipt.gasUsed.toString()}`);
             
           } catch (commitError) {
-            console.log(`⚠️  Could not commit randomness (may be auto-committed): ${commitError.message}`);
+            //console.log(`⚠️  Could not commit randomness (may be auto-committed): ${commitError.message}`);
             // Continue - the contract might handle commitment automatically
           }
         }
@@ -306,7 +306,7 @@ class RaffleV4FastFinalizer {
         await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (error) {
-        console.error(`❌ Error committing randomness for raffle ${raffle.id}:`, error.message);
+        //console.error(`❌ Error committing randomness for raffle ${raffle.id}:`, error.message);
       }
     }
   }
@@ -314,31 +314,31 @@ class RaffleV4FastFinalizer {
   async revealWinnersForRaffles(raffles) {
     for (const raffle of raffles) {
       try {
-        console.log(`🎯 Revealing winner for raffle #${raffle.id}: "${raffle.title}"`);
+        //console.log(`🎯 Revealing winner for raffle #${raffle.id}: "${raffle.title}"`);
         
         if (!raffle.nonce) {
-          console.log(`❌ No nonce stored for raffle ${raffle.id}, using emergency selection`);
+          //console.log(`❌ No nonce stored for raffle ${raffle.id}, using emergency selection`);
           
           const gasEstimate = await this.contract.emergencySelectWinner.estimateGas(raffle.id);
           const tx = await this.contract.emergencySelectWinner(raffle.id, {
             gasLimit: gasEstimate * BigInt(120) / BigInt(100)
           });
           
-          console.log(`📤 Emergency selection transaction: ${tx.hash}`);
+          //console.log(`📤 Emergency selection transaction: ${tx.hash}`);
           const receipt = await tx.wait();
-          console.log(`✅ Emergency selection confirmed! Gas used: ${receipt.gasUsed.toString()}`);
+          //console.log(`✅ Emergency selection confirmed! Gas used: ${receipt.gasUsed.toString()}`);
           
         } else {
-          console.log(`  - Using nonce: ${raffle.nonce}`);
+          //console.log(`  - Using nonce: ${raffle.nonce}`);
           
           const gasEstimate = await this.contract.revealAndSelectWinner.estimateGas(raffle.id, raffle.nonce);
           const tx = await this.contract.revealAndSelectWinner(raffle.id, raffle.nonce, {
             gasLimit: gasEstimate * BigInt(120) / BigInt(100)
           });
           
-          console.log(`📤 Reveal transaction: ${tx.hash}`);
+          //console.log(`📤 Reveal transaction: ${tx.hash}`);
           const receipt = await tx.wait();
-          console.log(`✅ Winner revealed! Gas used: ${receipt.gasUsed.toString()}`);
+          //console.log(`✅ Winner revealed! Gas used: ${receipt.gasUsed.toString()}`);
           
           // Parse events to get winner
           const winnerEvents = receipt.logs.filter(log => {
@@ -352,7 +352,7 @@ class RaffleV4FastFinalizer {
           
           if (winnerEvents.length > 0) {
             const parsed = this.contract.interface.parseLog(winnerEvents[0]);
-            console.log(`🎉 Winner selected: ${parsed.args.winner}`);
+            //console.log(`🎉 Winner selected: ${parsed.args.winner}`);
           }
         }
         
@@ -361,7 +361,7 @@ class RaffleV4FastFinalizer {
         this.processedRaffles.add(raffle.id);
         
       } catch (error) {
-        console.error(`❌ Error revealing winner for raffle ${raffle.id}:`, error.message);
+        //console.error(`❌ Error revealing winner for raffle ${raffle.id}:`, error.message);
       }
     }
   }
@@ -373,34 +373,34 @@ class RaffleV4FastFinalizer {
 
   async processRaffles() {
     if (this.isRunning) {
-      console.log("⏳ Finalizer already running, skipping...");
+      //console.log("⏳ Finalizer already running, skipping...");
       return;
     }
 
     this.isRunning = true;
     const timestamp = new Date().toISOString();
-    console.log(`\n🚀 [${timestamp}] Starting V4 Fast raffle processing...`);
+    //console.log(`\n🚀 [${timestamp}] Starting V4 Fast raffle processing...`);
 
     try {
       // Check wallet balance first
       const hasBalance = await this.checkWalletBalance();
       if (!hasBalance) {
-        console.log("❌ Insufficient balance, skipping processing");
+        //console.log("❌ Insufficient balance, skipping processing");
         return;
       }
 
       // ✅ STEP 0: Auto-finalize expired raffles (main workhorse)
       // This handles: no-ticket cancellation + expired randomness commitment
       try {
-        console.log("🧹 Auto-finalizing expired raffles...");
+        //console.log("🧹 Auto-finalizing expired raffles...");
         const tx = await this.contract.finalizeExpiredRaffles({
           gasLimit: 500000
         });
-        console.log(`📤 Auto-finalize transaction: ${tx.hash}`);
+        //console.log(`📤 Auto-finalize transaction: ${tx.hash}`);
         await tx.wait();
-        console.log("✅ Auto-finalize completed (no-ticket raffles cancelled, expired raffles committed)");
+        //console.log("✅ Auto-finalize completed (no-ticket raffles cancelled, expired raffles committed)");
       } catch (error) {
-        console.log("⚠️  Auto-finalize error (might be no expired raffles):", error.message);
+        //console.log("⚠️  Auto-finalize error (might be no expired raffles):", error.message);
       }
 
       // ✅ STEP 1: Handle sold-out raffles that need commitment
@@ -409,14 +409,14 @@ class RaffleV4FastFinalizer {
       const soldOutRaffles = rafflesNeedingCommitment.filter(r => r.isSoldOut && !r.isExpired);
       
       if (soldOutRaffles.length > 0) {
-        console.log(`🎲 Found ${soldOutRaffles.length} sold-out raffles needing commitment:`);
+        //console.log(`🎲 Found ${soldOutRaffles.length} sold-out raffles needing commitment:`);
         soldOutRaffles.forEach(raffle => {
-          console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (SOLD OUT, ${raffle.ticketsSold}/${raffle.maxTickets} tickets)`);
+          //console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (SOLD OUT, ${raffle.ticketsSold}/${raffle.maxTickets} tickets)`);
         });
         
         await this.commitRandomnessForRaffles(soldOutRaffles);
       } else {
-        console.log("✅ No sold-out raffles need randomness commitment");
+        //console.log("✅ No sold-out raffles need randomness commitment");
       }
 
       // ✅ STEP 2: Emergency winner selection for deadline-passed raffles
@@ -424,29 +424,29 @@ class RaffleV4FastFinalizer {
       const rafflesReadyForReveal = await this.getRafflesReadyForReveal();
       
       if (rafflesReadyForReveal.length > 0) {
-        console.log(`🎯 Found ${rafflesReadyForReveal.length} raffles ready for emergency selection:`);
+        //console.log(`🎯 Found ${rafflesReadyForReveal.length} raffles ready for emergency selection:`);
         rafflesReadyForReveal.forEach(raffle => {
-          console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${raffle.ticketsSold} tickets sold)`);
+          //console.log(`  - Raffle #${raffle.id}: "${raffle.title}" (${raffle.ticketsSold} tickets sold)`);
         });
         
         await this.revealWinnersForRaffles(rafflesReadyForReveal);
       } else {
-        console.log("✅ No raffles ready for emergency selection");
+        //console.log("✅ No raffles ready for emergency selection");
       }
 
       // ✅ REMOVED STEP 3: Reward distribution is now AUTOMATIC
       // The new contract auto-distributes rewards when winners are selected
-      console.log("✅ Reward distribution is automatic in new contract");
+      //console.log("✅ Reward distribution is automatic in new contract");
 
     } catch (error) {
-      console.error("❌ Processing error:", error.message);
+      //console.error("❌ Processing error:", error.message);
       
       if (error.code === 'INSUFFICIENT_FUNDS') {
-        console.log("💸 Insufficient funds for transaction");
+        //console.log("💸 Insufficient funds for transaction");
       } else if (error.code === 'NONCE_EXPIRED') {
-        console.log("🔄 Nonce expired, will retry next cycle");
+        //console.log("🔄 Nonce expired, will retry next cycle");
       } else {
-        console.log("🔍 Full error:", error);
+        //console.log("🔍 Full error:", error);
       }
     } finally {
       this.isRunning = false;
@@ -455,22 +455,22 @@ class RaffleV4FastFinalizer {
       if (this.processedRaffles.size > 1000) {
         const sortedIds = Array.from(this.processedRaffles).sort((a, b) => b - a);
         this.processedRaffles = new Set(sortedIds.slice(0, 1000));
-        console.log(`🧹 Cleaned up processed raffles cache (kept last 1000)`);
+        //console.log(`🧹 Cleaned up processed raffles cache (kept last 1000)`);
       }
       
-      console.log(`⏰ [${new Date().toISOString()}] V4 Fast processing completed\n`);
+      //console.log(`⏰ [${new Date().toISOString()}] V4 Fast processing completed\n`);
     }
   }
 
   startCronJob(intervalMinutes = 3) {
-    console.log(`🤖 Starting V4 Fast Raffle Finalizer`);
-    console.log(`📍 Contract: ${this.contractAddress}`);
-    console.log(`👤 Wallet: ${this.wallet.address}`);
-    console.log(`⏰ Interval: Every ${intervalMinutes} minutes`);
-    console.log(`🌐 Network: Monad Testnet`);
-    console.log(`⚡ Reveal Window: ${this.revealWindow / 60} minutes`);
-    console.log(`📦 Max Batch Size: ${this.maxBatchSize} raffles`);
-    console.log("=" * 50);
+    //console.log(`🤖 Starting V4 Fast Raffle Finalizer`);
+    //console.log(`📍 Contract: ${this.contractAddress}`);
+    //console.log(`👤 Wallet: ${this.wallet.address}`);
+    //console.log(`⏰ Interval: Every ${intervalMinutes} minutes`);
+    //console.log(`🌐 Network: Monad Testnet`);
+    //console.log(`⚡ Reveal Window: ${this.revealWindow / 60} minutes`);
+    //console.log(`📦 Max Batch Size: ${this.maxBatchSize} raffles`);
+    //console.log("=" * 50);
 
     // Run immediately once
     this.processRaffles();
@@ -484,23 +484,23 @@ class RaffleV4FastFinalizer {
 
   // Manual trigger method
   async triggerOnce() {
-    console.log("🎯 Manual V4 Fast trigger activated");
+    //console.log("🎯 Manual V4 Fast trigger activated");
     await this.processRaffles();
   }
 }
 
 // Usage
 async function main() {
-  console.log("🚀 Starting Raffle V4 Fast Finalizer...");
+  //console.log("🚀 Starting Raffle V4 Fast Finalizer...");
   
   try {
     const finalizer = new RaffleV4FastFinalizer();
     
     // Check wallet connection first
-    console.log("🔗 Testing wallet connection...");
+    //console.log("🔗 Testing wallet connection...");
     const hasBalance = await finalizer.checkWalletBalance();
     if (!hasBalance) {
-      console.log("⚠️  Low wallet balance, but continuing...");
+      //console.log("⚠️  Low wallet balance, but continuing...");
     }
     
     // Check if this is a manual run or cron job
@@ -508,7 +508,7 @@ async function main() {
     
     if (args.includes('--once')) {
       // Manual single run
-      console.log("🎯 Running finalizer once (test mode)");
+      //console.log("🎯 Running finalizer once (test mode)");
       await finalizer.triggerOnce();
       process.exit(0);
     } else {
@@ -516,12 +516,12 @@ async function main() {
       const interval = args.includes('--interval') ? 
         parseInt(args[args.indexOf('--interval') + 1]) || 3 : 3;
       
-      console.log(`🤖 Starting continuous finalizer (${interval} minute intervals)`);
+      //console.log(`🤖 Starting continuous finalizer (${interval} minute intervals)`);
       finalizer.startCronJob(interval);
     }
   } catch (error) {
-    console.error("💥 Finalizer startup failed:", error.message);
-    console.log("🔄 Retrying in 30 seconds...");
+    //console.error("💥 Finalizer startup failed:", error.message);
+    //console.log("🔄 Retrying in 30 seconds...");
     setTimeout(() => {
       main();
     }, 30000);
@@ -530,17 +530,17 @@ async function main() {
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Gracefully shutting down V4 Fast finalizer...');
+  //console.log('\n🛑 Gracefully shutting down V4 Fast finalizer...');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n🛑 Gracefully shutting down V4 Fast finalizer...');
+  //console.log('\n🛑 Gracefully shutting down V4 Fast finalizer...');
   process.exit(0);
 });
 
 if (require.main === module) {
-  main().catch(console.error);
+  main().catch(//console.error);
 }
 
 module.exports = { RaffleV4FastFinalizer }; 

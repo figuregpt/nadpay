@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  console.log("🚨 EMERGENCY: Resolving Stuck Expired Raffles");
+  //console.log("🚨 EMERGENCY: Resolving Stuck Expired Raffles");
   
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -20,14 +20,14 @@ async function main() {
   
   const contract = new ethers.Contract(contractAddress, abi, wallet);
   
-  console.log("👤 Using wallet:", wallet.address);
-  console.log("🔐 Contract owner:", await contract.owner());
+  //console.log("👤 Using wallet:", wallet.address);
+  //console.log("🔐 Contract owner:", await contract.owner());
   
   // Get stuck raffles
   const activeRaffleIds = await contract.getActiveRaffles();
   const currentTime = Math.floor(Date.now() / 1000);
   
-  console.log(`\n🔍 Found ${activeRaffleIds.length} active raffles`);
+  //console.log(`\n🔍 Found ${activeRaffleIds.length} active raffles`);
   
   const stuckRaffles = [];
   
@@ -55,25 +55,25 @@ async function main() {
         });
       }
     } catch (error) {
-      console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
+      //console.log(`❌ Error checking raffle ${raffleId}:`, error.message);
     }
   }
   
   if (stuckRaffles.length === 0) {
-    console.log("✅ No stuck raffles found");
+    //console.log("✅ No stuck raffles found");
     return;
   }
   
-  console.log(`\n🎯 Found ${stuckRaffles.length} STUCK expired raffles:`);
+  //console.log(`\n🎯 Found ${stuckRaffles.length} STUCK expired raffles:`);
   stuckRaffles.forEach(raffle => {
     const expiredDate = new Date(raffle.expirationTime * 1000).toLocaleString();
-    console.log(`\n📋 Raffle #${raffle.id}: "${raffle.title}"`);
-    console.log(`   Creator: ${raffle.creator}`);
-    console.log(`   Tickets: ${raffle.ticketsSold}/${raffle.maxTickets}`);
-    console.log(`   Reward: ${raffle.rewardAmount} ${raffle.rewardType === 0 ? 'MON' : 'NFT'}`);
-    console.log(`   Total Earned: ${raffle.totalEarned} MON`);
-    console.log(`   Expired: ${expiredDate}`);
-    console.log(`   Participants:`);
+    //console.log(`\n📋 Raffle #${raffle.id}: "${raffle.title}"`);
+    //console.log(`   Creator: ${raffle.creator}`);
+    //console.log(`   Tickets: ${raffle.ticketsSold}/${raffle.maxTickets}`);
+    //console.log(`   Reward: ${raffle.rewardAmount} ${raffle.rewardType === 0 ? 'MON' : 'NFT'}`);
+    //console.log(`   Total Earned: ${raffle.totalEarned} MON`);
+    //console.log(`   Expired: ${expiredDate}`);
+    //console.log(`   Participants:`);
     
     // Group tickets by buyer
     const participants = {};
@@ -85,20 +85,20 @@ async function main() {
     });
     
     Object.entries(participants).forEach(([buyer, count]) => {
-      console.log(`     - ${buyer}: ${count} tickets`);
+      //console.log(`     - ${buyer}: ${count} tickets`);
     });
   });
   
-  console.log("\n🛡️ OWNER EMERGENCY OPTIONS:");
-  console.log("1. Manual Winner Selection (risky - no randomness committed)");
-  console.log("2. Emergency Pause + Migration Plan"); 
-  console.log("3. Wait for contract upgrade");
+  //console.log("\n🛡️ OWNER EMERGENCY OPTIONS:");
+  //console.log("1. Manual Winner Selection (risky - no randomness committed)");
+  //console.log("2. Emergency Pause + Migration Plan"); 
+  //console.log("3. Wait for contract upgrade");
   
   // Option 1: Try manual emergency selection (will likely fail but let's try)
-  console.log("\n🎲 Attempting EMERGENCY manual winner selection...");
+  //console.log("\n🎲 Attempting EMERGENCY manual winner selection...");
   
   for (const raffle of stuckRaffles) {
-    console.log(`\n🔄 Processing raffle #${raffle.id}...`);
+    //console.log(`\n🔄 Processing raffle #${raffle.id}...`);
     
     try {
       // Generate a pseudo-random winner since we can't use normal randomness
@@ -115,36 +115,36 @@ async function main() {
       const winnerIndex = parseInt(pseudoRandom.slice(-8), 16) % raffle.ticketsSold;
       const winner = raffle.tickets[winnerIndex];
       
-      console.log(`🎯 Pseudo-random selection:`);
-      console.log(`   Block: ${currentBlock}`);
-      console.log(`   Random hash: ${pseudoRandom}`);
-      console.log(`   Winner index: ${winnerIndex}`);
-      console.log(`   Winner: ${winner.buyer} (ticket #${winner.ticketNumber})`);
+      //console.log(`🎯 Pseudo-random selection:`);
+      //console.log(`   Block: ${currentBlock}`);
+      //console.log(`   Random hash: ${pseudoRandom}`);
+      //console.log(`   Winner index: ${winnerIndex}`);
+      //console.log(`   Winner: ${winner.buyer} (ticket #${winner.ticketNumber})`);
       
       // NOTE: This is just showing who SHOULD win
       // The actual contract call will likely fail because no randomness committed
-      console.log(`⚠️  Cannot execute - contract requires randomness commitment`);
+      //console.log(`⚠️  Cannot execute - contract requires randomness commitment`);
       
     } catch (error) {
-      console.error(`❌ Error processing raffle ${raffle.id}:`, error.message);
+      //console.error(`❌ Error processing raffle ${raffle.id}:`, error.message);
     }
   }
   
-  console.log("\n📋 RECOMMENDED SOLUTION:");
-  console.log("1. Deploy new fixed contract");
-  console.log("2. Manually select winners for stuck raffles");
-  console.log("3. Distribute rewards to selected winners");
-  console.log("4. Migrate to new contract for future raffles");
+  //console.log("\n📋 RECOMMENDED SOLUTION:");
+  //console.log("1. Deploy new fixed contract");
+  //console.log("2. Manually select winners for stuck raffles");
+  //console.log("3. Distribute rewards to selected winners");
+  //console.log("4. Migrate to new contract for future raffles");
   
-  console.log("\n⚠️  NEXT STEPS:");
-  console.log("- Deploy V4 Fast Fixed contract");
-  console.log("- Use owner privileges to resolve stuck raffles");
-  console.log("- Ensure all participants get fair resolution");
+  //console.log("\n⚠️  NEXT STEPS:");
+  //console.log("- Deploy V4 Fast Fixed contract");
+  //console.log("- Use owner privileges to resolve stuck raffles");
+  //console.log("- Ensure all participants get fair resolution");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Emergency script failed:", error);
+    //console.error("❌ Emergency script failed:", error);
     process.exit(1);
   }); 

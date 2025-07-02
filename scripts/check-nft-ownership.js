@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat');
 
 async function main() {
-  console.log("🔍 Checking NFT Ownership in Contract...");
+  //console.log("🔍 Checking NFT Ownership in Contract...");
   
   const provider = ethers.provider;
   
@@ -21,27 +21,27 @@ async function main() {
     const nftContract = new ethers.Contract(nftContractAddress, nftAbi, provider);
     
     const owner = await nftContract.ownerOf(nftTokenId);
-    console.log('NFT Owner:', owner);
-    console.log('Your Address:', userAddress);
-    console.log('You own this NFT:', owner.toLowerCase() === userAddress.toLowerCase());
+    //console.log('NFT Owner:', owner);
+    //console.log('Your Address:', userAddress);
+    //console.log('You own this NFT:', owner.toLowerCase() === userAddress.toLowerCase());
     
     const approved = await nftContract.getApproved(nftTokenId);
-    console.log('Approved address:', approved);
-    console.log('Approved for raffle contract:', approved.toLowerCase() === raffleContractAddress.toLowerCase());
+    //console.log('Approved address:', approved);
+    //console.log('Approved for raffle contract:', approved.toLowerCase() === raffleContractAddress.toLowerCase());
     
     const approvedForAll = await nftContract.isApprovedForAll(owner, raffleContractAddress);
-    console.log('Approved for all:', approvedForAll);
+    //console.log('Approved for all:', approvedForAll);
     
-    console.log('\n📋 Summary:');
-    console.log('- NFT Contract:', nftContractAddress);
-    console.log('- Token ID:', nftTokenId);
-    console.log('- Raffle Contract:', raffleContractAddress);
-    console.log('- Owner Check:', owner.toLowerCase() === userAddress.toLowerCase() ? '✅ You own this NFT' : '❌ You do not own this NFT');
-    console.log('- Approval Check:', (approved.toLowerCase() === raffleContractAddress.toLowerCase() || approvedForAll) ? '✅ Approved' : '❌ Not approved');
+    //console.log('\n📋 Summary:');
+    //console.log('- NFT Contract:', nftContractAddress);
+    //console.log('- Token ID:', nftTokenId);
+    //console.log('- Raffle Contract:', raffleContractAddress);
+    //console.log('- Owner Check:', owner.toLowerCase() === userAddress.toLowerCase() ? '✅ You own this NFT' : '❌ You do not own this NFT');
+    //console.log('- Approval Check:', (approved.toLowerCase() === raffleContractAddress.toLowerCase() || approvedForAll) ? '✅ Approved' : '❌ Not approved');
     
   } catch (error) {
-    console.error('Error:', error.message);
+    //console.error('Error:', error.message);
   }
 }
 
-main().catch(console.error); 
+main().catch(//console.error); 

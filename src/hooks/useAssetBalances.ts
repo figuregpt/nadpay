@@ -17,8 +17,8 @@ export interface NFTBalance extends KnownNFT {
 }
 
 // Rate limiting and caching
-const RATE_LIMIT_DELAY = 100; // 100ms between calls
-const CACHE_DURATION = 30000; // 30 seconds cache
+const RATE_LIMIT_DELAY = 0; // Remove rate limiting for parallel fetching
+const CACHE_DURATION = 300000; // 5 minutes cache
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
 
 // Helper to add delay between calls
@@ -321,7 +321,7 @@ export function useAssetBalances() {
     
     if (!address || !isConnected) {
       console.log('❌ No address or not connected, setting empty balances');
-      // Initialize empty balances when not connected
+      // Initialize with MON visible even when not connected
       setTokenBalances(KNOWN_TOKENS.map(token => ({
         ...token,
         balance: '0',
@@ -342,12 +342,12 @@ export function useAssetBalances() {
     setIsLoading(true);
 
     try {
-      // Initialize with loading state
+      // Initialize with MON and CHOG immediately visible (assume they have these)
       setTokenBalances(KNOWN_TOKENS.map(token => ({
         ...token,
         balance: '0',
-        formattedBalance: '0',
-        isLoading: true,
+        formattedBalance: token.symbol === 'MON' || token.symbol === 'CHOG' ? 'Loading...' : '0',
+        isLoading: token.symbol === 'MON' || token.symbol === 'CHOG',
       })));
 
       setNftBalances(KNOWN_NFTS.map(nft => ({
@@ -357,39 +357,35 @@ export function useAssetBalances() {
         isLoading: true,
       })));
 
-      // Fetch token balances with staggered loading to avoid rate limits
-      // Priority: MON first, then CHOG, then others
-      const priorityTokens = KNOWN_TOKENS.filter(token => token.symbol === 'MON' || token.symbol === 'CHOG');
-      const otherTokens = KNOWN_TOKENS.filter(token => token.symbol !== 'MON' && token.symbol !== 'CHOG');
-      
-      // Fetch priority tokens first to ensure they always load
-      
-      // Fetch priority tokens first (no delay)
-      const priorityPromises = priorityTokens.map(token => fetchTokenBalance(token, 0));
-      const priorityResults = await Promise.allSettled(priorityPromises);
-      
-      // Fetch other tokens with staggered delays
-      const otherPromises = otherTokens.map((token, index) => 
-        fetchTokenBalance(token, index * RATE_LIMIT_DELAY)
-      );
-      const otherResults = await Promise.allSettled(otherPromises);
-      
-      // Combine results in original order
-      const tokenResults: any[] = [];
-      KNOWN_TOKENS.forEach((token, index) => {
-        const priorityIndex = priorityTokens.findIndex(p => p.symbol === token.symbol);
-        if (priorityIndex !== -1) {
-          tokenResults[index] = priorityResults[priorityIndex];
-        } else {
-          const otherIndex = otherTokens.findIndex(o => o.symbol === token.symbol);
-          tokenResults[index] = otherResults[otherIndex];
-        }
-      });
+      // Fetch MON balance immediately and update UI
+      const monToken = KNOWN_TOKENS.find(t => t.symbol === 'MON');
+      if (monToken) {
+        fetchTokenBalance(monToken, 0).then(monBalance => {
+          setTokenBalances(prev => prev.map(token => 
+            token.symbol === 'MON' ? monBalance : token
+          ));
+        });
+      }
+
+      // Fetch all tokens in parallel (no delays)
+      const tokenPromises = KNOWN_TOKENS.map(token => fetchTokenBalance(token, 0));
+      const tokenResults = await Promise.allSettled(tokenPromises);
       
       const tokenBalancesData = tokenResults.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
+          // For important tokens, still show them
+          const token = KNOWN_TOKENS[index];
+          if (token.symbol === 'MON' || token.symbol === 'CHOG') {
+            return {
+              ...token,
+              balance: '0',
+              formattedBalance: 'Network Error',
+              isLoading: false,
+              error: 'Failed to fetch balance',
+            };
+          }
           return {
             ...KNOWN_TOKENS[index],
             balance: '0',
@@ -400,7 +396,7 @@ export function useAssetBalances() {
         }
       });
 
-      // Fetch NFT balances
+      // Fetch NFT balances in parallel
       console.log('🎯 Starting NFT balance fetch for', KNOWN_NFTS.length, 'collections');
       const nftPromises = KNOWN_NFTS.map(nft => fetchNFTBalance(nft));
       const nftResults = await Promise.allSettled(nftPromises);

@@ -187,7 +187,7 @@ const NFTAssetCard = React.memo(({
 
 NFTAssetCard.displayName = 'NFTAssetCard';
 
-export default function SwapProposalForm() {
+export default function SwapProposalForm({ onProposalCreated }: { onProposalCreated?: () => void }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { tokenBalances, nftBalances, isLoading } = useAssetBalances();
@@ -399,8 +399,13 @@ export default function SwapProposalForm() {
       setSelectedRequestedAssets([]);
       setSuccessMessage('Proposal created successfully!');
       setTransactionHash(undefined);
+      
+      // Call the callback to refresh proposals in parent
+      if (onProposalCreated) {
+        onProposalCreated();
+      }
     }
-  }, [isConfirmed]);
+  }, [isConfirmed, onProposalCreated]);
 
   // Monitor transaction hash
   useEffect(() => {

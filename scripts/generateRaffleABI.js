@@ -75,11 +75,11 @@ export const RAFFLE_STATUS = {
   // Write the TypeScript file
   fs.writeFileSync(outputPath, tsContent);
   
-  console.log('✅ Raffle ABI generated successfully!');
-  console.log(`📝 Contract address: ${deploymentInfo.contractAddress}`);
-  console.log(`📂 Output file: ${outputPath}`);
+  //console.log('✅ Raffle ABI generated successfully!');
+  //console.log(`📝 Contract address: ${deploymentInfo.contractAddress}`);
+  //console.log(`📂 Output file: ${outputPath}`);
   
 } catch (error) {
-  console.error('❌ Error generating raffle ABI:', error.message);
+  //console.error('❌ Error generating raffle ABI:', error.message);
   process.exit(1);
 } 

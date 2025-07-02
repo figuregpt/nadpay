@@ -2,27 +2,27 @@ const fs = require('fs');
 const path = require('path');
 
 async function main() {
-  console.log("🔧 Generating NadSwapV3 ABI...");
+  //console.log("🔧 Generating NadSwapV3 ABI...");
 
   // Read the deployment info
   const deploymentFile = 'nadswap-v3-deployment-monadTestnet.json';
   if (!fs.existsSync(deploymentFile)) {
-    console.error(`❌ Deployment file not found: ${deploymentFile}`);
+    //console.error(`❌ Deployment file not found: ${deploymentFile}`);
     process.exit(1);
   }
 
   const deploymentInfo = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'));
-  console.log("📄 Deployment info loaded:", deploymentInfo.contractAddress);
+  //console.log("📄 Deployment info loaded:", deploymentInfo.contractAddress);
 
   // Read the compiled contract artifact
   const artifactPath = path.join(__dirname, '../artifacts/contracts/NadSwapV3.sol/NadSwapV3.json');
   if (!fs.existsSync(artifactPath)) {
-    console.error(`❌ Contract artifact not found: ${artifactPath}`);
+    //console.error(`❌ Contract artifact not found: ${artifactPath}`);
     process.exit(1);
   }
 
   const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
-  console.log("📦 Contract artifact loaded");
+  //console.log("📦 Contract artifact loaded");
 
   // Generate the hook file
   const hookContent = `import { useState, useEffect } from 'react';
@@ -175,7 +175,7 @@ export function useNadSwapV3Contract() {
             throw new Error(\`Please approve the NadSwap contract to transfer your \${asset.name || 'NFT'} first. Go to the NFT collection and set approval for all.\`);
           }
         } catch (error) {
-          console.warn('Could not check NFT approval:', error);
+          //console.warn('Could not check NFT approval:', error);
         }
       } else if (asset.contractAddress !== "0x0000000000000000000000000000000000000000") {
         // Check ERC20 allowance for all ERC20 tokens
@@ -200,7 +200,7 @@ export function useNadSwapV3Contract() {
             throw new Error(\`Insufficient allowance for \${asset.symbol || 'token'}. Please approve the NadSwap contract to spend your tokens first.\`);
           }
         } catch (error) {
-          console.warn('Could not check token allowance:', error);
+          //console.warn('Could not check token allowance:', error);
         }
       }
     }
@@ -344,7 +344,7 @@ export function useNadSwapV3Contract() {
         }))
       };
     } catch (error) {
-      console.error('Error fetching proposal:', error);
+      //console.error('Error fetching proposal:', error);
       return null;
     }
   };
@@ -405,7 +405,7 @@ export function useNadSwapV3Contract() {
   // Write the hook file
   const hookPath = path.join(__dirname, '../src/hooks/useNadSwapV3Contract.ts');
   fs.writeFileSync(hookPath, hookContent);
-  console.log("✅ NadSwapV3 hook generated:", hookPath);
+  //console.log("✅ NadSwapV3 hook generated:", hookPath);
 
   // Also create a simple ABI export file
   const abiContent = `export const NADSWAP_V3_ABI = ${JSON.stringify(artifact.abi, null, 2)} as const;
@@ -414,17 +414,17 @@ export const NADSWAP_V3_ADDRESS = '${deploymentInfo.contractAddress}' as const;`
 
   const abiPath = path.join(__dirname, '../src/lib/nadswap-v3-abi.ts');
   fs.writeFileSync(abiPath, abiContent);
-  console.log("✅ NadSwapV3 ABI file generated:", abiPath);
+  //console.log("✅ NadSwapV3 ABI file generated:", abiPath);
 
-  console.log("\n🎉 NadSwapV3 ABI generation completed!");
-  console.log("📝 Usage:");
-  console.log("import { useNadSwapV3Contract } from '@/hooks/useNadSwapV3Contract';");
-  console.log("import { NADSWAP_V3_ABI, NADSWAP_V3_ADDRESS } from '@/lib/nadswap-v3-abi';");
+  //console.log("\n🎉 NadSwapV3 ABI generation completed!");
+  //console.log("📝 Usage:");
+  //console.log("import { useNadSwapV3Contract } from '@/hooks/useNadSwapV3Contract';");
+  //console.log("import { NADSWAP_V3_ABI, NADSWAP_V3_ADDRESS } from '@/lib/nadswap-v3-abi';");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ ABI generation failed:", error);
+    //console.error("❌ ABI generation failed:", error);
     process.exit(1);
   }); 

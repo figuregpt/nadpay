@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 require("dotenv").config({ path: './nadpay/.env' });
 
 async function main() {
-  console.log("💰 Checking Platform Fees Across All Contracts");
+  //console.log("💰 Checking Platform Fees Across All Contracts");
   
   // Use Monad testnet directly
   const provider = new ethers.JsonRpcProvider("https://testnet-rpc.monad.xyz");
@@ -15,8 +15,8 @@ async function main() {
   
   const wallet = new ethers.Wallet(privateKey, provider);
   
-  console.log("👤 Using wallet:", wallet.address);
-  console.log("🌐 Network: Monad Testnet");
+  //console.log("👤 Using wallet:", wallet.address);
+  //console.log("🌐 Network: Monad Testnet");
   
   // All known contracts
   const contracts = [
@@ -37,44 +37,44 @@ async function main() {
   let withdrawableContracts = [];
   
   for (const contractInfo of contracts) {
-    console.log(`\n🔍 Checking ${contractInfo.name}: ${contractInfo.address}`);
+    //console.log(`\n🔍 Checking ${contractInfo.name}: ${contractInfo.address}`);
     
     try {
       const contract = new ethers.Contract(contractInfo.address, minimalABI, wallet);
       
       // Check contract balance
       const balance = await provider.getBalance(contractInfo.address);
-      console.log(`💰 Contract MON Balance: ${ethers.formatEther(balance)} MON`);
+      //console.log(`💰 Contract MON Balance: ${ethers.formatEther(balance)} MON`);
       
       if (balance > ethers.parseEther("0.001")) {
-        console.log(`   💸 Potential fees to withdraw: ${ethers.formatEther(balance)} MON`);
+        //console.log(`   💸 Potential fees to withdraw: ${ethers.formatEther(balance)} MON`);
         totalFeesAvailable = totalFeesAvailable + balance;
         
         // Check if we are the owner
         try {
           const owner = await contract.owner();
-          console.log(`   👑 Contract Owner: ${owner}`);
+          //console.log(`   👑 Contract Owner: ${owner}`);
           
           if (owner.toLowerCase() === wallet.address.toLowerCase()) {
-            console.log(`   ✅ You are the owner! Can withdraw fees.`);
+            //console.log(`   ✅ You are the owner! Can withdraw fees.`);
             withdrawableContracts.push({
               ...contractInfo,
               balance: balance,
               contract: contract
             });
           } else {
-            console.log(`   ❌ You are NOT the owner. Cannot withdraw.`);
+            //console.log(`   ❌ You are NOT the owner. Cannot withdraw.`);
           }
         } catch (e) {
-          console.log(`   ⚠️  Could not check owner (might be different ABI)`);
+          //console.log(`   ⚠️  Could not check owner (might be different ABI)`);
         }
         
         // Check platform fee percentage
         try {
           const feePercentage = await contract.platformFeePercentage();
-          console.log(`   📊 Platform Fee: ${feePercentage}%`);
+          //console.log(`   📊 Platform Fee: ${feePercentage}%`);
         } catch (e) {
-          console.log(`   📊 Platform Fee: Unknown`);
+          //console.log(`   📊 Platform Fee: Unknown`);
         }
         
         // Try to estimate stuck rewards vs platform fees
@@ -105,46 +105,46 @@ async function main() {
         
         const estimatedPlatformFees = completedRaffleRevenue * BigInt(5) / BigInt(100); // Assume 5% fee
         
-        console.log(`   💎 Estimated stuck rewards: ${ethers.formatEther(estimatedRewards)} MON`);
-        console.log(`   💰 Estimated platform fees: ${ethers.formatEther(estimatedPlatformFees)} MON`);
-        console.log(`   📊 Total revenue processed: ${ethers.formatEther(completedRaffleRevenue)} MON`);
+        //console.log(`   💎 Estimated stuck rewards: ${ethers.formatEther(estimatedRewards)} MON`);
+        //console.log(`   💰 Estimated platform fees: ${ethers.formatEther(estimatedPlatformFees)} MON`);
+        //console.log(`   📊 Total revenue processed: ${ethers.formatEther(completedRaffleRevenue)} MON`);
       } else {
-        console.log(`   📭 No significant balance`);
+        //console.log(`   📭 No significant balance`);
       }
       
     } catch (error) {
-      console.log(`   ❌ Error checking ${contractInfo.name}:`, error.message);
+      //console.log(`   ❌ Error checking ${contractInfo.name}:`, error.message);
     }
   }
   
-  console.log(`\n📊 SUMMARY:`);
-  console.log(`💰 Total fees potentially available: ${ethers.formatEther(totalFeesAvailable)} MON`);
-  console.log(`🔐 Withdrawable contracts: ${withdrawableContracts.length}`);
+  //console.log(`\n📊 SUMMARY:`);
+  //console.log(`💰 Total fees potentially available: ${ethers.formatEther(totalFeesAvailable)} MON`);
+  //console.log(`🔐 Withdrawable contracts: ${withdrawableContracts.length}`);
   
   // Check our current balance
   const ourBalance = await provider.getBalance(wallet.address);
-  console.log(`💳 Your current balance: ${ethers.formatEther(ourBalance)} MON`);
+  //console.log(`💳 Your current balance: ${ethers.formatEther(ourBalance)} MON`);
   
   if (withdrawableContracts.length > 0) {
-    console.log(`\n💸 WITHDRAWAL OPTIONS:`);
+    //console.log(`\n💸 WITHDRAWAL OPTIONS:`);
     withdrawableContracts.forEach((contractInfo, index) => {
-      console.log(`${index + 1}. ${contractInfo.name}: ${ethers.formatEther(contractInfo.balance)} MON`);
+      //console.log(`${index + 1}. ${contractInfo.name}: ${ethers.formatEther(contractInfo.balance)} MON`);
     });
     
-    console.log(`\n🎯 To withdraw from a specific contract, run:`);
-    console.log(`node withdraw-specific-fees.js <contract_index>`);
+    //console.log(`\n🎯 To withdraw from a specific contract, run:`);
+    //console.log(`node withdraw-specific-fees.js <contract_index>`);
   } else {
-    console.log(`\n❌ No contracts where you can withdraw fees`);
-    console.log(`💡 You might need:`);
-    console.log(`   1. Owner access to contracts`);
-    console.log(`   2. Different wallet with owner privileges`);
-    console.log(`   3. Emergency withdrawal functions`);
+    //console.log(`\n❌ No contracts where you can withdraw fees`);
+    //console.log(`💡 You might need:`);
+    //console.log(`   1. Owner access to contracts`);
+    //console.log(`   2. Different wallet with owner privileges`);
+    //console.log(`   3. Emergency withdrawal functions`);
   }
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Script failed:", error);
+    //console.error("❌ Script failed:", error);
     process.exit(1);
   }); 
