@@ -14,10 +14,6 @@ export function usePersistentWallet() {
     if (isConnected && address) {
       localStorage.setItem('nadpay_wallet_connected', 'true');
       localStorage.setItem('nadpay_wallet_address', address);
-      console.log('💾 Wallet state saved:', address);
-    }
-  }, [isConnected, address]);
-
       // Only auto-reconnect if user was previously connected
   useEffect(() => {
     if (hasAttemptedReconnect) return;
@@ -28,26 +24,8 @@ export function usePersistentWallet() {
       
       // Only try to reconnect if there was a previously connected wallet and not currently connected
       if (wasConnected === 'true' && savedAddress && !isConnected && status === 'disconnected') {
-        console.log('🔄 Attempting to reconnect wallet...', savedAddress);
-        
-                  // Only try injected connectors (excluding WalletConnect/Coinbase)
-        const injectedConnectors = connectors.filter(
-          connector => connector.type === 'injected'
-        );
-        
-        if (injectedConnectors.length > 0) {
-          try {
-            // İlk injected connector ile dene
-            await connect({ connector: injectedConnectors[0] });
-            console.log('✅ Wallet reconnection successful');
-          } catch (error) {
-            console.log('❌ Wallet reconnection failed:', error);
-          }
-        }
-      }
-      
-              // Always set attempt to true (prevent infinite loop)
-      setHasAttemptedReconnect(true);
+        {
+            setHasAttemptedReconnect(true);
     };
 
           // Wait briefly, then try to reconnect
@@ -74,7 +52,6 @@ export function usePersistentWallet() {
       disconnect();
       localStorage.removeItem('nadpay_wallet_connected');
       localStorage.removeItem('nadpay_wallet_address');
-      console.log('🔌 Wallet disconnected and state cleared');
-    }
+      }
   };
 } 

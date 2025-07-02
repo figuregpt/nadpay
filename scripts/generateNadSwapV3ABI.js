@@ -2,37 +2,15 @@ const fs = require('fs');
 const path = require('path');
 
 async function main() {
-  //console.log("🔧 Generating NadSwapV3 ABI...");
-
-  // Read the deployment info
-  const deploymentFile = 'nadswap-v3-deployment-monadTestnet.json';
-  if (!fs.existsSync(deploymentFile)) {
-    //console.error(`❌ Deployment file not found: ${deploymentFile}`);
-    process.exit(1);
+  //process.exit(1);
   }
 
   const deploymentInfo = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'));
-  //console.log("📄 Deployment info loaded:", deploymentInfo.contractAddress);
-
-  // Read the compiled contract artifact
-  const artifactPath = path.join(__dirname, '../artifacts/contracts/NadSwapV3.sol/NadSwapV3.json');
-  if (!fs.existsSync(artifactPath)) {
-    //console.error(`❌ Contract artifact not found: ${artifactPath}`);
-    process.exit(1);
+  //process.exit(1);
   }
 
   const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
-  //console.log("📦 Contract artifact loaded");
-
-  // Generate the hook file
-  const hookContent = `import { useState, useEffect } from 'react';
-import { usePublicClient, useWalletClient, useAccount, useWriteContract, useReadContract } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
-
-// Contract configuration
-export const NADSWAP_V3_CONTRACT = {
-  address: '${deploymentInfo.contractAddress}' as \`0x\${string}\`,
-  abi: ${JSON.stringify(artifact.abi, null, 2)}
+  //}
 } as const;
 
 export interface SwapAssetV3 {
@@ -405,22 +383,8 @@ export function useNadSwapV3Contract() {
   // Write the hook file
   const hookPath = path.join(__dirname, '../src/hooks/useNadSwapV3Contract.ts');
   fs.writeFileSync(hookPath, hookContent);
-  //console.log("✅ NadSwapV3 hook generated:", hookPath);
-
-  // Also create a simple ABI export file
-  const abiContent = `export const NADSWAP_V3_ABI = ${JSON.stringify(artifact.abi, null, 2)} as const;
-
-export const NADSWAP_V3_ADDRESS = '${deploymentInfo.contractAddress}' as const;`;
-
-  const abiPath = path.join(__dirname, '../src/lib/nadswap-v3-abi.ts');
-  fs.writeFileSync(abiPath, abiContent);
-  //console.log("✅ NadSwapV3 ABI file generated:", abiPath);
-
-  //console.log("\n🎉 NadSwapV3 ABI generation completed!");
-  //console.log("📝 Usage:");
-  //console.log("import { useNadSwapV3Contract } from '@/hooks/useNadSwapV3Contract';");
-  //console.log("import { NADSWAP_V3_ABI, NADSWAP_V3_ADDRESS } from '@/lib/nadswap-v3-abi';");
-}
+  //fs.writeFileSync(abiPath, abiContent);
+  ////}
 
 main()
   .then(() => process.exit(0))

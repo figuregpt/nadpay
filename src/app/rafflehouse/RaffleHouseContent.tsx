@@ -120,8 +120,6 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
     return `data:image/svg+xml;base64,${btoa(svg)}`;
   };
 
-
-
   return (
     <>
       {/* Reward Image - Square with Hover Overlay and Verified Badge */}
@@ -473,8 +471,6 @@ export default function RaffleHouseContent() {
           const autoDescription = `V7 Multi-Token Raffle - ${autoTitle}`;
           
           const secureId = createPredictableSecureRaffleId(raffleId);
-          console.log(`🔗 V7 Raffle ${raffleId} -> Secure ID: ${secureId}`);
-          
           return {
             id: secureId,
             internalId: raffleId,
@@ -550,10 +546,7 @@ export default function RaffleHouseContent() {
       // Auto-refresh raffle data every 30 seconds (6 cycles)
       const shouldRefreshRaffles = Date.now() % 30000 < 5000; // Every 30 seconds
       if (shouldRefreshRaffles && publicClient && totalRaffles && !loading) {
-        console.log('🔄 Auto-refreshing raffles for winner updates...');
-        fetchRafflesPage(0, false);
-      }
-    }, 5000); // Update every 5 seconds
+        // Update every 5 seconds
 
     return () => clearInterval(timer);
   }, [publicClient, totalRaffles, loading, fetchRafflesPage]);
@@ -844,8 +837,6 @@ export default function RaffleHouseContent() {
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Created by</div>
                         <CreatorProfile creatorAddress={raffle.creator} preventLink={true} />
                       </div>
-
-
 
                       {/* Stats Row - More Compact */}
                       <div className="grid grid-cols-2 gap-2 mb-2">

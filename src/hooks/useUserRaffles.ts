@@ -46,48 +46,18 @@ export function useUserRaffles(userAddress?: string) {
 
   const fetchUserRaffles = useCallback(async () => {
     if (!userAddress || !publicClient || !totalRaffles) {
-      console.log('❌ useUserRaffles: Missing requirements:', { 
-        userAddress: !!userAddress, 
-        publicClient: !!publicClient, 
-        totalRaffles: totalRaffles?.toString() 
-      });
       return;
     }
 
     // Check cache
     const now = Date.now();
     if (now - lastFetchTime.current < RPC_CONFIG.CACHE_DURATION && userTickets.length > 0) {
-      console.log('📦 Using cached data, skipping fetch');
-      return;
-    }
-
-    console.log('🎯 useUserRaffles: Starting OPTIMIZED fetch for user:', userAddress);
-    console.log('📍 V6 Contract:', NADRAFFLE_V6_CONTRACT.address);
-    console.log('🎫 Total Raffles:', totalRaffles.toString());
-
-    setIsLoading(true);
-    lastFetchTime.current = now;
-    
-    try {
-      const raffleCount = Number(totalRaffles);
-      
-      // Limit max raffles to check (start from newest)
-      const startIndex = Math.max(0, raffleCount - RPC_CONFIG.MAX_RAFFLES_TO_CHECK);
-      const limitedRaffleCount = Math.min(raffleCount, RPC_CONFIG.MAX_RAFFLES_TO_CHECK);
-      
-      console.log(`🎯 Checking raffles ${startIndex} to ${raffleCount - 1} (${limitedRaffleCount} total)`);
+      `);
       const userRaffleData: UserTicket[] = [];
       const newNotifications: Notification[] = [];
 
       // 🚀 OPTIMIZATION 1: Batch ticket count checks WITH RATE LIMITING
-      console.log('⚡ Batch checking ticket counts for all raffles with rate limiting...');
-      
-      // Process in chunks to avoid rate limiting
-      
-      const ticketCounts: bigint[] = [];
-      
-      // Only check limited range of raffles
-      for (let chunkStart = startIndex; chunkStart < raffleCount; chunkStart += RPC_CONFIG.BATCH_SIZE) {
+      {
         const chunkEnd = Math.min(chunkStart + RPC_CONFIG.BATCH_SIZE, raffleCount);
         const chunkPromises = [];
         
@@ -124,20 +94,13 @@ export function useUserRaffles(userAddress?: string) {
         }
       }
 
-      console.log(`⚡ Found ${relevantRaffleIds.length} relevant raffles out of ${raffleCount} total`);
-
       if (relevantRaffleIds.length === 0) {
         setUserTickets([]);
         return;
       }
 
       // 🚀 OPTIMIZATION 3: Batch fetch raffle details WITH RATE LIMITING
-      console.log('⚡ Batch fetching raffle details with rate limiting...');
-      
-      const raffleDetails: any[] = [];
-      
-      // Process details in smaller chunks
-      const DETAILS_CHUNK_SIZE = Math.min(5, RPC_CONFIG.MAX_PARALLEL_REQUESTS); // Smaller chunk size for details
+      // Smaller chunk size for details
       
       for (let i = 0; i < relevantRaffleIds.length; i += DETAILS_CHUNK_SIZE) {
         const chunk = relevantRaffleIds.slice(i, i + DETAILS_CHUNK_SIZE);
@@ -171,8 +134,7 @@ export function useUserRaffles(userAddress?: string) {
 
         if (!raffleData) continue;
 
-        console.log(`✅ Processing raffle ${raffleId} with ${ticketCount} tickets:`, {
-          state: raffleData.state?.toString(),
+        ,
           winner: raffleData.winner,
           rewardType: raffleData.rewardType?.toString(),
           rewardTokenAddress: raffleData.rewardTokenAddress,
@@ -198,13 +160,7 @@ export function useUserRaffles(userAddress?: string) {
           rewardTokenId: raffleData.rewardTokenId,
         };
 
-        console.log(`➕ Adding optimized ticket data:`, ticketData);
-        userRaffleData.push(ticketData);
-
-        // Create notifications for winners
-        if (isWinner) {
-          newNotifications.push({
-            id: `winner_${raffleId}_${Date.now()}`,
+        }`,
             type: 'winner',
             raffleId,
             raffleName,
@@ -234,20 +190,7 @@ export function useUserRaffles(userAddress?: string) {
         }
       }
 
-      console.log('📊 Final OPTIMIZED user raffle data:', userRaffleData);
-      
-      // Sort by raffle ID descending (newest first)
-      const sortedUserRaffleData = userRaffleData.sort((a, b) => b.raffleId - a.raffleId);
-      setUserTickets(sortedUserRaffleData);
-      
-      // Merge with existing notifications, avoiding duplicates
-      setNotifications(prev => {
-        const existingIds = new Set(prev.map(n => n.id));
-        const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
-        return [...prev, ...uniqueNew].sort((a, b) => b.timestamp - a.timestamp);
-      });
-
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Error fetching user raffles:', error);
     } finally {
       setIsLoading(false);

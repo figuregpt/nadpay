@@ -60,22 +60,14 @@ export type Purchase = {
   
   fs.writeFileSync(contractConfigPath, contractConfigContent);
   
-  //console.log('✅ Contract ABI generated successfully!');
-  //console.log('📄 File created:', contractConfigPath);
-  //console.log('🔧 Usage: import { NADPAY_CONTRACT } from "@/lib/contract"');
-  
-  // Also create a pure ABI file for wagmi
+  //// Also create a pure ABI file for wagmi
   const abiPath = path.join(libDir, 'nadpay-abi.ts');
   const abiContent = `// Auto-generated ABI
 export const NADPAY_ABI = ${JSON.stringify(abi, null, 2)} as const;
 `;
   
   fs.writeFileSync(abiPath, abiContent);
-  //console.log('📄 ABI file created:', abiPath);
-}
-
-main()
-  .then(() => process.exit(0))
+  //.then(() => process.exit(0))
   .catch((error) => {
     //console.error(error);
     process.exit(1);

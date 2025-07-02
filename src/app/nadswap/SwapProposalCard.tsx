@@ -39,8 +39,6 @@ interface SwapProposalCardProps {
 function NFTImage({ asset }: { asset: any }) {
   const { metadata, isLoading } = useNFTMetadata(asset.contractAddress, asset.tokenId.toString());
   
-  console.log('🖼️ NFT Image Component:', { asset, metadata, isLoading });
-  
   // Function to open MagicEden page
   const openMagicEden = () => {
     const magicEdenUrl = `https://magiceden.io/item-details/monad-testnet/${asset.contractAddress}/${asset.tokenId}`;
@@ -67,26 +65,7 @@ function NFTImage({ asset }: { asset: any }) {
           alt={metadata.name || `NFT #${asset.tokenId}`}
           className="w-full h-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
           onError={(e) => {
-            console.log('❌ NFT Image failed to load:', metadata.image);
-            e.currentTarget.style.display = 'none';
-            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-            if (fallback) fallback.style.display = 'flex';
-          }}
-        />
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <div className="bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
-              <svg className="w-2 h-2 lg:w-3 lg:h-3 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clipRule="evenodd" />
-                <path fillRule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+            }
   
   return (
     <div 
@@ -284,25 +263,7 @@ export default function SwapProposalCard({
                 {Array.from({ length: showDetails ? Math.min(proposal.offeredAssets.length, 9) : 3 }).map((_, index) => {
                   const asset = proposal.offeredAssets[index];
                   if (asset && asset.isNFT) {
-                    console.log('🎯 Offering NFT Asset:', asset);
-                  }
-                  return (
-                    <div
-                      key={index}
-                      className={`aspect-square rounded-lg lg:rounded-2xl border-2 transition-all duration-300 ${
-                        asset
-                          ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-blue-700 hover:scale-105 cursor-pointer shadow-sm hover:shadow-lg'
-                          : 'border-dashed border-gray-300 bg-gray-50 dark:bg-dark-800 dark:border-gray-600'
-                      }`}
-                    >
-                      {asset ? (
-                        <div className="p-1 lg:p-2 h-full flex flex-col">
-                          <div className="flex-1 flex items-center justify-center mb-1 lg:mb-2">
-                            {asset.isNFT ? (
-                              <div className="w-6 h-6 lg:w-12 lg:h-12">
-                                <NFTImage asset={asset} />
-                              </div>
-                            ) : asset.image ? (
+                    : asset.image ? (
                               <img
                                 src={asset.image}
                                 alt={asset.name || 'Asset'}
@@ -383,25 +344,7 @@ export default function SwapProposalCard({
                 {Array.from({ length: showDetails ? Math.min(proposal.requestedAssets.length, 9) : 3 }).map((_, index) => {
                   const asset = proposal.requestedAssets[index];
                   if (asset && asset.isNFT) {
-                    console.log('🎯 Requesting NFT Asset:', asset);
-                  }
-                  return (
-                    <div
-                      key={index}
-                      className={`aspect-square rounded-lg lg:rounded-2xl border-2 transition-all duration-300 ${
-                        asset
-                          ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 dark:border-purple-700 hover:scale-105 cursor-pointer shadow-sm hover:shadow-lg'
-                          : 'border-dashed border-gray-300 bg-gray-50 dark:bg-dark-800 dark:border-gray-600'
-                      }`}
-                    >
-                      {asset ? (
-                        <div className="p-1 lg:p-2 h-full flex flex-col">
-                          <div className="flex-1 flex items-center justify-center mb-1 lg:mb-2">
-                            {asset.isNFT ? (
-                              <div className="w-6 h-6 lg:w-12 lg:h-12">
-                                <NFTImage asset={asset} />
-                              </div>
-                            ) : asset.image ? (
+                    : asset.image ? (
                               <img
                                 src={asset.image}
                                 alt={asset.name || 'Asset'}

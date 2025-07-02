@@ -21,7 +21,6 @@ export function usePointsTracker(options: PointsTrackerOptions = {}) {
     metadata?: any
   ) => {
     if (!address) {
-      console.log('❌ Points tracking disabled - no address:', { address });
       return;
     }
 
@@ -32,14 +31,11 @@ export function usePointsTracker(options: PointsTrackerOptions = {}) {
       const data = await response.json();
       
       if (!data.profile?.twitter) {
-        console.log('❌ Points tracking disabled - no Twitter connection:', { address });
         return;
       }
       
       actualTwitterHandle = data.profile.twitter.username;
-      console.log('✅ Twitter verified for points:', { address, twitterHandle: actualTwitterHandle });
-      
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Error verifying Twitter connection for points:', error);
       return;
     }
@@ -53,24 +49,10 @@ export function usePointsTracker(options: PointsTrackerOptions = {}) {
       metadata
     };
 
-    console.log('📤 Sending points request:', payload);
-
-    try {
-      const response = await fetch('/api/points/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+    ,
       });
 
-      console.log('📥 Points API response status:', response.status);
-      const result = await response.json();
-      console.log('📥 Points API response data:', result);
-      
-      if (result.success) {
-        console.log(`🎉 Awarded ${result.points} points for ${type}!`);
-        return result.points;
+      return result.points;
       } else {
         console.warn('Failed to award points:', result.error);
         return result;

@@ -21,42 +21,11 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
 export default function RaffleContent() {
-  console.log('🚀 RaffleContent component started!');
-  
-  const params = useParams();
-  const secureRaffleId = params.raffleId as string;
-  const router = useRouter();
-  
-  console.log('📝 Received raffleId from params:', secureRaffleId);
-  
-  // Smart raffle ID decoding - handle both numeric and secure hex IDs
-  const getRaffleId = () => {
-    // First check if it's a simple numeric string (like "0", "1", "2")
-    const numericId = parseInt(secureRaffleId);
-    if (!isNaN(numericId) && numericId.toString() === secureRaffleId) {
-      console.log('🔢 Using direct numeric ID:', numericId);
-      return numericId;
-    }
-    
-    // If not numeric, try to decode as secure hex ID
-    const decodedId = decodePredictableSecureRaffleId(secureRaffleId);
-    if (decodedId !== null) {
-      console.log('🔐 Decoded secure ID:', decodedId);
-      return decodedId;
-    }
-    
-    // If both fail, default to 0
-    console.log('❌ Failed to parse raffle ID, defaulting to 0');
-    return 0;
+  if (decodedId !== null) {
+      return 0;
   };
   
   const raffleId = getRaffleId();
-  
-  console.log('🎫 RaffleContent Debug:', {
-    secureRaffleId,
-    raffleId,
-    debugMessage: `Successfully resolved to raffle ID: ${raffleId}`
-  });
   
   // All hooks must be called at the top level
   const { address, isConnected, chain } = useAccount();
@@ -80,8 +49,6 @@ export default function RaffleContent() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [transactionStep, setTransactionStep] = useState<'idle' | 'approving' | 'purchasing'>('idle');
 
-
-  
   const [quantity, setQuantity] = useState(1);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [participants, setParticipants] = useState<Array<{address: string, tickets: number, twitterHandle?: string, twitterName?: string}>>([]);
@@ -113,43 +80,20 @@ export default function RaffleContent() {
   // Convert contract data to display format
   const raffle = raffleData ? formatRaffleV7(raffleData) : null;
 
-
-
   // Fetch participants from blockchain using contract mapping
   const fetchParticipants = useCallback(async () => {
     if (!publicClient || raffleId === null) {
-      console.log('❌ Cannot fetch participants - missing requirements:', { publicClient: !!publicClient, raffleId });
       return;
     }
     
     // Rate limiting: don't fetch more than once every 10 seconds
     const now = Date.now();
     if (now - lastFetchTime < 10000 && participantsFetched) {
-      console.log('⏰ Skipping fetch - too soon since last fetch');
-      return;
-    }
-    
-    setLoadingParticipants(true);
-    try {
-      console.log('🔍 Fetching participants for raffle:', raffleId);
-      console.log('📍 Contract address:', NADRAFFLE_V7_CONTRACT.address);
-      
-      // Use the contract's getRaffleParticipants function
-      console.log('🔍 Getting participants for raffle:', raffleId);
-      
-      const participantAddresses = await publicClient.readContract({
-        address: NADRAFFLE_V7_CONTRACT.address as `0x${string}`,
-        abi: NADRAFFLE_V7_CONTRACT.abi,
-        functionName: 'getRaffleParticipants',
-        args: [BigInt(raffleId)]
+      try {
+      ]
       }) as string[];
       
-      console.log('📊 Found', participantAddresses.length, 'participants for raffle', raffleId);
-      
-      // Get ticket counts for each participant
-      const participantList: Array<{address: string, tickets: number, twitterHandle?: string, twitterName?: string}> = [];
-      
-      for (const address of participantAddresses) {
+      {
         // Get ticket count from the contract
         const ticketCount = await publicClient.readContract({
           address: NADRAFFLE_V7_CONTRACT.address as `0x${string}`,
@@ -159,8 +103,6 @@ export default function RaffleContent() {
         }) as bigint;
         
         const tickets = Number(ticketCount);
-        console.log(`📝 ${address} has ${tickets} tickets`);
-        
         const participant = {
           address: address.toLowerCase(),
           tickets
@@ -168,8 +110,6 @@ export default function RaffleContent() {
         
         // Fetch Twitter info for this participant
         try {
-          console.log('🐦 Fetching Twitter info for:', address);
-          const twitterResponse = await fetch(`/api/profile/${address}`);
           const twitterData = await twitterResponse.json();
           
           if (twitterResponse.ok && twitterData.profile?.twitter) {
@@ -178,30 +118,14 @@ export default function RaffleContent() {
               twitterHandle: twitterData.profile.twitter.username,
               twitterName: twitterData.profile.twitter.name
             });
-            console.log('✅ Twitter info found:', {
-              handle: twitterData.profile.twitter.username,
-              name: twitterData.profile.twitter.name
-            });
-          } else {
+            } else {
             participantList.push(participant);
-            console.log('❌ No Twitter info found for participant');
-          }
-        } catch (twitterError) {
+            {
           console.error('❌ Error fetching Twitter info:', twitterError);
           participantList.push(participant);
         }
       }
       
-      console.log('🎯 Final participant list:', participantList);
-      
-      // If no participants found through events but tickets are sold, there might be an issue
-      if (participantList.length === 0 && raffle && Number(raffle.soldTickets) > 0) {
-        console.warn('⚠️ No participants found through events but tickets are sold!');
-        console.log('🔍 Debug info:', {
-          raffleId,
-          soldTickets: raffle.soldTickets,
-          contractAddress: NADRAFFLE_V7_CONTRACT.address
-        });
       }
 
       setParticipants(participantList);
@@ -256,34 +180,21 @@ export default function RaffleContent() {
     if (raffle) {
       const currentSoldTickets = Number(raffle.soldTickets);
       if (currentSoldTickets !== previousSoldTickets) {
-        console.log('🎫 Ticket sales changed from', previousSoldTickets, 'to', currentSoldTickets);
-        if (previousSoldTickets > 0) { // Only refresh if this isn't the initial load
-          console.log('🔄 Auto-refreshing participants due to ticket sale...');
-          refreshParticipants();
         }
-        setPreviousSoldTickets(currentSoldTickets);
-      }
     }
   }, [raffle?.soldTickets, previousSoldTickets, refreshParticipants]);
 
   // Periodic auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('⏰ Periodic refresh of participants...');
-      refreshParticipants();
-    }, 30000); // 30 seconds
+      // 30 seconds
 
     return () => clearInterval(interval);
   }, [refreshParticipants]);
   
   // Debug raffle data
   if (raffle) {
-    console.log('🔍 Raw raffle data from contract:', raffleData);
-    console.log('🎯 Formatted raffle data:', raffle);
-  }
-
-  // Fetch NFT metadata if reward is actually an NFT (check against known assets)
-  const shouldFetchNFT = raffle && (() => {
+    const shouldFetchNFT = raffle && (() => {
     if (raffle.rewardTokenAddress && raffle.rewardTokenAddress !== '0x0000000000000000000000000000000000000000') {
       const knownToken = getKnownToken(raffle.rewardTokenAddress);
       const knownNFT = getKnownNFT(raffle.rewardTokenAddress);
@@ -310,8 +221,6 @@ export default function RaffleContent() {
 
   // This effect is no longer needed as purchase confirmation is handled in handlePurchaseTickets
 
-
-
   // Update current time
   useEffect(() => {
     const timer = setInterval(() => {
@@ -320,38 +229,18 @@ export default function RaffleContent() {
     return () => clearInterval(timer);
   }, []);
 
-
-
   const handlePurchaseTickets = async () => {
-    console.log('🎫 Purchase button clicked');
-    
-    if (!isConnected || !raffle || !address) {
-      console.log('❌ Cannot purchase - missing requirements:', { isConnected, raffle: !!raffle, address });
-      showNotification('error', 'Please connect your wallet');
+    showNotification('error', 'Please connect your wallet');
       return;
     }
 
     if (chain?.id !== 10143) {
-      console.log('❌ Wrong chain:', chain?.id);
-      showNotification('error', 'Please switch to Monad Testnet');
-      return;
-    }
-
-    console.log('🔍 Raffle payment token:', raffle.ticketPaymentToken);
-
-    setIsPurchasing(true);
+      setIsPurchasing(true);
     setTransactionStep('idle');
 
     try {
       const ticketPriceInEther = formatEther(raffle.ticketPrice);
       const totalPrice = parseFloat(ticketPriceInEther) * quantity;
-      
-      console.log('💰 Purchase details:', {
-        ticketPrice: ticketPriceInEther,
-        quantity,
-        totalPrice,
-        paymentToken: raffle.ticketPaymentToken
-      });
       
       // Check user's balance only for MON payments
       if (!raffle.ticketPaymentToken || raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000') {
@@ -365,20 +254,8 @@ export default function RaffleContent() {
       // V7 purchase tickets - handle payment token
       if (!raffle.ticketPaymentToken || raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000') {
         // Native MON payment
-        console.log('💸 Purchasing with native MON');
-        setTransactionStep('purchasing');
-        
-        const hash = await writeContractAsync({
-          address: NADRAFFLE_V7_CONTRACT.address as `0x${string}`,
-          abi: NADRAFFLE_V7_CONTRACT.abi,
-          functionName: 'purchaseTickets',
-          args: [BigInt(raffleId), BigInt(quantity)],
+        , BigInt(quantity)],
           value: parseEther(totalPrice.toString()),
-        });
-        
-        console.log('⏳ Waiting for transaction confirmation...');
-        await waitForTransactionReceipt(config, {
-          hash,
         });
         
         showNotification('success', 'Tickets purchased successfully!');
@@ -393,32 +270,12 @@ export default function RaffleContent() {
         
         trackNadRaffleTicketPurchase(hash, totalPrice.toString(), raffleId.toString(), metadata)
           .then((result) => {
-            console.log('🎉 Points awarded for ticket purchase!', result);
-          })
-          .catch(error => {
+            .catch(error => {
             console.error('❌ Error tracking ticket purchase points:', error);
           });
           
       } else {
         // ERC20 token payment - need to handle approval first
-        console.log('💸 Purchasing with ERC20 token:', raffle.ticketPaymentToken);
-        
-        // Check token balance first
-        const tokenBalance = await publicClient?.readContract({
-          address: raffle.ticketPaymentToken as `0x${string}`,
-          abi: [
-            {
-              name: 'balanceOf',
-              type: 'function',
-              stateMutability: 'view',
-              inputs: [{ name: 'account', type: 'address' }],
-              outputs: [{ name: '', type: 'uint256' }],
-            },
-          ],
-          functionName: 'balanceOf',
-          args: [address],
-        });
-        
         const totalCostWei = raffle.ticketPrice * BigInt(quantity);
         
         if (!tokenBalance || tokenBalance < totalCostWei) {
@@ -447,41 +304,8 @@ export default function RaffleContent() {
           args: [address, NADRAFFLE_V7_CONTRACT.address as `0x${string}`],
         });
         
-        console.log('💰 Token payment details:', {
-          tokenBalance: tokenBalance?.toString(),
-          totalCostWei: totalCostWei.toString(),
-          currentAllowance: allowance?.toString(),
-        });
-        
         // Approve if needed
         if (!allowance || allowance < totalCostWei) {
-          console.log('🔓 Approving token spend...');
-          setTransactionStep('approving');
-          showNotification('info', 'Approving token spend...');
-          
-          const approvalHash = await writeContractAsync({
-            address: raffle.ticketPaymentToken as `0x${string}`,
-            abi: [
-              {
-                name: 'approve',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                  { name: 'spender', type: 'address' },
-                  { name: 'amount', type: 'uint256' },
-                ],
-                outputs: [{ name: '', type: 'bool' }],
-              },
-            ],
-            functionName: 'approve',
-            args: [NADRAFFLE_V7_CONTRACT.address as `0x${string}`, totalCostWei],
-          });
-          
-          console.log('⏳ Waiting for approval confirmation...');
-          await waitForTransactionReceipt(config, {
-            hash: approvalHash,
-          });
-          
           showNotification('success', 'Approval complete! Now purchasing tickets...');
         }
         
@@ -492,11 +316,6 @@ export default function RaffleContent() {
           abi: NADRAFFLE_V7_CONTRACT.abi,
           functionName: 'purchaseTickets',
           args: [BigInt(raffleId), BigInt(quantity)],
-        });
-        
-        console.log('⏳ Waiting for purchase confirmation...');
-        await waitForTransactionReceipt(config, {
-          hash: purchaseHash,
         });
         
         showNotification('success', 'Tickets purchased successfully!');
@@ -513,9 +332,7 @@ export default function RaffleContent() {
         
         trackNadRaffleTicketPurchase(purchaseHash, totalAmount, raffleId.toString(), metadata)
           .then((result) => {
-            console.log('🎉 Points awarded for ticket purchase!', result);
-          })
-          .catch(error => {
+            .catch(error => {
             console.error('❌ Error tracking ticket purchase points:', error);
           });
       }
@@ -813,7 +630,6 @@ export default function RaffleContent() {
               </div>
             </div>
 
-
           </div>
 
           {/* Right Column - Purchase, Your Tickets & Participants */}
@@ -1034,7 +850,6 @@ export default function RaffleContent() {
             </div>
 
             {/* Claim Section */}
-
 
             {/* Winner Display */}
             {raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && (

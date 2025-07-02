@@ -88,13 +88,6 @@ export default function LeaderboardPage() {
       const response = await fetch('/api/leaderboard');
       const data = await response.json();
       
-      console.log('🎯 Leaderboard Frontend - Response:', {
-        status: response.status,
-        data: data,
-        hasLeaderboard: !!data.leaderboard,
-        leaderboardLength: data.leaderboard?.length
-      });
-      
       if (data.leaderboard) {
         // Add rank to each user
         const rankedData = data.leaderboard.map((user: any, index: number) => ({
@@ -102,16 +95,9 @@ export default function LeaderboardPage() {
           rank: index + 1
         }));
         
-        console.log('📊 Leaderboard Frontend - Setting data:', {
-          count: rankedData.length,
-          firstUser: rankedData[0]
-        });
-        
         setLeaderboard(rankedData);
       } else {
-        console.log('⚠️ Leaderboard Frontend - No leaderboard data');
-        setLeaderboard([]);
-      }
+        }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {
@@ -182,9 +168,7 @@ export default function LeaderboardPage() {
   const connectedUserFromFull = simulatedAddress ? leaderboard.find(
     user => user.walletAddress.toLowerCase() === simulatedAddress.toLowerCase()
   ) : null;
-  
 
-  
   // Final users to display (connected user at top + current page users)
   const usersToDisplay = [];
   

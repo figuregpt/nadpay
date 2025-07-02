@@ -387,8 +387,6 @@ export default function SwapProposalForm({ onProposalCreated }: { onProposalCrea
     return () => clearTimeout(timeoutId);
   }, [targetWallet]);
 
-
-
   // Monitor transaction confirmation
   useEffect(() => {
     if (isConfirmed) {
@@ -510,19 +508,6 @@ export default function SwapProposalForm({ onProposalCreated }: { onProposalCrea
     setSuccessMessage(null);
 
     try {
-      console.log('Creating swap proposal...');
-      console.log('Target wallet:', targetWallet);
-      console.log('Offered assets:', selectedOfferedAssets);
-      console.log('Requested assets:', selectedRequestedAssets);
-      
-      setIsTransactionPending(true);
-      await createSwapProposal(targetWallet, selectedOfferedAssets, selectedRequestedAssets);
-      console.log('Transaction confirmed successfully');
-      
-      // Reset form and show success message
-      setIsTransactionPending(false);
-      setTargetWallet('');
-      setSelectedOfferedAssets([]);
       setSelectedRequestedAssets([]);
       setSuccessMessage('Swap proposal created successfully!');
     } catch (error: any) {
@@ -550,8 +535,6 @@ export default function SwapProposalForm({ onProposalCreated }: { onProposalCrea
       setErrorMessage(errorMsg);
     }
   };
-
-
 
   const AssetCard = ({ asset, onAdd, showAddButton = true }: { 
     asset: any; 

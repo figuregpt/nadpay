@@ -28,20 +28,8 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         // Wagmi store'dan kontrol et
         const savedConnection = localStorage.getItem('nadpay-wagmi');
         if (savedConnection) {
-          console.log('🔄 Provider attempting to restore connection...');
-          // Sadece reconnect dene, hata olursa devam et
-          await reconnect(config);
-        }
-      } catch (error) {
-        console.log('❌ Provider reconnection failed (normal):', error);
-        // Hata normal, devam et
-      }
-    };
-
-    // Daha uzun bekle
-    const timer = setTimeout(attemptReconnect, 200);
-    
-    return () => clearTimeout(timer);
+          {
+        return () => clearTimeout(timer);
   }, []);
 
   if (!mounted) {

@@ -58,12 +58,6 @@ export default function PaymentContent() {
   
   const internalLinkId = decodeSecureLinkId(linkId);
   
-  console.log('🔍 PaymentContent Debug:', {
-    linkId,
-    internalLinkId,
-    decodedSuccessfully: internalLinkId !== null
-  });
-  
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const { data: balance, refetch: refetchBalance } = useBalance({
@@ -89,13 +83,6 @@ export default function PaymentContent() {
     }
   });
 
-  console.log('📊 Contract Data:', {
-    internalLinkId,
-    contractLink: contractLink ? 'loaded' : 'null',
-    loadingLink,
-    contractError: contractError?.message || 'none'
-  });
-  
   const [quantity, setQuantity] = useState(1);
   const [isApproving, setIsApproving] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -153,13 +140,6 @@ export default function PaymentContent() {
       
       // Track points for buyer
       const totalAmount = (parseFloat(paymentLink.price) * quantity).toString();
-      console.log('🎯 Tracking NadPay purchase points:', {
-        buyer: address,
-        amount: totalAmount,
-        linkId: linkId,
-        txHash: purchaseHash
-      });
-      
       trackNadPayPurchase(purchaseHash, totalAmount, linkId).catch(error => {
         console.error('❌ Failed to track buyer points:', error);
       });

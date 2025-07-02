@@ -26,12 +26,6 @@ export function useBlockchainTime() {
         const blockTimestamp = Number(block.timestamp);
         
         // Log blockchain time for debugging
-        console.log('🕐 Blockchain time synced:', {
-          blockTime: new Date(blockTimestamp * 1000).toLocaleString(),
-          localTime: new Date().toLocaleString(),
-          difference: blockTimestamp - Math.floor(Date.now() / 1000)
-        });
-        
         setBlockchainTime(blockTimestamp);
       } catch (err) {
         console.error('❌ Error fetching blockchain time:', err);

@@ -64,18 +64,8 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#836EF9" />
         <meta name="theme-color" content="#836EF9" />
       </head>
-      <body className={`${inter.className} font-inter`}>
-        <Web3Provider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </Web3Provider>
-      </body>
-    </html>
-  );
-}
+      <body className={`${inter.className} font-inter`} suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              }

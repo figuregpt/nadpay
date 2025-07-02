@@ -199,16 +199,6 @@ export default function DashboardContent() {
   const { data: totalLinks, error: totalLinksError } = useTotalLinksV2();
   
   // Debug logging
-  console.log('🔍 Dashboard Debug:', {
-    address,
-    isConnected,
-    creatorLinksData,
-    loadingLinks,
-    linksError: linksError?.message,
-    totalLinks: totalLinks?.toString(),
-    totalLinksError: totalLinksError?.message,
-    contractAddress: CONTRACT_ADDRESS
-  });
   // V6 contract - raffle hooks (load immediately)
   const {
     data: creatorRafflesData,
@@ -217,11 +207,6 @@ export default function DashboardContent() {
   } = useCreatorRafflesV6(address);
   
   // Debug logging for raffles
-  console.log('🎫 Raffle Debug: V6 hooks enabled', {
-    creatorRafflesData,
-    loadingRaffles
-  });
-
   // Handle URL parameters for errors and success messages
   useEffect(() => {
     const error = searchParams.get('error');
@@ -502,23 +487,13 @@ export default function DashboardContent() {
   // Raffle contract hook - endRaffle and cancelRaffle functionality temporarily disabled
   // These functions would need to be implemented in the V2 hook
   const endRaffle = (_raffleId: any) => {
-    console.log('endRaffle not implemented for V2 yet');
-  };
-  const cancelRaffle = (_raffleId: any) => {
-    console.log('cancelRaffle not implemented for V2 yet');
-  };
-  const isEndingRaffle = false;
-  const isRaffleEnded = false;
-
-    // Convert contract data to display format and sort by newest first - MEMOIZED to prevent infinite loops
-  const paymentLinks: PaymentLinkData[] = useMemo(() => {
+    => {
+    => {
     return creatorLinksData ? creatorLinksData
       .map((link: unknown) => {
         try {
           const formatted = formatPaymentLinkV2(link);
-          console.log('Raw link data:', link);
-          console.log('Formatted link data:', formatted);
-          console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
+          .uniqueBuyersCount);
           
           const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
             ? "MON" 
@@ -570,27 +545,11 @@ export default function DashboardContent() {
   }, [creatorLinksData]);
 
   // Convert V6 raffle contract data to display format - MEMOIZED to prevent unnecessary re-renders
-  console.log('creatorRafflesData V6:', creatorRafflesData);
-  console.log('loadingRaffles:', loadingRaffles);
-  console.log('address:', address);
-  
-  const raffles: RaffleData[] = useMemo(() => {
+  => {
     return creatorRafflesData ? creatorRafflesData
       .map((raffle: RaffleInfoV6, index: number) => {
         try {
-          console.log('Processing V6 raffle:', raffle);
-          
-          // Calculate total earned (tickets sold * ticket price)
-          const totalEarned = raffle.soldTickets * raffle.ticketPrice;
-          
-          return {
-            id: raffle.raffleId !== undefined ? raffle.raffleId.toString() : index.toString(),
-            creator: raffle.creator || '',
-            title: `V6 Raffle #${raffle.raffleId !== undefined ? raffle.raffleId : index}`, // V6 doesn't have title/description
-            // Fix description to use correct field based on reward type
-            description: `Reward: ${
-              raffle.rewardType === 1 
-                ? (() => {
+          => {
                     const amount = formatPriceV6(raffle.rewardTokenId || BigInt(0));
                     const token = raffle.rewardTokenAddress 
                       ? getKnownToken(raffle.rewardTokenAddress.toLowerCase())
@@ -663,16 +622,7 @@ export default function DashboardContent() {
   
   useEffect(() => {
     if (deactivationConfirmed && !hasRefetchedAfterDeactivation) {
-      console.log('🔄 Refetching after deactivation...');
-      // Force refresh to bypass rate limiting
-      refetch(true);
-      setHasRefetchedAfterDeactivation(true);
-      
-      // Reset the flag after a delay to allow for future deactivations
-      setTimeout(() => {
-        setHasRefetchedAfterDeactivation(false);
-      }, 5000);
-    }
+      }
   }, [deactivationConfirmed, refetch, hasRefetchedAfterDeactivation]);
   
   // Refetch when raffle is ended
@@ -820,22 +770,8 @@ export default function DashboardContent() {
   };
 
   const handleEndRaffle = async (raffleId: string) => {
-    console.log('handleEndRaffle called with raffleId:', raffleId);
-    
-    if (!address) {
-      console.log('No address, returning');
-      return;
-    }
-    
-    const raffle = raffles.find(r => r.id === raffleId);
     if (!raffle) {
-      console.log('Raffle not found:', raffleId);
-      return;
-    }
-    
-    console.log('Found raffle:', raffle);
-    
-    let confirmMessage = 'Are you sure you want to end this raffle?';
+      let confirmMessage = 'Are you sure you want to end this raffle?';
     let actionType = 'end';
     
     if (raffle.ticketsSold === BigInt(0)) {
@@ -846,23 +782,12 @@ export default function DashboardContent() {
       actionType = 'end';
     }
     
-    console.log('Showing confirmation dialog for action:', actionType);
-    const confirmed = confirm(confirmMessage);
-    if (!confirmed) {
-      console.log('User cancelled');
-      return;
-    }
-
-    console.log(`User confirmed, calling ${actionType}Raffle with ID:`, parseInt(raffleId));
+    );
     try {
       if (actionType === 'cancel') {
         await cancelRaffle(parseInt(raffleId));
-        console.log('cancelRaffle called successfully');
-      } else {
-        await endRaffle(parseInt(raffleId));
-        console.log('endRaffle called successfully');
-      }
-    } catch (error) {
+        );
+        {
       console.error(`Error ${actionType}ing raffle:`, error);
       alert(`Failed to ${actionType} raffle: ` + (error as Error).message);
     }
@@ -1065,8 +990,6 @@ export default function DashboardContent() {
     link_download.click();
     document.body.removeChild(link_download);
   };
-
-
 
   // Filter functions
   const filteredPaymentLinks = paymentLinks.filter((link: PaymentLinkData) => {
@@ -1421,8 +1344,6 @@ export default function DashboardContent() {
             formatStatsPoints={formatStatsPoints}
           />
         </div>
-
-
 
         {/* Tab Navigation */}
         <div className="mb-8">
