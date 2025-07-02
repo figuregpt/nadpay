@@ -149,10 +149,27 @@ function convertIpfsUrl(url: string): string {
 }
 
 // Helper function to fetch metadata from URI
-async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
+async function fetchNFTMetadata(uri: string, tokenId?: string): Promise<NFTMetadata | null> {
   try {
-    const httpUrl = convertIpfsUrl(uri);
+    let httpUrl = convertIpfsUrl(uri);
+    
+    console.log('🔍 fetchNFTMetadata called:', {
+      uri,
+      tokenId,
+      httpUrl
+    });
+    
+    // Special handling for AllDomains - append tokenId if URL ends with /
+    if (httpUrl.endsWith('/') && tokenId) {
+      httpUrl = `${httpUrl}${tokenId}`;
+      console.log('📎 AllDomains: Appended tokenId to URL:', httpUrl);
+    }
+    
+    console.log('🌐 Final URL to fetch:', httpUrl);
+    
     const response = await fetch(httpUrl);
+    
+    console.log('📊 Response status:', response.status);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -160,8 +177,13 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
     
     const metadata = await response.json();
     
+    console.log('✅ Metadata fetched:', {
+      name: metadata.name,
+      image: metadata.image
+    });
+    
     return {
-      tokenId: metadata.tokenId || '',
+      tokenId: metadata.tokenId || tokenId || '',
       name: metadata.name || 'Unnamed NFT',
       description: metadata.description,
       image: convertIpfsUrl(metadata.image || ''),
@@ -342,14 +364,46 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
         // Fetch metadata quickly (parallel but limited)
         const metadataPromises = ownedTokenIds.slice(0, 5).map(async (tokenId, index) => {
           try {
-            const tokenURI = await publicClient.readContract({
-              address: contractAddress as `0x${string}`,
-              abi: ERC721_ABI,
-              functionName: 'tokenURI',
-              args: [BigInt(tokenId)]
+            // Convert tokenId to BigInt safely
+            let tokenIdBigInt: bigint;
+            try {
+              // Handle scientific notation and large numbers
+              if (tokenId.includes('e') || tokenId.includes('E')) {
+                // Parse scientific notation to regular number string
+                const num = Number(tokenId);
+                if (isNaN(num) || !isFinite(num)) {
+                  throw new Error('Invalid token ID format');
+                }
+                // Convert to string without scientific notation
+                tokenIdBigInt = BigInt(Math.floor(num));
+              } else {
+                // Direct conversion for regular number strings
+                tokenIdBigInt = BigInt(tokenId);
+              }
+            } catch (e) {
+              console.error('Failed to convert tokenId to BigInt:', tokenId, e);
+              throw new Error('Invalid token ID format');
+            }
+            
+            const tokenURI = await retryWithBackoff(async () => {
+              console.log('🔗 Fetching tokenURI for:', {
+                contractAddress,
+                tokenId,
+                tokenIdBigInt: tokenIdBigInt.toString()
+              });
+              
+              const uri = await publicClient.readContract({
+                address: contractAddress as `0x${string}`,
+                abi: ERC721_ABI,
+                functionName: 'tokenURI',
+                args: [tokenIdBigInt]
+              });
+              
+              console.log('📄 TokenURI received:', uri);
+              return uri;
             });
 
-            const metadata = await fetchNFTMetadata(tokenURI);
+            const metadata = await fetchNFTMetadata(tokenURI, tokenId);
             
             setNfts(prev => prev.map((nft, i) => 
               i === index 
@@ -416,18 +470,48 @@ export function useNFTMetadata(contractAddress: string, tokenId: string) {
       try {
         await rateLimiter.throttle();
         
+        // Convert tokenId to BigInt safely
+        let tokenIdBigInt: bigint;
+        try {
+          // Handle scientific notation and large numbers
+          if (tokenId.includes('e') || tokenId.includes('E')) {
+            // Parse scientific notation to regular number string
+            const num = Number(tokenId);
+            if (isNaN(num) || !isFinite(num)) {
+              throw new Error('Invalid token ID format');
+            }
+            // Convert to string without scientific notation
+            tokenIdBigInt = BigInt(Math.floor(num));
+          } else {
+            // Direct conversion for regular number strings
+            tokenIdBigInt = BigInt(tokenId);
+          }
+        } catch (e) {
+          console.error('Failed to convert tokenId to BigInt:', tokenId, e);
+          throw new Error('Invalid token ID format');
+        }
+        
         // Get tokenURI with retry logic
         const tokenURI = await retryWithBackoff(async () => {
-          return await publicClient.readContract({
+          console.log('🔗 Fetching tokenURI for:', {
+            contractAddress,
+            tokenId,
+            tokenIdBigInt: tokenIdBigInt.toString()
+          });
+          
+          const uri = await publicClient.readContract({
             address: contractAddress as `0x${string}`,
             abi: ERC721_ABI,
             functionName: 'tokenURI',
-            args: [BigInt(tokenId)]
+            args: [tokenIdBigInt]
           });
+          
+          console.log('📄 TokenURI received:', uri);
+          return uri;
         });
 
         // Fetch metadata from URI
-        const fetchedMetadata = await fetchNFTMetadata(tokenURI);
+        const fetchedMetadata = await fetchNFTMetadata(tokenURI, tokenId);
         
         // Cache the result
         metadataCache.set(cacheKey, {

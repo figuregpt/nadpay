@@ -14,7 +14,7 @@ export const NADSWAP_V3_CONTRACT = {
 
 export interface SwapAssetV3 {
   contractAddress: string;
-  tokenId: number;
+  tokenId: string;
   amount: string;
   isNFT: boolean;
   name?: string;
@@ -607,41 +607,76 @@ export function useNadSwapV3Contract() {
   const fetchAssetMetadata = useCallback(async (asset: any): Promise<SwapAssetV3> => {
     console.log('🔍 fetchAssetMetadata called with:', asset);
     
+    // Convert tokenId to string properly, handling large numbers
+    let tokenIdString: string;
+    if (typeof asset.tokenId === 'number') {
+      // For numbers, check if they're in scientific notation
+      const tokenIdStr = asset.tokenId.toString();
+      if (tokenIdStr.includes('e') || tokenIdStr.includes('E')) {
+        // Handle scientific notation by converting to BigInt first, then to string
+        // This is a workaround for JavaScript's number limitations
+        console.warn('⚠️ TokenId in scientific notation:', tokenIdStr);
+        // Since we can't convert scientific notation directly to BigInt,
+        // we'll use the string as-is and handle it differently
+        tokenIdString = tokenIdStr;
+      } else {
+        tokenIdString = tokenIdStr;
+      }
+    } else if (typeof asset.tokenId === 'bigint') {
+      tokenIdString = asset.tokenId.toString();
+    } else {
+      tokenIdString = String(asset.tokenId);
+    }
+    
     const baseAsset = {
       contractAddress: asset.contractAddress,
-      tokenId: Number(asset.tokenId),
+      tokenId: tokenIdString,
       amount: asset.isNFT ? '0' : formatEther(asset.amount),
       isNFT: asset.isNFT
     };
 
     try {
       if (asset.isNFT) {
-        console.log('🖼️ Processing NFT:', asset.contractAddress, 'tokenId:', asset.tokenId);
+        console.log('🖼️ Processing NFT:', asset.contractAddress, 'tokenId:', tokenIdString);
         
         // Check known NFT collections first
         const knownNFT = getKnownNFT(asset.contractAddress);
-        if (knownNFT) {
-          // For Nad Name Service, format special display
-          if (asset.contractAddress.toLowerCase() === "0x3019bf1dfb84e5b46ca9d0eec37de08a59a41308") {
-            return {
-              ...baseAsset,
-              name: `m${asset.tokenId}.nad`,
-              symbol: 'NNS',
-              image: knownNFT.image
-            };
-          }
-          
+        
+        // For Nad Name Service, use special formatting with hardcoded image
+        if (asset.contractAddress.toLowerCase() === "0x3019bf1dfb84e5b46ca9d0eec37de08a59a41308") {
           return {
             ...baseAsset,
-            name: `${knownNFT.name} #${asset.tokenId}`,
-            symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
-            image: knownNFT.image
+            name: `m${tokenIdString}.nad`,
+            symbol: 'NNS',
+            image: knownNFT?.image
           };
         }
-
-        // Fetch NFT metadata from contract using the same method as raffle
+        
+        // For ALL NFTs (including AllDomains), fetch metadata from blockchain
         if (publicClient) {
           try {
+            // Check if tokenId is in scientific notation - if so, skip blockchain call
+            if (tokenIdString.includes('e') || tokenIdString.includes('E')) {
+              console.warn('⚠️ Skipping blockchain metadata fetch for scientific notation tokenId:', tokenIdString);
+              // Use known NFT data if available
+              if (knownNFT) {
+                return {
+                  ...baseAsset,
+                  name: `${knownNFT.name} #${tokenIdString}`,
+                  symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
+                  image: knownNFT.image
+                };
+              } else {
+                return {
+                  ...baseAsset,
+                  name: `NFT #${tokenIdString}`
+                };
+              }
+            }
+            
+            // For normal tokenIds, proceed with blockchain fetch
+            const tokenIdBigInt = BigInt(tokenIdString);
+            
             // Get token URI
             const tokenURI = await publicClient.readContract({
               address: asset.contractAddress as `0x${string}`,
@@ -655,7 +690,7 @@ export function useNadSwapV3Contract() {
                 },
               ],
               functionName: 'tokenURI',
-              args: [BigInt(asset.tokenId)]
+              args: [tokenIdBigInt]
             });
 
             console.log('📄 TokenURI:', tokenURI, 'Type:', typeof tokenURI);
@@ -669,7 +704,14 @@ export function useNadSwapV3Contract() {
                 return url; // Keep HTTP URLs as-is
               };
 
-              const httpUrl = convertToHttpUrl(tokenURI as string);
+              let httpUrl = convertToHttpUrl(tokenURI as string);
+              
+              // Special handling for AllDomains - append tokenId if URL ends with /
+              if (asset.contractAddress.toLowerCase() === "0x05b16393517026d6c635b6e87c256923e91caf90" && httpUrl.endsWith('/')) {
+                httpUrl = `${httpUrl}${tokenIdString}`;
+                console.log('🔗 AllDomains URL with tokenId:', httpUrl);
+              }
+              
               console.log('🌐 Fetching metadata from:', httpUrl);
               const response = await fetch(httpUrl);
               
@@ -679,10 +721,17 @@ export function useNadSwapV3Contract() {
                 
                 console.log('✅ NFT metadata loaded:', metadata.name, imageUrl ? '(with image)' : '(no image)');
 
+                // For AllDomains, append .mon to the name if it doesn't have it
+                let displayName = metadata.name || `NFT #${tokenIdString}`;
+                if (asset.contractAddress.toLowerCase() === "0x05b16393517026d6c635b6e87c256923e91caf90" && !displayName.endsWith('.mon')) {
+                  displayName = `${displayName}.mon`;
+                }
+
                 return {
                   ...baseAsset,
-                  name: metadata.name || `NFT #${asset.tokenId}`,
-                  image: imageUrl
+                  name: displayName,
+                  symbol: knownNFT?.name.split(' ').map(w => w[0]).join('').toUpperCase() || 'NFT',
+                  image: imageUrl || knownNFT?.image
                 };
               } else {
                 console.warn('❌ Failed to fetch metadata, response status:', response.status);
@@ -695,10 +744,20 @@ export function useNadSwapV3Contract() {
           }
         }
 
-        // Fallback for NFTs
+        // Fallback: Use known NFT data if available
+        if (knownNFT) {
+          return {
+            ...baseAsset,
+            name: `${knownNFT.name} #${tokenIdString}`,
+            symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
+            image: knownNFT.image
+          };
+        }
+
+        // Final fallback for NFTs
         return {
           ...baseAsset,
-          name: `NFT #${asset.tokenId}`
+          name: `NFT #${tokenIdString}`
         };
       } else {
         // Check known tokens first
@@ -857,7 +916,7 @@ export function useNadSwapV3Contract() {
           if (proposalData[2]?.toLowerCase() === address.toLowerCase()) {
             receivedIds.push(i);
           }
-    } catch (error) {
+        } catch (error) {
           // Skip failed proposals
           continue;
         }

@@ -37,13 +37,36 @@ interface SwapProposalCardProps {
 
 // NFT Image Component with metadata fetching
 function NFTImage({ asset }: { asset: any }) {
-  const { metadata, isLoading } = useNFTMetadata(asset.contractAddress, asset.tokenId.toString());
+  // tokenId should already be a string from useNadSwapV3Contract
+  const tokenIdString = String(asset.tokenId);
+  const { metadata, isLoading } = useNFTMetadata(asset.contractAddress, tokenIdString);
   
   // Function to open MagicEden page
   const openMagicEden = () => {
-    const magicEdenUrl = `https://magiceden.io/item-details/monad-testnet/${asset.contractAddress}/${asset.tokenId}`;
+    const magicEdenUrl = `https://magiceden.io/item-details/monad-testnet/${asset.contractAddress}/${tokenIdString}`;
     window.open(magicEdenUrl, '_blank', 'noopener,noreferrer');
   };
+  
+  // If asset already has an image, use it directly
+  if (asset.image) {
+    return (
+      <div 
+        className="relative group cursor-pointer w-full h-full" 
+        onClick={openMagicEden}
+        title={`View ${asset.name || `NFT #${tokenIdString}`} on MagicEden`}
+      >
+        <img
+          src={asset.image}
+          alt={asset.name || `NFT #${tokenIdString}`}
+          className="w-full h-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      </div>
+    );
+  }
   
   if (isLoading) {
     return (
@@ -58,11 +81,11 @@ function NFTImage({ asset }: { asset: any }) {
       <div 
         className="relative group cursor-pointer w-full h-full" 
         onClick={openMagicEden}
-        title={`View ${metadata.name || `NFT #${asset.tokenId}`} on MagicEden`}
+        title={`View ${metadata.name || `NFT #${tokenIdString}`} on MagicEden`}
       >
         <img
           src={metadata.image}
-          alt={metadata.name || `NFT #${asset.tokenId}`}
+          alt={metadata.name || `NFT #${tokenIdString}`}
           className="w-full h-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -77,7 +100,7 @@ function NFTImage({ asset }: { asset: any }) {
     <div 
       className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform"
       onClick={openMagicEden}
-      title={`View NFT #${asset.tokenId} on MagicEden`}
+      title={`View NFT #${tokenIdString} on MagicEden`}
     >
       <ImageIcon className="w-4 h-4 lg:w-6 lg:h-6 text-white" />
     </div>
