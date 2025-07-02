@@ -199,6 +199,16 @@ export default function DashboardContent() {
   const { data: totalLinks, error: totalLinksError } = useTotalLinksV2();
   
   // Debug logging
+  console.log('🔍 Dashboard Debug:', {
+    address,
+    isConnected,
+    creatorLinksData,
+    loadingLinks,
+    linksError: linksError?.message,
+    totalLinks: totalLinks?.toString(),
+    totalLinksError: totalLinksError?.message,
+    contractAddress: CONTRACT_ADDRESS
+  });
   // V6 contract - raffle hooks (load immediately)
   const {
     data: creatorRafflesData,
@@ -207,6 +217,11 @@ export default function DashboardContent() {
   } = useCreatorRafflesV6(address);
   
   // Debug logging for raffles
+  console.log('🎫 Raffle Debug: V6 hooks enabled', {
+    creatorRafflesData,
+    loadingRaffles
+  });
+
   // Handle URL parameters for errors and success messages
   useEffect(() => {
     const error = searchParams.get('error');
@@ -487,69 +502,95 @@ export default function DashboardContent() {
   // Raffle contract hook - endRaffle and cancelRaffle functionality temporarily disabled
   // These functions would need to be implemented in the V2 hook
   const endRaffle = (_raffleId: any) => {
-    => {
-    => {
+    console.log('endRaffle not implemented for V2 yet');
+  };
+  const cancelRaffle = (_raffleId: any) => {
+    console.log('cancelRaffle not implemented for V2 yet');
+  };
+  const isEndingRaffle = false;
+  const isRaffleEnded = false;
+
+    // Convert contract data to display format and sort by newest first - MEMOIZED to prevent infinite loops
+  const paymentLinks: PaymentLinkData[] = useMemo(() => {
     return creatorLinksData ? creatorLinksData
-      .map((link: unknown) => {
-        try {
-          const formatted = formatPaymentLinkV2(link);
-          .uniqueBuyersCount);
-          
-          const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
-            ? "MON" 
-            : getKnownToken(formatted.paymentToken)?.symbol || "TOKEN";
-          
-          return {
-            ...formatted,
-            linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
-            _id: (link as { linkId: { toString(): string } }).linkId.toString(),
-            creatorAddress: formatted.creator,
-            price: formatPriceV2(formatted.price),
-            totalEarned: formatPriceV2(formatted.totalEarned),
-            paymentToken: formatted.paymentToken,
-            paymentTokenSymbol: tokenSymbol,
-            uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
-            purchases: [], // Will be fetched separately if needed
-            createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
-            expiresAt: (formatted as any).expiresAt || BigInt(0),
-          };
-      } catch (error) {
-        console.error('Error formatting payment link:', error, link);
-        // Return a default object to prevent crashes
+    .map((link: unknown) => {
+      try {
+        const formatted = formatPaymentLinkV2(link);
+        console.log('Raw link data:', link);
+        console.log('Formatted link data:', formatted);
+        console.log('uniqueBuyersCount from link:', (link as { uniqueBuyersCount?: number }).uniqueBuyersCount);
+        
+        const tokenSymbol = formatted.paymentToken === "0x0000000000000000000000000000000000000000" 
+          ? "MON" 
+          : getKnownToken(formatted.paymentToken)?.symbol || "TOKEN";
+        
         return {
-          linkId: '0',
-          _id: '0',
-          creator: '',
-          title: 'Error Loading Link',
-          description: 'This link could not be loaded',
-          coverImage: '',
-          price: '0',
-          paymentToken: '0x0000000000000000000000000000000000000000',
-          paymentTokenSymbol: 'MON',
-          totalSales: BigInt(0),
-          maxPerWallet: BigInt(0),
-          salesCount: BigInt(0),
-          totalEarned: '0',
-          isActive: false,
-          createdAt: new Date().toISOString(),
-          expiresAt: BigInt(0),
-          creatorAddress: '',
-          purchases: [],
+          ...formatted,
+          linkId: (link as { linkId: { toString(): string } }).linkId.toString(), // Use actual linkId from contract
+          _id: (link as { linkId: { toString(): string } }).linkId.toString(),
+          creatorAddress: formatted.creator,
+          price: formatPriceV2(formatted.price),
+          totalEarned: formatPriceV2(formatted.totalEarned),
+          paymentToken: formatted.paymentToken,
+          paymentTokenSymbol: tokenSymbol,
+          uniqueBuyersCount: (link as { uniqueBuyersCount?: number }).uniqueBuyersCount || 0, // Add this explicitly
+          purchases: [], // Will be fetched separately if needed
+          createdAt: formatted.createdAt ? new Date(Number(formatted.createdAt) * 1000).toISOString() : new Date().toISOString(),
+          expiresAt: (formatted as any).expiresAt || BigInt(0),
         };
-      }
-    })
-      .sort((a: PaymentLinkData, b: PaymentLinkData) => {
-        // Sort by linkId descending (newest first)
-        return parseInt(b.linkId) - parseInt(a.linkId);
-      }) : [];
+    } catch (error) {
+      console.error('Error formatting payment link:', error, link);
+      // Return a default object to prevent crashes
+      return {
+        linkId: '0',
+        _id: '0',
+        creator: '',
+        title: 'Error Loading Link',
+        description: 'This link could not be loaded',
+        coverImage: '',
+        price: '0',
+        paymentToken: '0x0000000000000000000000000000000000000000',
+        paymentTokenSymbol: 'MON',
+        totalSales: BigInt(0),
+        maxPerWallet: BigInt(0),
+        salesCount: BigInt(0),
+        totalEarned: '0',
+        isActive: false,
+        createdAt: new Date().toISOString(),
+        expiresAt: BigInt(0),
+        creatorAddress: '',
+        purchases: [],
+      };
+    }
+  })
+    .sort((a: PaymentLinkData, b: PaymentLinkData) => {
+      // Sort by linkId descending (newest first)
+      return parseInt(b.linkId) - parseInt(a.linkId);
+    }) : [];
   }, [creatorLinksData]);
 
   // Convert V6 raffle contract data to display format - MEMOIZED to prevent unnecessary re-renders
-  => {
+  console.log('creatorRafflesData V6:', creatorRafflesData);
+  console.log('loadingRaffles:', loadingRaffles);
+  console.log('address:', address);
+  
+  const raffles: RaffleData[] = useMemo(() => {
     return creatorRafflesData ? creatorRafflesData
-      .map((raffle: RaffleInfoV6, index: number) => {
-        try {
-          => {
+    .map((raffle: RaffleInfoV6, index: number) => {
+      try {
+        console.log('Processing V6 raffle:', raffle);
+        
+        // Calculate total earned (tickets sold * ticket price)
+        const totalEarned = raffle.soldTickets * raffle.ticketPrice;
+        
+        return {
+          id: raffle.raffleId !== undefined ? raffle.raffleId.toString() : index.toString(),
+          creator: raffle.creator || '',
+          title: `V6 Raffle #${raffle.raffleId !== undefined ? raffle.raffleId : index}`, // V6 doesn't have title/description
+            // Fix description to use correct field based on reward type
+            description: `Reward: ${
+              raffle.rewardType === 1 
+                ? (() => {
                     const amount = formatPriceV6(raffle.rewardTokenId || BigInt(0));
                     const token = raffle.rewardTokenAddress 
                       ? getKnownToken(raffle.rewardTokenAddress.toLowerCase())
@@ -568,7 +609,7 @@ export default function DashboardContent() {
                   })()
                 : formatPriceV6(raffle.rewardAmount) + ' MON'
             }`,
-            rewardType: Number(raffle.rewardType) || 0,
+          rewardType: Number(raffle.rewardType) || 0,
             // For ERC20 tokens (type 1), amount is in rewardTokenId, not rewardAmount
             // For NFTs (type 2), show collection name + token ID instead of amount
             rewardAmount: raffle.rewardType === 1 
@@ -584,37 +625,37 @@ export default function DashboardContent() {
                 })()
               : formatPriceV6(raffle.rewardAmount),
             rewardTokenAddress: raffle.rewardTokenAddress, // Include token address for identifying specific tokens
-            ticketPrice: formatPriceV6(raffle.ticketPrice),
-            maxTickets: raffle.maxTickets || BigInt(0),
-            ticketsSold: raffle.soldTickets || BigInt(0),
-            totalEarned: formatPriceV6(totalEarned),
-            status: Number(raffle.state) || 0, // V6 uses 'state' instead of 'status'
-            createdAt: raffle.startTime ? new Date(Number(raffle.startTime) * 1000).toISOString() : new Date().toISOString(),
-            expirationTime: raffle.endTime || BigInt(0),
-            winner: raffle.winner !== '0x0000000000000000000000000000000000000000' ? raffle.winner : undefined,
-          };
-        } catch (error) {
-          console.error('Error formatting V6 raffle data:', error, raffle);
-          return {
-            id: index.toString(),
-            creator: '',
-            title: 'Error Loading V6 Raffle',
-            description: 'This raffle could not be loaded',
-            rewardType: 0,
-            rewardAmount: '0',
-            ticketPrice: '0',
-            maxTickets: BigInt(0),
-            ticketsSold: BigInt(0),
-            totalEarned: '0',
-            status: 2, // CANCELLED
-            createdAt: new Date().toISOString(),
-            expirationTime: BigInt(0),
-          };
-        }
-      })
-      .sort((a: RaffleData, b: RaffleData) => {
-        return parseInt(b.id) - parseInt(a.id);
-      }) : [];
+          ticketPrice: formatPriceV6(raffle.ticketPrice),
+          maxTickets: raffle.maxTickets || BigInt(0),
+          ticketsSold: raffle.soldTickets || BigInt(0),
+          totalEarned: formatPriceV6(totalEarned),
+          status: Number(raffle.state) || 0, // V6 uses 'state' instead of 'status'
+          createdAt: raffle.startTime ? new Date(Number(raffle.startTime) * 1000).toISOString() : new Date().toISOString(),
+          expirationTime: raffle.endTime || BigInt(0),
+          winner: raffle.winner !== '0x0000000000000000000000000000000000000000' ? raffle.winner : undefined,
+        };
+      } catch (error) {
+        console.error('Error formatting V6 raffle data:', error, raffle);
+        return {
+          id: index.toString(),
+          creator: '',
+          title: 'Error Loading V6 Raffle',
+          description: 'This raffle could not be loaded',
+          rewardType: 0,
+          rewardAmount: '0',
+          ticketPrice: '0',
+          maxTickets: BigInt(0),
+          ticketsSold: BigInt(0),
+          totalEarned: '0',
+          status: 2, // CANCELLED
+          createdAt: new Date().toISOString(),
+          expirationTime: BigInt(0),
+        };
+      }
+    })
+    .sort((a: RaffleData, b: RaffleData) => {
+      return parseInt(b.id) - parseInt(a.id);
+    }) : [];
   }, [creatorRafflesData]);
 
   // Refetch when deactivation is confirmed
@@ -622,7 +663,16 @@ export default function DashboardContent() {
   
   useEffect(() => {
     if (deactivationConfirmed && !hasRefetchedAfterDeactivation) {
-      }
+      console.log('🔄 Refetching after deactivation...');
+      // Force refresh to bypass rate limiting
+      refetch(true);
+      setHasRefetchedAfterDeactivation(true);
+      
+      // Reset the flag after a delay to allow for future deactivations
+      setTimeout(() => {
+        setHasRefetchedAfterDeactivation(false);
+      }, 5000);
+    }
   }, [deactivationConfirmed, refetch, hasRefetchedAfterDeactivation]);
   
   // Refetch when raffle is ended
@@ -770,8 +820,22 @@ export default function DashboardContent() {
   };
 
   const handleEndRaffle = async (raffleId: string) => {
+    console.log('handleEndRaffle called with raffleId:', raffleId);
+    
+    if (!address) {
+      console.log('No address, returning');
+      return;
+    }
+    
+    const raffle = raffles.find(r => r.id === raffleId);
     if (!raffle) {
-      let confirmMessage = 'Are you sure you want to end this raffle?';
+      console.log('Raffle not found:', raffleId);
+      return;
+    }
+    
+    console.log('Found raffle:', raffle);
+    
+    let confirmMessage = 'Are you sure you want to end this raffle?';
     let actionType = 'end';
     
     if (raffle.ticketsSold === BigInt(0)) {
@@ -782,12 +846,23 @@ export default function DashboardContent() {
       actionType = 'end';
     }
     
-    );
+    console.log('Showing confirmation dialog for action:', actionType);
+    const confirmed = confirm(confirmMessage);
+    if (!confirmed) {
+      console.log('User cancelled');
+      return;
+    }
+
+    console.log(`User confirmed, calling ${actionType}Raffle with ID:`, parseInt(raffleId));
     try {
       if (actionType === 'cancel') {
         await cancelRaffle(parseInt(raffleId));
-        );
-        {
+        console.log('cancelRaffle called successfully');
+      } else {
+        await endRaffle(parseInt(raffleId));
+        console.log('endRaffle called successfully');
+      }
+    } catch (error) {
       console.error(`Error ${actionType}ing raffle:`, error);
       alert(`Failed to ${actionType} raffle: ` + (error as Error).message);
     }
@@ -991,6 +1066,8 @@ export default function DashboardContent() {
     document.body.removeChild(link_download);
   };
 
+
+
   // Filter functions
   const filteredPaymentLinks = paymentLinks.filter((link: PaymentLinkData) => {
     if (!searchQuery) return true;
@@ -1038,7 +1115,7 @@ export default function DashboardContent() {
   const activeUserTickets = userTickets; // Show ALL tickets, not just active ones
   const filteredMyTickets = activeUserTickets
     .filter(ticket =>
-      ticket.raffleName.toLowerCase().includes(searchQuery.toLowerCase())
+    ticket.raffleName.toLowerCase().includes(searchQuery.toLowerCase())
     )
     // Sort by raffleId in descending order (newest first)
     .sort((a, b) => b.raffleId - a.raffleId);
@@ -1345,62 +1422,64 @@ export default function DashboardContent() {
           />
         </div>
 
+
+
         {/* Tab Navigation */}
         <div className="mb-8">
           {/* Desktop - Single Row */}
           <div className="hidden sm:flex space-x-1 bg-gray-100 dark:bg-dark-700 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveTab('payment-links')}
+          <button
+            onClick={() => setActiveTab('payment-links')}
               className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'payment-links'
-                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <Link2 className="w-4 h-4" />
-                <span>Payment Links ({paymentLinks.length})</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('my-payments')}
+              activeTab === 'payment-links'
+                ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Link2 className="w-4 h-4" />
+              <span>Payment Links ({paymentLinks.length})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('my-payments')}
               className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'my-payments'
-                  ? 'bg-white dark:bg-dark-800 text-green-600 dark:text-green-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <ShoppingCart className="w-4 h-4" />
-                <span>My Payments ({myPurchases.length})</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('raffles')}
+              activeTab === 'my-payments'
+                ? 'bg-white dark:bg-dark-800 text-green-600 dark:text-green-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <ShoppingCart className="w-4 h-4" />
+              <span>My Payments ({myPurchases.length})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('raffles')}
               className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'raffles'
-                  ? 'bg-white dark:bg-dark-800 text-purple-600 dark:text-purple-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <span className="text-lg">🎫</span>
-                <span>Raffles ({raffles.length})</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('my-tickets')}
+              activeTab === 'raffles'
+                ? 'bg-white dark:bg-dark-800 text-purple-600 dark:text-purple-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-lg">🎫</span>
+              <span>Raffles ({raffles.length})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('my-tickets')}
               className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'my-tickets'
-                  ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <span className="text-lg">🎟️</span>
-                <span>My Tickets ({activeUserTickets.length})</span>
-              </div>
-            </button>
+              activeTab === 'my-tickets'
+                ? 'bg-white dark:bg-dark-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-lg">🎟️</span>
+              <span>My Tickets ({activeUserTickets.length})</span>
+            </div>
+          </button>
           </div>
           
           {/* Mobile - 2x2 Grid */}

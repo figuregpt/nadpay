@@ -104,7 +104,18 @@ export default function CreateRaffleContent() {
     if (!raffleHash) return;
     
     try {
-      alert('Raffle created but failed to generate link. Please check the transaction.');
+      console.log('🎯 Raffle transaction confirmed, extracting raffle ID...');
+      const raffleId = await getRaffleIdFromTransaction(raffleHash);
+      
+      if (raffleId !== null) {
+        console.log('🎫 Raffle ID extracted:', raffleId);
+        const secureRaffleId = createPredictableSecureRaffleId(raffleId);
+        const raffleUrl = `${window.location.origin}/raffle/${secureRaffleId}`;
+        setGeneratedRaffleLink(raffleUrl);
+        console.log('🔗 Raffle link generated:', raffleUrl);
+      } else {
+        console.error('❌ Failed to extract raffle ID from transaction');
+        alert('Raffle created but failed to generate link. Please check the transaction.');
       }
     } catch (error) {
       console.error('❌ Error in raffle success handler:', error);
@@ -262,7 +273,8 @@ export default function CreateRaffleContent() {
         });
 
         needsNFTApproval = !isApprovedForAll;
-        } catch (error) {
+        console.log('🔍 NFT Approval Check:', { isApprovedForAll, needsNFTApproval });
+      } catch (error) {
         console.error('Error checking NFT approval:', error);
         alert('Failed to check NFT approval status. Please try again.');
         return;
@@ -295,19 +307,89 @@ export default function CreateRaffleContent() {
         const rewardTokenAddress = selectedRewardAsset.data.address;
         const rewardAmount = BigInt(parseFloat(raffleFormData.rewardAmount.toString()) * 1e18);
         
-        if (needsNFTApproval && raffleFormData.rewardType === 'NFT' && selectedRewardAsset) {
+        console.log('Approving reward token...');
+        await approveERC20Token(rewardTokenAddress, NADRAFFLE_V7_CONTRACT.address, rewardAmount);
+        
+        // Verify approval
+        const newAllowance = await checkERC20Allowance(
+          rewardTokenAddress,
+          address as string,
+          NADRAFFLE_V7_CONTRACT.address
+        );
+        
+        if (newAllowance < rewardAmount) {
+          throw new Error('Reward token approval failed');
+        }
+        
+        currentStepIndex++;
+      }
+
+      // Step 2: NFT Approval (if needed)
+      if (needsNFTApproval && raffleFormData.rewardType === 'NFT' && selectedRewardAsset) {
         setTransactionState(prev => ({ ...prev, currentStep: 'Approving NFT' }));
         
         const contractAddress = NADRAFFLE_V7_CONTRACT.address;
         const tokenId = BigInt(raffleFormData.rewardAmount);
         const nftAddress = selectedRewardAsset.data.address as `0x${string}`;
 
+        console.log('Sending NFT approval transaction using setApprovalForAll...');
+        
+        // Use setApprovalForAll instead of individual approve
+        const { request } = await publicClient.simulateContract({
+          account: address as `0x${string}`,
+          address: nftAddress,
+          abi: [
+            {
+              name: 'setApprovalForAll',
+              type: 'function',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'operator', type: 'address' },
+                { name: 'approved', type: 'bool' }
+              ],
+              outputs: []
+            }
+          ],
+          functionName: 'setApprovalForAll',
+          args: [contractAddress, true]
+        });
+
         const approvalHash = await walletClient.writeContract(request);
+        console.log('NFT setApprovalForAll transaction sent:', approvalHash);
+
+        // Wait for approval to be confirmed
+        const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+        console.log('NFT setApprovalForAll confirmed:', approvalReceipt);
+
+        // Verify the approval was actually set
+        const isApprovedForAll = await publicClient.readContract({
+          address: nftAddress,
+          abi: [
+            {
+              name: 'isApprovedForAll',
+              type: 'function',
+              stateMutability: 'view',
+              inputs: [
+                { name: 'owner', type: 'address' },
+                { name: 'operator', type: 'address' }
+              ],
+              outputs: [{ name: '', type: 'bool' }]
+            }
+          ],
+          functionName: 'isApprovedForAll',
+          args: [address as `0x${string}`, contractAddress]
+        });
+
         if (!isApprovedForAll) {
           throw new Error('NFT approval failed - setApprovalForAll was not successful');
         }
 
-        );
+        console.log('✅ NFT setApprovalForAll successful');
+        currentStepIndex++;
+      }
+
+      // Final Step: Create Raffle
+      setTransactionState(prev => ({ ...prev, currentStep: 'Creating Raffle' }));
       const expirationTime = parseInputTimeToBlockchain(raffleFormData.expirationDateTime);
       
       // Convert expirationTime to duration (seconds from now)
@@ -317,9 +399,18 @@ export default function CreateRaffleContent() {
       // Ensure minimum duration is met (V7 contract requires 3600 seconds minimum)
       const MIN_DURATION = 3600; // 1 hour in seconds
       if (duration < MIN_DURATION) {
+        console.log(`⚠️ Duration ${duration}s is less than minimum ${MIN_DURATION}s, adjusting...`);
         duration = MIN_DURATION;
       }
       
+      console.log('🎫 Creating raffle with data:', {
+        ...raffleFormData,
+        expirationTime,
+        duration,
+        rewardTokenAddress: selectedRewardAsset.data.address,
+        ticketPaymentToken: selectedTicketPaymentAsset.data.address
+      });
+
       // Map V4 rewardType to V7 rewardType
       let v7RewardType: number;
       if (raffleFormData.rewardType === 'NFT') {
@@ -528,6 +619,7 @@ export default function CreateRaffleContent() {
             ) : (
               <div className="space-y-6">
 
+
                 {/* Reward Configuration */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -555,6 +647,10 @@ export default function CreateRaffleContent() {
                               try {
                                 const owner = await contract.ownerOf(reportedTokenId);
                                 if (owner.toLowerCase() === userAddr.toLowerCase()) {
+                                  console.log('✅ Token ID ownership confirmed:', reportedTokenId);
+                                  return reportedTokenId;
+                                } else {
+                                  console.error('❌ User does not own token ID:', reportedTokenId, 'Owner:', owner);
                                   throw new Error(`Token ID ${reportedTokenId} is not owned by user`);
                                 }
                               } catch (e) {
@@ -570,7 +666,10 @@ export default function CreateRaffleContent() {
                           // Validate ownership before setting token ID
                           validateAndUseTokenId(nftData.address, address || '', nftData.tokenId)
                             .then(validTokenId => {
-                              .catch(error => {
+                              console.log('🎯 Using validated token ID:', validTokenId);
+                              handleRaffleInputChange('rewardAmount', validTokenId);
+                            })
+                            .catch(error => {
                               console.error('🚨 NFT validation failed, cannot use this NFT for raffle:', error);
                               alert(`Cannot use this NFT: ${error.message}\n\nThe NFT selector may be showing incorrect token IDs. Please try refreshing the page.`);
                             });
@@ -722,7 +821,9 @@ export default function CreateRaffleContent() {
                           const formattedTime = formatBlockchainTimeForInput(endTimestamp);
                           handleRaffleInputChange('expirationDateTime', formattedTime);
                           
-                          .toISOString(),
+                          console.log(`⏰ Set expiration to ${duration.minutes} minutes from blockchain time:`, {
+                            requested: duration.minutes,
+                            endTime: new Date(endTimestamp * 1000).toISOString(),
                             localDisplay: formattedTime
                           });
                         }}

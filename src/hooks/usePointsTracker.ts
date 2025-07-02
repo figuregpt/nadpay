@@ -49,17 +49,25 @@ export function usePointsTracker(options: PointsTrackerOptions = {}) {
       metadata
     };
 
-    ,
-      });
+    const response = await fetch('/api/points/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
 
+    if (!response.ok) {
+      throw new Error('Failed to add points');
+    }
+
+    const result = await response.json();
+    
+    if (result.success) {
       return result.points;
-      } else {
-        console.warn('Failed to award points:', result.error);
-        return result;
-      }
-    } catch (error) {
-      console.error('Error awarding points:', error);
-      throw error;
+    } else {
+      console.warn('Failed to award points:', result.error);
+      return result;
     }
   }, [address]);
 

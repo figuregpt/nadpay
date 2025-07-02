@@ -57,7 +57,9 @@ export default function NadSwapPage() {
     if (!isConnected) return;
     
     const interval = setInterval(() => {
-      // 30 seconds
+      console.log('🔄 Auto-refreshing proposals...');
+      setRefreshTrigger(prev => prev + 1);
+    }, 30000); // 30 seconds
     
     return () => clearInterval(interval);
   }, [isConnected]);
@@ -65,7 +67,12 @@ export default function NadSwapPage() {
   // Refresh when totalProposals changes (someone created a new proposal)
   useEffect(() => {
     if (totalProposals > 0) {
-      // Manual refresh trigger
+      console.log('📊 Total proposals changed:', totalProposals);
+      setRefreshTrigger(prev => prev + 1);
+    }
+  }, [totalProposals]);
+
+  // Manual refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch proposals when tab changes or proposal IDs change
@@ -76,6 +83,14 @@ export default function NadSwapPage() {
         setReceivedProposals([]);
         return;
       }
+      
+      console.log('📊 Proposal IDs:', {
+        activeTab,
+        userProposalIds: userProposalIds.length,
+        userReceivedProposalIds: userReceivedProposalIds.length,
+        sentIds: userProposalIds,
+        receivedIds: userReceivedProposalIds
+      });
       
       // Prevent unnecessary fetches
       if (activeTab === 'sent' && userProposalIds.length === 0) {
@@ -115,7 +130,19 @@ export default function NadSwapPage() {
   const handleAcceptProposal = useCallback(async (proposalId: number) => {
     try {
       setAcceptingProposal(proposalId);
-      {
+      console.log('🔄 Attempting to accept proposal:', proposalId);
+      await acceptSwapProposal(proposalId);
+      console.log('✅ Successfully accepted proposal and confirmed on blockchain:', proposalId);
+      
+      // Now refresh proposals since transaction is confirmed
+      console.log('🔄 Refreshing proposals after accept...');
+      if (activeTab === 'received' && userReceivedProposalIds.length > 0) {
+        const proposals = await getMultipleProposals(userReceivedProposalIds);
+        setReceivedProposals(proposals);
+        console.log('✅ Proposals refreshed successfully');
+      }
+      
+    } catch (error) {
       console.error('❌ Error accepting proposal:', error);
       // Show user-friendly error message
       if (error instanceof Error) {
@@ -146,7 +173,14 @@ export default function NadSwapPage() {
 
   // Handler for when a new proposal is created
   const handleProposalCreated = useCallback(() => {
-    if (!isConnected) {
+    console.log('🔄 New proposal created, switching to sent tab and refreshing...');
+    // Switch to sent tab to show the new proposal
+    setActiveTab('sent');
+    // Trigger a refresh
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
         <Navbar 

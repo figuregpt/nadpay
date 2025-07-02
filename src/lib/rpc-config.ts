@@ -42,6 +42,7 @@ export async function retryRpcCall<T>(
     return await fn();
   } catch (error: any) {
     if (retries > 0 && error?.status === 429) {
+      // console.log(`⏳ Rate limited, retrying in ${RPC_CONFIG.RETRY_DELAY}ms...`);
       await delay(RPC_CONFIG.RETRY_DELAY);
       return retryRpcCall(fn, retries - 1);
     }

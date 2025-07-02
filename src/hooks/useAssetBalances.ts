@@ -257,6 +257,13 @@ export function useAssetBalances() {
         const totalOwned = Number(balance);
         const ownedTokens: string[] = [];
         
+        // Debug: NFT balance
+        // console.log(`🔍 NFT Balance Debug for ${nft.name}:`, {
+        //   contract: nft.address,
+        //   user: address,
+        //   totalOwned
+        // });
+        
         // If user owns NFTs, try to get token IDs (this might fail for some contracts)
         if (totalOwned > 0) {
           try {
@@ -268,7 +275,7 @@ export function useAssetBalances() {
                 args: [address as `0x${string}`, BigInt(i)]
               });
               
-              );
+              // console.log(`🎯 Token at index ${i}:`, tokenId.toString());
               ownedTokens.push(tokenId.toString());
             }
           } catch (error) {
@@ -279,6 +286,8 @@ export function useAssetBalances() {
             }
           }
         }
+
+        // console.log(`✅ Final ownedTokens for ${nft.name}:`, ownedTokens);
 
         return {
           ...nft,
@@ -309,8 +318,18 @@ export function useAssetBalances() {
 
   // Fetch all balances
   const fetchAllBalances = async () => {
+    // Debug: fetchAllBalances
+    // console.log('🚀 fetchAllBalances called', { address, isConnected });
+    
     if (!address || !isConnected) {
-      ));
+      // console.log('❌ No address or not connected, setting empty balances');
+      // Initialize with MON visible even when not connected
+      setTokenBalances(KNOWN_TOKENS.map(token => ({
+        ...token,
+        balance: '0',
+        formattedBalance: '0',
+        isLoading: false,
+      })));
 
       setNftBalances(KNOWN_NFTS.map(nft => ({
         ...nft,
@@ -321,7 +340,17 @@ export function useAssetBalances() {
       return;
     }
 
-    ));
+    // console.log('✅ Starting balance fetch for address:', address);
+    setIsLoading(true);
+
+    try {
+      // Initialize with MON and CHOG immediately visible (assume they have these)
+      setTokenBalances(KNOWN_TOKENS.map(token => ({
+        ...token,
+        balance: '0',
+        formattedBalance: token.symbol === 'MON' || token.symbol === 'CHOG' ? 'Loading...' : '0',
+        isLoading: token.symbol === 'MON' || token.symbol === 'CHOG',
+      })));
 
       setNftBalances(KNOWN_NFTS.map(nft => ({
         ...nft,
@@ -370,7 +399,16 @@ export function useAssetBalances() {
       });
 
       // Fetch NFT balances in parallel
-      ));
+      // console.log('🎯 Starting NFT balance fetch for', KNOWN_NFTS.length, 'collections');
+      const nftPromises = KNOWN_NFTS.map(nft => fetchNFTBalance(nft));
+      const nftResults = await Promise.allSettled(nftPromises);
+      
+      // Debug: NFT results
+      // console.log('🎯 NFT results:', nftResults.map((result, index) => ({
+      //   collection: KNOWN_NFTS[index].name,
+      //   status: result.status,
+      //   totalOwned: result.status === 'fulfilled' ? result.value.totalOwned : 0
+      // })));
       
       const nftBalancesData = nftResults.map((result, index) => {
         if (result.status === 'fulfilled') {
@@ -389,7 +427,12 @@ export function useAssetBalances() {
       setTokenBalances(tokenBalancesData);
       setNftBalances(nftBalancesData);
       
-      ));
+      // Debug: Final NFT balances
+      // console.log('✅ Final NFT balances set:', nftBalancesData.map(nft => ({
+      //   name: nft.name,
+      //   totalOwned: nft.totalOwned,
+      //   ownedTokens: nft.ownedTokens
+      // })));
     } catch (error) {
       console.error('Error fetching balances:', error);
     } finally {

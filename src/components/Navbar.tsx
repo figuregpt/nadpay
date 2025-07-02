@@ -64,7 +64,6 @@ export default function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWalletDropdownOpen, setIsWalletDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showDiscordToast, setShowDiscordToast] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -145,22 +144,10 @@ export default function Navbar({
     setIsWalletDropdownOpen(false);
   };
 
-  const handleDiscordClick = () => {
-    setShowDiscordToast(true);
-    setTimeout(() => setShowDiscordToast(false), 3000);
-  };
-
   if (!mounted) return null;
 
   return (
     <>
-      {/* Discord Coming Soon Toast */}
-      {showDiscordToast && (
-        <div className="fixed top-20 right-4 z-50 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
-          <p className="text-sm font-medium">Discord coming soon! 🚀</p>
-        </div>
-      )}
-      
       <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -225,7 +212,7 @@ export default function Navbar({
                 </button>
               )}
 
-              {/* Social Links */}
+              {/* X Button */}
               <a
                 href="https://x.com/nadpayxyz"
                 target="_blank"
@@ -236,8 +223,9 @@ export default function Navbar({
                 <Twitter className="w-4 h-4" />
               </a>
 
+              {/* Discord Button */}
               <button
-                onClick={handleDiscordClick}
+                onClick={() => alert("Coming soon!")}
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Join our Discord"
               >
@@ -430,6 +418,7 @@ export default function Navbar({
                   )}
                 </button>
               )}
+
 
             </div>
           </div>

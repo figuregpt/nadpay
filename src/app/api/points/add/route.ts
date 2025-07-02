@@ -15,15 +15,21 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!walletAddress || !type || !amount || !txHash) {
-      }
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
 
     // TWITTER REQUIREMENT: All users must have Twitter connected to earn points
     let actualTwitterHandle = twitterHandle;
     if (!actualTwitterHandle) {
       try {
+        const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/profile/${walletAddress}`);
         const profileData = await profileResponse.json();
         if (profileData.profile?.twitter) {
           actualTwitterHandle = profileData.profile.twitter.username;
+        } else {
           return NextResponse.json(
             { message: 'Twitter connection required to earn points. Connect your Twitter account in dashboard.', points: 0 },
             { status: 200 }
@@ -50,7 +56,11 @@ export async function POST(request: NextRequest) {
     // Check if transaction already processed
     const alreadyProcessed = await isTransactionProcessed(txHash);
     if (alreadyProcessed) {
-      }
+      return NextResponse.json(
+        { message: 'Transaction already processed', points: 0 },
+        { status: 200 }
+      );
+    }
 
     // Calculate points based on type
     let points = 0;
@@ -61,7 +71,9 @@ export async function POST(request: NextRequest) {
     } else if (type === 'nadpay_sell') {
       // FORCED: NadPay sellers get exactly 1 point for any amount
       points = 1;
-      }
+    } else {
+      points = calculatePoints(type, amount);
+    }
 
     // Create transaction record
     const transaction: PointTransaction = {
@@ -70,22 +82,34 @@ export async function POST(request: NextRequest) {
       amount,
       txHash,
       timestamp: new Date(),
-      metadata
+      metadata: { ...metadata, buyerAddress: walletAddress }
     };
 
     // Update user points
-    ,
+    await updateUserPoints(walletAddress, transaction, actualTwitterHandle);
+    
+    // Award points to creator for sales
+    if ((type === 'nadpay_sell' || type === 'nadraffle_sell') && metadata?.creatorAddress) {
+      try {
+        const creatorTransaction: PointTransaction = {
+          ...transaction,
           metadata: { ...metadata, buyerAddress: walletAddress }
         };
         
         await updateUserPoints(metadata.creatorAddress, creatorTransaction, metadata.creatorTwitterHandle);
-        } catch (creatorError) {
+      } catch (creatorError) {
         console.error('❌ Error awarding points to creator:', creatorError);
         // Don't fail the buyer's transaction if creator points fail
       }
     }
 
-    } catch (error) {
+    return NextResponse.json({ 
+      success: true, 
+      points: points,
+      txHash: txHash 
+    });
+
+  } catch (error) {
     console.error('Error adding points:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

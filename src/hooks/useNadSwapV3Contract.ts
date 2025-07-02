@@ -190,35 +190,105 @@ export function useNadSwapV3Contract() {
     }
 
     // Check and handle approvals for offered assets before creating proposal
-    {
-      }
+    console.log('🔐 Checking and handling approvals for offered assets...');
+    const unapprovedAssets = [];
+    
+    for (const asset of offeredAssets) {
+      console.log('🔍 Processing offered asset:', asset);
+      
+      if (asset.isNFT && asset.contractAddress && asset.contractAddress !== "0x0000000000000000000000000000000000000000") {
+        console.log('🖼️ Checking NFT approval for:', asset.contractAddress);
+        try {
+          const isApproved = await publicClient.readContract({
+            address: asset.contractAddress as `0x${string}`,
+            abi: [
+              {
+                inputs: [{ name: 'owner', type: 'address' }, { name: 'operator', type: 'address' }],
+                name: 'isApprovedForAll',
+                outputs: [{ name: '', type: 'bool' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+            ],
+            functionName: 'isApprovedForAll',
+            args: [address, NADSWAP_V3_CONTRACT.address]
+          });
+
+          console.log('🔐 NFT approval status:', isApproved);
+          if (!isApproved) {
+            console.log('🔄 NFT not approved, will request approval...');
+            unapprovedAssets.push({ type: 'NFT', asset, approveFunction: () => approveNFT(asset.contractAddress) });
+          }
         } catch (error) {
           console.warn('⚠️ Could not check NFT approval:', error);
           // Continue anyway, might work
         }
       } else if (asset.contractAddress && asset.contractAddress !== "0x0000000000000000000000000000000000000000") {
-        const requiredAmount = parseEther(asset.amount);
+        console.log('🪙 Checking ERC20 allowance for:', asset.contractAddress);
+        try {
+          const allowance = await publicClient.readContract({
+            address: asset.contractAddress as `0x${string}`,
+            abi: [
+              {
+                inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
+                name: 'allowance',
+                outputs: [{ name: '', type: 'uint256' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+            ],
+            functionName: 'allowance',
+            args: [address, NADSWAP_V3_CONTRACT.address]
+          });
+
+          const requiredAmount = parseEther(asset.amount);
+          console.log('🔐 ERC20 allowance check:', { allowance: allowance.toString(), required: requiredAmount.toString() });
+          
           if (allowance < requiredAmount) {
-            }
+            console.log('🔄 Insufficient allowance, will request approval...');
+            unapprovedAssets.push({ type: 'ERC20', asset, approveFunction: () => approveERC20(asset.contractAddress, asset.amount) });
+          }
         } catch (error) {
           console.warn('⚠️ Could not check token allowance:', error);
           // Continue anyway, might work
         }
       } else {
-        {
-      {
+        console.log('💎 Native MON asset, no approval needed');
+      }
+    }
+
+    // If there are unapproved assets, approve them first and wait
+    if (unapprovedAssets.length > 0) {
+      console.log('🔄 Found unapproved assets, processing approvals...', unapprovedAssets);
+      
+      // Process approvals sequentially
+      for (const { type, asset, approveFunction } of unapprovedAssets) {
+        console.log(`🔄 Requesting ${type} approval for:`, asset.name || asset.contractAddress);
         try {
           const approvalTxHash = await approveFunction();
+          console.log(`✅ ${type} approval transaction sent:`, approvalTxHash);
+          
           // Wait for approval transaction to be mined
           if (approvalTxHash) {
-            }
+            console.log('⏳ Waiting for approval transaction to be mined...');
+            await waitForTransactionReceipt(config, {
+              hash: approvalTxHash,
+              timeout: 60000, // 60 second timeout
+            });
+            console.log(`✅ ${type} approval confirmed on blockchain`);
+          }
         } catch (error) {
           console.error(`❌ Failed to approve ${type}:`, error);
           throw new Error(`Failed to approve ${type}. Please try again.`);
         }
       }
       
-      ,
+      console.log('✅ All approvals completed, proceeding with create proposal...');
+    }
+
+    const formattedOfferedAssets = offeredAssets.map(asset => ({
+      contractAddress: asset.contractAddress as `0x${string}`,
+      tokenId: BigInt(asset.tokenId),
       amount: asset.isNFT ? BigInt(asset.tokenId) : parseEther(asset.amount),
       isNFT: asset.isNFT
     }));
@@ -230,60 +300,244 @@ export function useNadSwapV3Contract() {
       isNFT: asset.isNFT
     }));
 
-    // Wait 2 seconds for blockchain to update
+    console.log('🔄 Calling createProposal with writeContractAsync...');
+    const txHash = await createProposalAsync({
+      address: NADSWAP_V3_CONTRACT.address,
+      abi: NADSWAP_V3_CONTRACT.abi,
+      functionName: 'createProposal',
+      args: [
+        targetWallet as `0x${string}`,
+        formattedOfferedAssets,
+        formattedRequestedAssets
+      ],
+      value: totalNativeValue
+    });
+    console.log('✅ createProposal transaction sent:', txHash);
+    
+    // Wait for transaction confirmation
+    console.log('⏳ Waiting for transaction confirmation...');
+    await waitForTransactionReceipt(config, {
+      hash: txHash,
+      timeout: 60000, // 60 second timeout
+    });
+    console.log('✅ Create proposal transaction confirmed on blockchain');
+    
+    // Refresh proposals after successful creation
+    console.log('🔄 Refreshing proposals after creation...');
+    setTimeout(() => {
+      refreshProposals();
+    }, 2000); // Wait 2 seconds for blockchain to update
     
     return txHash;
   };
 
   const acceptSwapProposal = async (proposalId: number, requiredNativeValue: bigint = BigInt(0)) => {
+    console.log('🚀 acceptSwapProposal called with:', { proposalId, requiredNativeValue, address, publicClient: !!publicClient });
+    
     if (!publicClient || !address) {
       console.error('❌ Wallet not connected:', { publicClient: !!publicClient, address });
       throw new Error('Wallet not connected');
     }
 
+    console.log('📋 Getting proposal details for ID:', proposalId);
+    // Get the proposal details first
+    const proposal = await getProposal(proposalId);
+    if (!proposal) {
+      console.error('❌ Proposal not found:', proposalId);
+      throw new Error('Proposal not found');
+    }
+    
+    console.log('✅ Proposal found:', proposal);
+
     // Calculate total native MON value needed (native assets that target needs to send)
     let totalNativeValue = requiredNativeValue;
-    );
+    console.log('💰 Checking requested assets for native MON:', proposal.requestedAssets);
+    
+    for (const asset of proposal.requestedAssets) {
+      console.log('🔍 Checking asset:', asset);
+      if (!asset.isNFT && asset.contractAddress === "0x0000000000000000000000000000000000000000") {
+        const assetValue = parseEther(asset.amount);
+        totalNativeValue += assetValue;
+        console.log('💎 Adding native MON value:', asset.amount, 'Total now:', totalNativeValue.toString());
+      }
+    }
+    
+    console.log('💰 Final native value to send:', totalNativeValue.toString());
 
     // Check and handle approvals for requested assets that the target (current user) needs to send
-    {
-      }
+    console.log('🔐 Checking approvals for requested assets...');
+    const unapprovedAssets = [];
+    
+    for (const asset of proposal.requestedAssets) {
+      console.log('🔍 Processing asset:', asset);
+      
+      if (asset.isNFT && asset.contractAddress && asset.contractAddress !== "0x0000000000000000000000000000000000000000") {
+        console.log('🖼️ Checking NFT approval for:', asset.contractAddress);
+        try {
+          const isApproved = await publicClient.readContract({
+            address: asset.contractAddress as `0x${string}`,
+            abi: [
+              {
+                inputs: [{ name: 'owner', type: 'address' }, { name: 'operator', type: 'address' }],
+                name: 'isApprovedForAll',
+                outputs: [{ name: '', type: 'bool' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+            ],
+            functionName: 'isApprovedForAll',
+            args: [address, NADSWAP_V3_CONTRACT.address]
+          });
+
+          console.log('🔐 NFT approval status:', isApproved);
+          if (!isApproved) {
+            console.log('🔄 NFT not approved, will request approval...');
+            unapprovedAssets.push({ type: 'NFT', asset, approveFunction: () => approveNFT(asset.contractAddress) });
+          }
         } catch (error) {
           console.warn('⚠️ Could not check NFT approval:', error);
           // Continue anyway, might work
         }
       } else if (asset.contractAddress && asset.contractAddress !== "0x0000000000000000000000000000000000000000") {
-        const requiredAmount = parseEther(asset.amount);
+        console.log('🪙 Checking ERC20 allowance for:', asset.contractAddress);
+        try {
+          const allowance = await publicClient.readContract({
+            address: asset.contractAddress as `0x${string}`,
+            abi: [
+              {
+                inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
+                name: 'allowance',
+                outputs: [{ name: '', type: 'uint256' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+            ],
+            functionName: 'allowance',
+            args: [address, NADSWAP_V3_CONTRACT.address]
+          });
+
+          const requiredAmount = parseEther(asset.amount);
+          console.log('🔐 ERC20 allowance check:', { allowance: allowance.toString(), required: requiredAmount.toString() });
+          
           if (allowance < requiredAmount) {
-            }
+            console.log('🔄 Insufficient allowance, will request approval...');
+            unapprovedAssets.push({ type: 'ERC20', asset, approveFunction: () => approveERC20(asset.contractAddress, asset.amount) });
+          }
         } catch (error) {
           console.warn('⚠️ Could not check token allowance:', error);
           // Continue anyway, might work
         }
       } else {
-        {
-      {
+        console.log('💎 Native MON asset, no approval needed');
+      }
+    }
+
+    // If there are unapproved assets, approve them first and wait
+    if (unapprovedAssets.length > 0) {
+      console.log('🔄 Found unapproved assets, processing approvals...', unapprovedAssets);
+      
+      // Process approvals sequentially
+      for (const { type, asset, approveFunction } of unapprovedAssets) {
+        console.log(`🔄 Requesting ${type} approval for:`, asset.name || asset.contractAddress);
         try {
           const approvalTxHash = await approveFunction();
+          console.log(`✅ ${type} approval transaction sent:`, approvalTxHash);
+          
           // Wait for approval transaction to be mined
           if (approvalTxHash) {
-            }
+            console.log('⏳ Waiting for approval transaction to be mined...');
+            await waitForTransactionReceipt(config, {
+              hash: approvalTxHash,
+              timeout: 60000, // 60 second timeout
+            });
+            console.log(`✅ ${type} approval confirmed on blockchain`);
+          }
         } catch (error) {
           console.error(`❌ Failed to approve ${type}:`, error);
           throw new Error(`Failed to approve ${type}. Please try again.`);
         }
       }
       
-      try {
+      console.log('✅ All approvals completed, proceeding with accept proposal...');
+    }
+
+    console.log('✅ All approvals checked, calling acceptProposal...');
+    console.log('📝 Transaction params:', {
+      address: NADSWAP_V3_CONTRACT.address,
+      functionName: 'acceptProposal',
+      args: [BigInt(proposalId)],
+      value: totalNativeValue.toString()
+    });
+
+    try {
+      console.log('🔄 Calling acceptProposal with writeContractAsync...');
+      const txHash = await acceptProposalAsync({
+      address: NADSWAP_V3_CONTRACT.address,
+      abi: NADSWAP_V3_CONTRACT.abi,
+      functionName: 'acceptProposal',
+      args: [BigInt(proposalId)],
+        value: totalNativeValue
+    });
+      console.log('✅ acceptProposal transaction sent:', txHash);
+      
+      // Wait for transaction confirmation
+      console.log('⏳ Waiting for transaction confirmation...');
+      await waitForTransactionReceipt(config, {
+        hash: txHash,
+        timeout: 60000, // 60 second timeout
       });
+      console.log('✅ Accept proposal transaction confirmed on blockchain');
+      
+      // Award points to both participants
+      try {
+        console.log('🎯 Awarding points for successful swap...');
+        
+        // Points for the proposer
+        await fetch('/api/points/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: proposal.proposer,
+            type: 'nadswap',
+            amount: 1, // Not relevant for swaps
+            txHash: txHash,
+            metadata: {
+              proposalId,
+              targetAddress: address,
+              role: 'proposer'
+            }
+          })
         });
-        {
+        console.log('✅ Points awarded to proposer:', proposal.proposer);
+        
+        // Points for the acceptor (current user)
+        await fetch('/api/points/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: address,
+            type: 'nadswap',
+            amount: 1, // Not relevant for swaps
+            txHash: `${txHash}_acceptor`, // Make unique for acceptor
+            metadata: {
+              proposalId,
+              proposerAddress: proposal.proposer,
+              role: 'acceptor'
+            }
+          })
+        });
+        console.log('✅ Points awarded to acceptor:', address);
+        
+      } catch (pointsError) {
         console.error('❌ Error awarding points:', pointsError);
         // Don't fail the swap if points fail
       }
       
       // Refresh proposals after successful acceptance
-      // Wait 2 seconds for blockchain to update
+      console.log('🔄 Refreshing proposals after acceptance...');
+      setTimeout(() => {
+        refreshProposals();
+      }, 2000); // Wait 2 seconds for blockchain to update
       
       return txHash;
     } catch (error) {
@@ -351,8 +605,36 @@ export function useNadSwapV3Contract() {
 
   // Helper function to fetch asset metadata
   const fetchAssetMetadata = useCallback(async (asset: any): Promise<SwapAssetV3> => {
-    {
-        .map(w => w[0]).join('').toUpperCase(),
+    console.log('🔍 fetchAssetMetadata called with:', asset);
+    
+    const baseAsset = {
+      contractAddress: asset.contractAddress,
+      tokenId: Number(asset.tokenId),
+      amount: asset.isNFT ? '0' : formatEther(asset.amount),
+      isNFT: asset.isNFT
+    };
+
+    try {
+      if (asset.isNFT) {
+        console.log('🖼️ Processing NFT:', asset.contractAddress, 'tokenId:', asset.tokenId);
+        
+        // Check known NFT collections first
+        const knownNFT = getKnownNFT(asset.contractAddress);
+        if (knownNFT) {
+          // For Nad Name Service, format special display
+          if (asset.contractAddress.toLowerCase() === "0x3019bf1dfb84e5b46ca9d0eec37de08a59a41308") {
+            return {
+              ...baseAsset,
+              name: `m${asset.tokenId}.nad`,
+              symbol: 'NNS',
+              image: knownNFT.image
+            };
+          }
+          
+          return {
+            ...baseAsset,
+            name: `${knownNFT.name} #${asset.tokenId}`,
+            symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
             image: knownNFT.image
           };
         }
@@ -376,7 +658,35 @@ export function useNadSwapV3Contract() {
               args: [BigInt(asset.tokenId)]
             });
 
-            }
+            console.log('📄 TokenURI:', tokenURI, 'Type:', typeof tokenURI);
+
+            if (tokenURI && typeof tokenURI === 'string') {
+              // Convert IPFS URLs to HTTP, but keep HTTP URLs as-is
+              const convertToHttpUrl = (url: string): string => {
+                if (url.startsWith('ipfs://')) {
+                  return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                }
+                return url; // Keep HTTP URLs as-is
+              };
+
+              const httpUrl = convertToHttpUrl(tokenURI as string);
+              console.log('🌐 Fetching metadata from:', httpUrl);
+              const response = await fetch(httpUrl);
+              
+              if (response.ok) {
+                const metadata = await response.json();
+                const imageUrl = metadata.image ? convertToHttpUrl(metadata.image) : undefined;
+                
+                console.log('✅ NFT metadata loaded:', metadata.name, imageUrl ? '(with image)' : '(no image)');
+
+                return {
+                  ...baseAsset,
+                  name: metadata.name || `NFT #${asset.tokenId}`,
+                  image: imageUrl
+                };
+              } else {
+                console.warn('❌ Failed to fetch metadata, response status:', response.status);
+              }
             } else {
               console.warn('❌ No tokenURI returned from contract');
             }
@@ -547,7 +857,7 @@ export function useNadSwapV3Contract() {
           if (proposalData[2]?.toLowerCase() === address.toLowerCase()) {
             receivedIds.push(i);
           }
-        } catch (error) {
+    } catch (error) {
           // Skip failed proposals
           continue;
         }

@@ -78,7 +78,9 @@ export function useNadRaffleV6Contract() {
     try {
       const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
       
-      if (log.address.toLowerCase() === RAFFLE_V6_CONTRACT_ADDRESS.toLowerCase()) {
+      // Loop through logs to find RaffleCreated event
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() === RAFFLE_V6_CONTRACT_ADDRESS.toLowerCase()) {
           if (log.topics && log.topics.length > 1) {
             try {
               const raffleIdHex = log.topics[1];
@@ -86,31 +88,56 @@ export function useNadRaffleV6Contract() {
                 throw new Error('RaffleId topic is undefined');
               }
               const raffleId = parseInt(raffleIdHex, 16);
+              
               // Direct API call to track points - no component dependency
-                try {
-                  // First check if user has Twitter connected
-                  const userAddress = txHash; // We'll extract from transaction
-                  
-                  // Get the transaction to extract the sender address
-                  const transaction = await publicClient.getTransaction({ hash: txHash });
-                  const creatorAddress = transaction.from;
-                  const profileData = await profileResponse.json();
-                  
-                  if (profileData.profile?.twitter) {
-                    }
-                      }),
-                    });
-                    
-                    const pointsResult = await pointsResponse.json();
-                    }
-                } catch (pointsError) {
-                  console.error('❌ Points tracking failed in hook:', pointsError);
-                }
+              try {
+                // First check if user has Twitter connected
+                const transaction = await publicClient.getTransaction({ hash: txHash });
+                const creatorAddress = transaction.from;
                 
-                return raffleId;
+                const profileResponse = await fetch(`/api/profile/${creatorAddress}`);
+                const profileData = await profileResponse.json();
+                
+                if (profileData.profile?.twitter) {
+                  const pointsResponse = await fetch('/api/points/add', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      walletAddress: creatorAddress,
+                      points: 200,
+                      reason: 'raffle_created',
+                      metadata: {
+                        raffleId: raffleId.toString()
+                      }
+                    }),
+                  });
+                  
+                  const pointsResult = await pointsResponse.json();
+                  // console.log('Points tracking result:', pointsResult);
+                }
+              } catch (pointsError) {
+                console.error('❌ Points tracking failed in hook:', pointsError);
               }
+              
+              return raffleId;
             } catch (topicError) {
-              } catch (error) {
+              console.error('Topic extraction error:', topicError);
+              
+              // Fallback: scan receipt logs
+              const logs = receipt.logs;
+              for (const log of logs) {
+                if (log.address.toLowerCase() === RAFFLE_V6_CONTRACT_ADDRESS.toLowerCase()) {
+                  // Extract raffle ID from data field if topics fail
+                  return 0; // Default to raffle ID 0 if extraction fails
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
       console.error('Error extracting V6 raffle ID from transaction:', error);
       throw error;
     }
@@ -191,7 +218,7 @@ export interface RaffleInfoV6 {
 }
 
 export function formatRaffleV6(rawRaffle: unknown): RaffleInfoV6 {
-  );
+  const raffle = rawRaffle as any;
   // Check if required properties exist
   if (!raffle.creator || !raffle.ticketPrice || !raffle.maxTickets) {
     console.error('❌ Missing required raffle properties:', raffle);
@@ -285,7 +312,16 @@ export function useCreatorRafflesV6(creatorAddress?: string) {
       return;
     }
 
-    const raffleData = await publicClient.readContract({
+    setIsLoading(true);
+    const creatorRaffles: RaffleInfoV6[] = [];
+
+    try {
+      const totalCount = Number(totalRaffles);
+      
+      // Loop through all raffles to find ones created by this address
+      for (let i = 0; i < totalCount; i++) {
+        try {
+          const raffleData = await publicClient.readContract({
             address: RAFFLE_V6_CONTRACT_ADDRESS,
             abi: V6ABI,
             functionName: 'getRaffleDetails',
@@ -308,7 +344,8 @@ export function useCreatorRafflesV6(creatorAddress?: string) {
         }
       }
 
-      {
+      setRaffles(creatorRaffles);
+    } catch (error) {
       console.error('❌ Error fetching creator raffles:', error);
       setError(error as Error);
     } finally {

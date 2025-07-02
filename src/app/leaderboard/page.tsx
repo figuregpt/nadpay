@@ -88,6 +88,13 @@ export default function LeaderboardPage() {
       const response = await fetch('/api/leaderboard');
       const data = await response.json();
       
+      console.log('🎯 Leaderboard Frontend - Response:', {
+        status: response.status,
+        data: data,
+        hasLeaderboard: !!data.leaderboard,
+        leaderboardLength: data.leaderboard?.length
+      });
+      
       if (data.leaderboard) {
         // Add rank to each user
         const rankedData = data.leaderboard.map((user: any, index: number) => ({
@@ -95,9 +102,16 @@ export default function LeaderboardPage() {
           rank: index + 1
         }));
         
+        console.log('📊 Leaderboard Frontend - Setting data:', {
+          count: rankedData.length,
+          firstUser: rankedData[0]
+        });
+        
         setLeaderboard(rankedData);
       } else {
-        }
+        console.log('⚠️ Leaderboard Frontend - No leaderboard data');
+        setLeaderboard([]);
+      }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {
@@ -168,7 +182,9 @@ export default function LeaderboardPage() {
   const connectedUserFromFull = simulatedAddress ? leaderboard.find(
     user => user.walletAddress.toLowerCase() === simulatedAddress.toLowerCase()
   ) : null;
+  
 
+  
   // Final users to display (connected user at top + current page users)
   const usersToDisplay = [];
   
@@ -354,14 +370,14 @@ export default function LeaderboardPage() {
                       <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                       Refresh
                     </button>
-                    {!isTwitterConnected && (
-                      <Link
-                        href="/dashboard"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors"
-                      >
-                        Connect Twitter <ArrowRight className="w-4 h-4 ml-2" />
-                      </Link>
-                    )}
+                  {!isTwitterConnected && (
+                    <Link
+                      href="/dashboard"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors"
+                    >
+                      Connect Twitter <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  )}
                   </div>
                 </div>
 
@@ -470,7 +486,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
 
-                            {loading ? (
+              {loading ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p className="text-gray-600 dark:text-gray-300">Loading leaderboard...</p>
@@ -556,34 +572,34 @@ export default function LeaderboardPage() {
                         const isConnectedUserAtTop = isConnectedUser && connectedUserFromFull && index === 0;
                         
                         return (
-                          <motion.tr
-                            key={user._id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
+                        <motion.tr
+                          key={user._id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors ${
+                          className={`hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors ${
                               isConnectedUser
-                                ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
-                                : ''
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+                              : ''
                             } ${
                               isConnectedUserAtTop
                                 ? 'border-b-2 border-b-blue-300 dark:border-b-blue-600'
                                 : ''
-                            }`}
-                          >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center">
-                                {getRankIcon(user.rank)}
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              {getRankIcon(user.rank)}
                                 {isConnectedUserAtTop && (
                                   <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
                                     You
                                   </span>
                                 )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
                               <div className="flex items-center">
-                                {user.twitterHandle ? (
+                              {user.twitterHandle ? (
                                   <a 
                                     href={`https://twitter.com/${user.twitterHandle}`}
                                     target="_blank"
@@ -592,29 +608,29 @@ export default function LeaderboardPage() {
                                   >
                                     @{user.twitterHandle}
                                   </a>
-                                ) : (
-                                  <span className="text-gray-600 dark:text-gray-300 font-mono">{formatAddress(user.walletAddress)}</span>
-                                )}
+                              ) : (
+                                <span className="text-gray-600 dark:text-gray-300 font-mono">{formatAddress(user.walletAddress)}</span>
+                              )}
                                 {isConnectedUserAtTop && (
                                   <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
                                     You
                                   </span>
                                 )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-2xl font-bold text-gray-900 dark:text-white">{formatPoints(user.totalPoints)}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-green-600 dark:text-green-400 font-medium">{formatPoints(user.pointsBreakdown.nadswap)}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-blue-600 dark:text-blue-400 font-medium">{formatPoints(user.pointsBreakdown.nadpay)}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-purple-600 dark:text-purple-400 font-medium">{formatPoints(user.pointsBreakdown.nadraffle)}</span>
-                            </td>
-                          </motion.tr>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-2xl font-bold text-gray-900 dark:text-white">{formatPoints(user.totalPoints)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-green-600 dark:text-green-400 font-medium">{formatPoints(user.pointsBreakdown.nadswap)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">{formatPoints(user.pointsBreakdown.nadpay)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-purple-600 dark:text-purple-400 font-medium">{formatPoints(user.pointsBreakdown.nadraffle)}</span>
+                          </td>
+                        </motion.tr>
                         );
                       })}
                     </tbody>

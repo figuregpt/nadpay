@@ -62,6 +62,7 @@ class RateLimiter {
       const waitTime = this.timeWindow - (now - oldestRequest);
       
       if (waitTime > 0) {
+        console.log(`🕐 Rate limiting: waiting ${waitTime}ms`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
@@ -92,7 +93,7 @@ async function retryWithBackoff<T>(
       
       if (isRateLimit && attempt < maxRetries) {
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-        }ms`);
+        console.log(`🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -192,10 +193,41 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
       
       // Add timeout to prevent infinite loading
       const timeoutId = setTimeout(() => {
-        // 10 second timeout
+        console.log('❌ NFT loading timeout after 10 seconds');
+        setError('Loading timeout - please refresh');
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
       
       try {
-        ,
+        console.log('🔍 Starting NFT fetch for:', ownerAddress);
+        
+        // Method 1: Use Transfer events (but with limits for speed)
+        const fromBlock = BigInt(Math.max(0, Date.now() - 30 * 24 * 60 * 60 * 1000)); // Last 30 days only
+        const toBlock = 'latest';
+        
+        console.log('📅 Scanning events from block:', fromBlock.toString());
+        
+        let ownedTokenIds: string[] = [];
+        
+        try {
+          // Get Transfer events with timeout
+          const [transfersToUser, transfersFromUser] = await Promise.race([
+            Promise.all([
+              publicClient.getLogs({
+                address: contractAddress as `0x${string}`,
+                event: {
+                  type: 'event',
+                  name: 'Transfer',
+                  inputs: [
+                    { name: 'from', type: 'address', indexed: true },
+                    { name: 'to', type: 'address', indexed: true },
+                    { name: 'tokenId', type: 'uint256', indexed: true }
+                  ]
+                },
+                args: { to: ownerAddress as `0x${string}` },
+                fromBlock,
+                toBlock
+              }),
               publicClient.getLogs({
                 address: contractAddress as `0x${string}`,
                 event: {
@@ -217,6 +249,19 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
             )
           ]) as [any[], any[]];
 
+          console.log('📨 Transfer TO user:', transfersToUser.length);
+          console.log('📤 Transfer FROM user:', transfersFromUser.length);
+
+          // Process transfers to build current ownership map
+          const tokenOwnership = new Map<string, boolean>();
+
+          transfersToUser.forEach(log => {
+            const tokenId = log.args?.tokenId?.toString();
+            if (tokenId) {
+              tokenOwnership.set(tokenId, true);
+            }
+          });
+
           transfersFromUser.forEach(log => {
             const tokenId = log.args?.tokenId?.toString();
             if (tokenId) {
@@ -228,16 +273,55 @@ export function useOwnedNFTsWithMetadata(contractAddress: string, ownerAddress?:
             .filter(([_, isOwned]) => isOwned)
             .map(([tokenId, _]) => tokenId);
 
-          {
-          {
-          const balanceNum = Number(balance);
-            ]
+          console.log('🎯 From events:', ownedTokenIds);
+        } catch (eventError) {
+          console.log('⚠️ Event scan failed/timeout, using fallback:', eventError);
+        }
+
+        // Always try fallback method if events didn't work or found nothing
+        if (ownedTokenIds.length === 0) {
+          console.log('🔄 Using tokenOfOwnerByIndex fallback...');
+          
+          try {
+            const balance = await publicClient.readContract({
+              address: contractAddress as `0x${string}`,
+              abi: ERC721_ABI,
+              functionName: 'balanceOf',
+              args: [ownerAddress as `0x${string}`]
+            });
+
+            const balanceNum = Number(balance);
+            console.log('👛 Balance:', balanceNum);
+
+            if (balanceNum > 0) {
+              // Get first few tokens quickly, then validate
+              const maxTokens = Math.min(balanceNum, 10); // Limit for speed
+              
+              for (let i = 0; i < maxTokens; i++) {
+                try {
+                  const tokenId = await publicClient.readContract({
+                    address: contractAddress as `0x${string}`,
+                    abi: ERC721_ABI,
+                    functionName: 'tokenOfOwnerByIndex',
+                    args: [ownerAddress as `0x${string}`, BigInt(i)]
                   });
                   
                   ownedTokenIds.push(tokenId.toString());
-                  {
-                  {
-            clearTimeout(timeoutId);
+                  console.log('✅ Token from index:', tokenId.toString());
+                } catch (error) {
+                  console.log('❌ Error at index', i, '- stopping');
+                  break;
+                }
+              }
+            }
+          } catch (error) {
+            console.log('❌ Fallback failed:', error);
+            throw new Error('Failed to load NFTs - please refresh the page');
+          }
+        }
+
+        console.log('🏆 Final token IDs:', ownedTokenIds);
+        clearTimeout(timeoutId);
 
         if (ownedTokenIds.length === 0) {
           setNfts([]);
@@ -318,7 +402,14 @@ export function useNFTMetadata(contractAddress: string, tokenId: string) {
     // Check cache first
     const cached = metadataCache.get(cacheKey);
     if (cached && isCacheValid(cached.timestamp)) {
-      => {
+      console.log('📋 Using cached NFT metadata for', tokenId);
+      setMetadata(cached.data);
+      setError(cached.error || null);
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchMetadata = async () => {
       setIsLoading(true);
       setError(null);
       

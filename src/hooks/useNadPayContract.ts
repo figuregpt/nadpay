@@ -89,9 +89,12 @@ export function useCreatorPaymentLinks(creatorAddress?: string) {
                if (purchasesResult && Array.isArray(purchasesResult)) {
                  const uniqueBuyers = new Set();
                  purchasesResult.forEach((purchase: any) => {
-                   uniqueBuyersCount = uniqueBuyers.size;
-                 } else {
-                 }
+                   if (purchase?.buyer) {
+                     uniqueBuyers.add(purchase.buyer);
+                   }
+                 });
+                 uniqueBuyersCount = uniqueBuyers.size;
+               }
              } catch (purchaseError) {
                console.error(`Error fetching purchases for link ${linkId}:`, purchaseError);
                // If we can't get purchases, keep uniqueBuyersCount as 0
@@ -208,7 +211,10 @@ export function useCreatePaymentLink() {
       if (linkCreatedEvent && linkCreatedEvent.topics[1]) {
         // Link ID is the first indexed parameter (topics[1])
         const linkId = parseInt(linkCreatedEvent.topics[1], 16);
-        return null;
+        return linkId;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error getting link ID from transaction:', error);
       return null;

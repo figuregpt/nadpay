@@ -4,6 +4,24 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Web3Provider } from "@/components/providers";
 
+// ASCII Art Console Display
+const consoleArt = `
+%c
+███╗   ██╗ █████╗ ██████╗ ██████╗  █████╗ ██╗   ██╗
+████╗  ██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝
+██╔██╗ ██║███████║██║  ██║██████╔╝███████║ ╚████╔╝ 
+██║╚██╗██║██╔══██║██║  ██║██╔═══╝ ██╔══██║  ╚██╔╝  
+██║ ╚████║██║  ██║██████╔╝██║     ██║  ██║   ██║   
+╚═╝  ╚═══╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝  ╚═╝   ╚═╝   
+
+%cBuilt by figure 🛠️
+`;
+
+// Client-side console display
+if (typeof window !== 'undefined') {
+  console.log(consoleArt, 'color: #836EF9; font-family: monospace;', 'color: #666; font-style: italic;');
+}
+
 const inter = Inter({ 
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
@@ -64,8 +82,18 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#836EF9" />
         <meta name="theme-color" content="#836EF9" />
       </head>
-      <body className={`${inter.className} font-inter`} suppressHydrationWarning>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              }
+      <body className={`${inter.className} font-inter`}>
+        <Web3Provider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </Web3Provider>
+      </body>
+    </html>
+  );
+}

@@ -159,6 +159,13 @@ export async function getLeaderboard(limit: number = 100): Promise<UserPoints[]>
     .limit(limit)
     .toArray();
     
+    // Debug: Database getLeaderboard
+    // console.log('🔍 Database getLeaderboard:', {
+    //   totalUsers: users.length,
+    //   firstUser: users[0],
+    //   hasAnyUsers: users.length > 0
+    // });
+  
   return users;
 }
 

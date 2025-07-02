@@ -28,8 +28,16 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         // Wagmi store'dan kontrol et
         const savedConnection = localStorage.getItem('nadpay-wagmi');
         if (savedConnection) {
-          {
-        return () => clearTimeout(timer);
+          await reconnect(config);
+        }
+      } catch (error) {
+        console.error('Reconnect error:', error);
+      }
+    };
+    
+    // Wait a moment before attempting reconnect
+    const timer = setTimeout(attemptReconnect, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   if (!mounted) {

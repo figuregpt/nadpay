@@ -83,8 +83,8 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
         return `${formatPriceV7(raffle.rawRewardAmount)} ${knownToken.symbol}`;
       } else if (knownNFT || raffle.rewardType === 2) {
         // It's a known NFT collection or NFT type
-        return '1 NFT';
-      } else {
+      return '1 NFT';
+    } else {
         // Unknown token - use rawRewardAmount for amount
         return `${formatPriceV7(raffle.rawRewardAmount)} TOKEN`;
       }
@@ -119,6 +119,8 @@ function NFTAwareRewardSection({ raffle }: { raffle: RaffleItem }) {
     </svg>`;
     return `data:image/svg+xml;base64,${btoa(svg)}`;
   };
+
+
 
   return (
     <>
@@ -271,8 +273,8 @@ export default function RaffleHouseContent() {
         return `${formatPriceV7(raffle.rawRewardAmount)} ${knownToken.symbol}`;
       } else if (knownNFT || raffle.rewardType === 2) {
         // It's a known NFT collection or NFT type
-        return "1 NFT";
-      } else {
+      return "1 NFT";
+    } else {
         // Unknown token - use rawRewardAmount for amount
         return `${formatPriceV7(raffle.rawRewardAmount)} TOKEN`;
       }
@@ -471,6 +473,8 @@ export default function RaffleHouseContent() {
           const autoDescription = `V7 Multi-Token Raffle - ${autoTitle}`;
           
           const secureId = createPredictableSecureRaffleId(raffleId);
+          console.log(`🔗 V7 Raffle ${raffleId} -> Secure ID: ${secureId}`);
+          
           return {
             id: secureId,
             internalId: raffleId,
@@ -546,7 +550,10 @@ export default function RaffleHouseContent() {
       // Auto-refresh raffle data every 30 seconds (6 cycles)
       const shouldRefreshRaffles = Date.now() % 30000 < 5000; // Every 30 seconds
       if (shouldRefreshRaffles && publicClient && totalRaffles && !loading) {
-        // Update every 5 seconds
+        console.log('🔄 Auto-refreshing raffles for winner updates...');
+        fetchRafflesPage(0, false);
+      }
+    }, 5000); // Update every 5 seconds
 
     return () => clearInterval(timer);
   }, [publicClient, totalRaffles, loading, fetchRafflesPage]);
@@ -656,7 +663,7 @@ export default function RaffleHouseContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-                      >
+          >
             <h1 className="text-display-lg md:text-display-xl font-inter text-gray-900 dark:text-white mb-4">
               Welcome to <span className="bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">RaffleHouse</span>
             </h1>
@@ -837,6 +844,8 @@ export default function RaffleHouseContent() {
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Created by</div>
                         <CreatorProfile creatorAddress={raffle.creator} preventLink={true} />
                       </div>
+
+
 
                       {/* Stats Row - More Compact */}
                       <div className="grid grid-cols-2 gap-2 mb-2">

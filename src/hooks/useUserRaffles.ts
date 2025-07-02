@@ -46,29 +46,61 @@ export function useUserRaffles(userAddress?: string) {
 
   const fetchUserRaffles = useCallback(async () => {
     if (!userAddress || !publicClient || !totalRaffles) {
+      // Debug: Missing requirements
+      // console.log('❌ useUserRaffles: Missing requirements:', { 
+      //   userAddress: !!userAddress, 
+      //   publicClient: !!publicClient, 
+      //   totalRaffles: totalRaffles?.toString() 
+      // });
       return;
     }
 
     // Check cache
     const now = Date.now();
     if (now - lastFetchTime.current < RPC_CONFIG.CACHE_DURATION && userTickets.length > 0) {
-      `);
+      // console.log('📦 Using cached data, skipping fetch');
+      return;
+    }
+
+    // Debug: Starting fetch
+    // console.log('🎯 useUserRaffles: Starting OPTIMIZED fetch for user:', userAddress);
+    // console.log('📍 V6 Contract:', NADRAFFLE_V6_CONTRACT.address);
+    // console.log('🎫 Total Raffles:', totalRaffles.toString());
+
+    setIsLoading(true);
+    lastFetchTime.current = now;
+    
+    try {
+      const raffleCount = Number(totalRaffles);
+      
+      // Limit max raffles to check (start from newest)
+      const startIndex = Math.max(0, raffleCount - RPC_CONFIG.MAX_RAFFLES_TO_CHECK);
+      const limitedRaffleCount = Math.min(raffleCount, RPC_CONFIG.MAX_RAFFLES_TO_CHECK);
+      
+      // console.log(`🎯 Checking raffles ${startIndex} to ${raffleCount - 1} (${limitedRaffleCount} total)`);
       const userRaffleData: UserTicket[] = [];
       const newNotifications: Notification[] = [];
 
       // 🚀 OPTIMIZATION 1: Batch ticket count checks WITH RATE LIMITING
-      {
+      // console.log('⚡ Batch checking ticket counts for all raffles with rate limiting...');
+      
+      // Process in chunks to avoid rate limiting
+      
+      const ticketCounts: bigint[] = [];
+      
+      // Only check limited range of raffles
+      for (let chunkStart = startIndex; chunkStart < raffleCount; chunkStart += RPC_CONFIG.BATCH_SIZE) {
         const chunkEnd = Math.min(chunkStart + RPC_CONFIG.BATCH_SIZE, raffleCount);
         const chunkPromises = [];
-        
+          
         // Create promises for this chunk
         for (let i = chunkStart; i < chunkEnd; i++) {
           chunkPromises.push(
             publicClient.readContract({
-              address: NADRAFFLE_V6_CONTRACT.address as `0x${string}`,
-              abi: NADRAFFLE_V6_CONTRACT.abi,
-              functionName: 'ticketCounts',
-              args: [BigInt(i), userAddress as `0x${string}`],
+            address: NADRAFFLE_V6_CONTRACT.address as `0x${string}`,
+            abi: NADRAFFLE_V6_CONTRACT.abi,
+            functionName: 'ticketCounts',
+            args: [BigInt(i), userAddress as `0x${string}`],
             }).catch(error => {
               console.error(`Error checking raffle ${i}:`, error);
               return BigInt(0);
@@ -94,21 +126,28 @@ export function useUserRaffles(userAddress?: string) {
         }
       }
 
+      // console.log(`⚡ Found ${relevantRaffleIds.length} relevant raffles out of ${raffleCount} total`);
+
       if (relevantRaffleIds.length === 0) {
         setUserTickets([]);
         return;
       }
 
       // 🚀 OPTIMIZATION 3: Batch fetch raffle details WITH RATE LIMITING
-      // Smaller chunk size for details
+      // console.log('⚡ Batch fetching raffle details with rate limiting...');
+      
+      const raffleDetails: any[] = [];
+      
+      // Process details in smaller chunks
+      const DETAILS_CHUNK_SIZE = Math.min(5, RPC_CONFIG.MAX_PARALLEL_REQUESTS); // Smaller chunk size for details
       
       for (let i = 0; i < relevantRaffleIds.length; i += DETAILS_CHUNK_SIZE) {
         const chunk = relevantRaffleIds.slice(i, i + DETAILS_CHUNK_SIZE);
         const chunkPromises = chunk.map(raffleId => 
           publicClient.readContract({
-            address: NADRAFFLE_V6_CONTRACT.address as `0x${string}`,
-            abi: NADRAFFLE_V6_CONTRACT.abi,
-            functionName: 'getRaffleDetails',
+              address: NADRAFFLE_V6_CONTRACT.address as `0x${string}`,
+              abi: NADRAFFLE_V6_CONTRACT.abi,
+              functionName: 'getRaffleDetails',
             args: [BigInt(raffleId)],
           }).catch(error => {
             console.error(`Error fetching raffle ${raffleId} details:`, error);
@@ -134,63 +173,84 @@ export function useUserRaffles(userAddress?: string) {
 
         if (!raffleData) continue;
 
-        ,
-          winner: raffleData.winner,
-          rewardType: raffleData.rewardType?.toString(),
-          rewardTokenAddress: raffleData.rewardTokenAddress,
-          rewardAmount: raffleData.rewardAmount?.toString(),
-          rewardTokenId: raffleData.rewardTokenId?.toString()
-        });
+        // Debug: Processing raffle
+        // console.log(`✅ Processing raffle ${raffleId} with ${ticketCount} tickets:`, {
+        //       state: raffleData.state?.toString(),
+        //       winner: raffleData.winner,
+        //   rewardType: raffleData.rewardType?.toString(),
+        //   rewardTokenAddress: raffleData.rewardTokenAddress,
+        //   rewardAmount: raffleData.rewardAmount?.toString(),
+        //   rewardTokenId: raffleData.rewardTokenId?.toString()
+        //     });
 
-        const isWinner = raffleData.winner?.toLowerCase() === userAddress.toLowerCase();
+            const isWinner = raffleData.winner?.toLowerCase() === userAddress.toLowerCase();
         const raffleName = `V6 Raffle #${raffleId}`;
 
-        const ticketData = {
+            const ticketData = {
           raffleId,
           ticketCount,
-          raffleName,
-          status: Number(raffleData.state), // V6 uses 'state' instead of 'status'
-          isWinner,
-          rewardClaimed: false, // V6 doesn't have this field yet
-          expirationTime: Number(raffleData.endTime),
+              raffleName,
+              status: Number(raffleData.state), // V6 uses 'state' instead of 'status'
+              isWinner,
+              rewardClaimed: false, // V6 doesn't have this field yet
+              expirationTime: Number(raffleData.endTime),
           // Include reward information - FIX: use rewardTokenAddress not rewardToken
           rewardType: Number(raffleData.rewardType),
           rewardToken: raffleData.rewardTokenAddress, // FIXED: was raffleData.rewardToken
           rewardAmount: raffleData.rewardAmount,
           rewardTokenId: raffleData.rewardTokenId,
-        };
+            };
 
-        }`,
-            type: 'winner',
+        // console.log(`➕ Adding optimized ticket data:`, ticketData);
+            userRaffleData.push(ticketData);
+
+            // Create notifications for winners
+            if (isWinner) {
+              newNotifications.push({
+            id: `winner_${raffleId}_${Date.now()}`,
+                type: 'winner',
             raffleId,
-            raffleName,
-            message: `🎉 Congratulations! You won "${raffleName}"! Check your winnings.`,
-            timestamp: Date.now(),
-            read: false,
-          });
-        }
+                raffleName,
+                message: `🎉 Congratulations! You won "${raffleName}"! Check your winnings.`,
+                timestamp: Date.now(),
+                read: false,
+              });
+            }
 
-        // Create notifications for ended raffles
-        if (Number(raffleData.state) === 1 && !isWinner) {
-          const now = Date.now() / 1000;
-          const endTime = Number(raffleData.endTime);
-          
-          // Only notify if raffle ended recently (within 24 hours)
-          if (now - endTime < 86400) {
-            newNotifications.push({
+            // Create notifications for ended raffles
+            if (Number(raffleData.state) === 1 && !isWinner) {
+              const now = Date.now() / 1000;
+              const endTime = Number(raffleData.endTime);
+              
+              // Only notify if raffle ended recently (within 24 hours)
+              if (now - endTime < 86400) {
+                newNotifications.push({
               id: `ended_${raffleId}_${Date.now()}`,
-              type: 'ended',
+                  type: 'ended',
               raffleId,
-              raffleName,
-              message: `Raffle "${raffleName}" has ended. You didn't win this time, but keep trying!`,
-              timestamp: Date.now(),
-              read: false,
-            });
+                  raffleName,
+                  message: `Raffle "${raffleName}" has ended. You didn't win this time, but keep trying!`,
+                  timestamp: Date.now(),
+                  read: false,
+                });
+              }
+            }
           }
-        }
-      }
 
-      } catch (error) {
+      // console.log('📊 Final OPTIMIZED user raffle data:', userRaffleData);
+      
+      // Sort by raffle ID descending (newest first)
+      const sortedUserRaffleData = userRaffleData.sort((a, b) => b.raffleId - a.raffleId);
+      setUserTickets(sortedUserRaffleData);
+      
+      // Merge with existing notifications, avoiding duplicates
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n.id));
+        const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
+        return [...prev, ...uniqueNew].sort((a, b) => b.timestamp - a.timestamp);
+      });
+
+    } catch (error) {
       console.error('❌ Error fetching user raffles:', error);
     } finally {
       setIsLoading(false);

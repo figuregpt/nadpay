@@ -791,7 +791,12 @@ export function useCreatorLinksV2(creatorAddress?: string, debug = false) {
     // Rate limiting: Don't refetch more than once every 3 seconds
     const now = Date.now();
     if (!forceRefresh && (now - lastFetchTime) < 3000) {
-      setError(null);
+      console.log('🚫 Rate limiting: Skipping refetch (too recent)');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
 
     try {
       let creatorLinkIds: bigint[] = [];
@@ -804,7 +809,10 @@ export function useCreatorLinksV2(creatorAddress?: string, debug = false) {
           functionName: 'getTotalLinks',
         }) as bigint;
         
-        => BigInt(i));
+        console.log('🔍 DEBUG MODE: Total Links:', totalLinks.toString());
+        
+        // Create array of all link IDs
+        creatorLinkIds = Array.from({ length: Number(totalLinks) }, (_, i) => BigInt(i));
       } else {
         // Normal mode: get creator-specific links
         creatorLinkIds = await publicClient.readContract({
@@ -815,7 +823,12 @@ export function useCreatorLinksV2(creatorAddress?: string, debug = false) {
         }) as bigint[];
       }
 
-      {
+      console.log('📋 Creator Link IDs:', creatorLinkIds.map(id => id.toString()));
+
+      const creatorLinks: any[] = [];
+      
+      // Fetch each link details
+      for (const linkId of creatorLinkIds) {
         try {
           const link = await publicClient.readContract({
             address: NADPAY_V2_CONTRACT_ADDRESS,
@@ -837,7 +850,11 @@ export function useCreatorLinksV2(creatorAddress?: string, debug = false) {
         }
       }
 
-      {
+      console.log('📋 Creator Links Found:', creatorLinks);
+      
+      setLinks(creatorLinks);
+      setLastFetchTime(now);
+    } catch (err) {
       console.error('❌ Error fetching creator links:', err);
       setError(err as Error);
     } finally {

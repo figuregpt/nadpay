@@ -65,7 +65,13 @@ function NFTImage({ asset }: { asset: any }) {
           alt={metadata.name || `NFT #${asset.tokenId}`}
           className="w-full h-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
           onError={(e) => {
-            }
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      </div>
+    );
+  }
   
   return (
     <div 
@@ -262,44 +268,50 @@ export default function SwapProposalCard({
               <div className="grid grid-cols-3 lg:grid-cols-3 gap-1.5 lg:gap-4">
                 {Array.from({ length: showDetails ? Math.min(proposal.offeredAssets.length, 9) : 3 }).map((_, index) => {
                   const asset = proposal.offeredAssets[index];
-                  if (asset && asset.isNFT) {
-                    : asset.image ? (
-                              <img
-                                src={asset.image}
-                                alt={asset.name || 'Asset'}
-                                className="w-6 h-6 lg:w-12 lg:h-12 rounded-lg object-cover shadow-sm"
-                                onError={(e) => {
-                                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                  if (fallback) {
-                                    e.currentTarget.style.display = 'none';
-                                    fallback.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center shadow-sm">
-                                <Coins className="w-3 h-3 lg:w-6 lg:h-6 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-center space-y-0.5 px-0.5">
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white truncate" title={asset.name}>
-                              {asset.name ? asset.name.slice(0, 8) + (asset.name.length > 8 ? '...' : '') : (asset.isNFT ? `#${asset.tokenId}` : 'Token')}
+                  if (asset) {
+                    return (
+                      <div key={index} className="flex flex-col items-center">
+                        <div className="w-full aspect-square p-0.5 lg:p-1">
+                          {asset.isNFT ? (
+                            <NFTImage asset={asset} />
+                          ) : asset.image ? (
+                            <img
+                              src={asset.image}
+                              alt={asset.name || 'Asset'}
+                              className="w-6 h-6 lg:w-12 lg:h-12 rounded-lg object-cover shadow-sm"
+                              onError={(e) => {
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) {
+                                  e.currentTarget.style.display = 'none';
+                                  fallback.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center shadow-sm">
+                              <Coins className="w-3 h-3 lg:w-6 lg:h-6 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center space-y-0.5 px-0.5">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white truncate" title={asset.name}>
+                            {asset.name ? asset.name.slice(0, 8) + (asset.name.length > 8 ? '...' : '') : (asset.isNFT ? `#${asset.tokenId}` : 'Token')}
+                          </p>
+                          {!asset.isNFT && asset.amount && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                              {parseFloat(asset.amount).toFixed(1)} {asset.symbol?.slice(0, 4) || ''}
                             </p>
-                            {!asset.isNFT && asset.amount && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                                {parseFloat(asset.amount).toFixed(1)} {asset.symbol?.slice(0, 4) || ''}
-              </p>
-            )}
-                          </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="h-full flex items-center justify-center">
-                          <Plus className="w-4 h-4 lg:w-8 lg:h-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                  );
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={index} className="h-full flex items-center justify-center">
+                        <Plus className="w-4 h-4 lg:w-8 lg:h-8 text-gray-400" />
+                      </div>
+                    );
+                  }
                 })}
               </div>
               
@@ -343,44 +355,50 @@ export default function SwapProposalCard({
               <div className="grid grid-cols-3 lg:grid-cols-3 gap-1.5 lg:gap-4">
                 {Array.from({ length: showDetails ? Math.min(proposal.requestedAssets.length, 9) : 3 }).map((_, index) => {
                   const asset = proposal.requestedAssets[index];
-                  if (asset && asset.isNFT) {
-                    : asset.image ? (
-                              <img
-                                src={asset.image}
-                                alt={asset.name || 'Asset'}
-                                className="w-6 h-6 lg:w-12 lg:h-12 rounded-lg object-cover shadow-sm"
-                                onError={(e) => {
-                                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                  if (fallback) {
-                                    e.currentTarget.style.display = 'none';
-                                    fallback.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-sm">
-                                <Coins className="w-3 h-3 lg:w-6 lg:h-6 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-center space-y-0.5 px-0.5">
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white truncate" title={asset.name}>
-                              {asset.name ? asset.name.slice(0, 8) + (asset.name.length > 8 ? '...' : '') : (asset.isNFT ? `#${asset.tokenId}` : 'Token')}
+                  if (asset) {
+                    return (
+                      <div key={index} className="flex flex-col items-center">
+                        <div className="w-full aspect-square p-0.5 lg:p-1">
+                          {asset.isNFT ? (
+                            <NFTImage asset={asset} />
+                          ) : asset.image ? (
+                            <img
+                              src={asset.image}
+                              alt={asset.name || 'Asset'}
+                              className="w-6 h-6 lg:w-12 lg:h-12 rounded-lg object-cover shadow-sm"
+                              onError={(e) => {
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) {
+                                  e.currentTarget.style.display = 'none';
+                                  fallback.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-sm">
+                              <Coins className="w-3 h-3 lg:w-6 lg:h-6 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center space-y-0.5 px-0.5">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white truncate" title={asset.name}>
+                            {asset.name ? asset.name.slice(0, 8) + (asset.name.length > 8 ? '...' : '') : (asset.isNFT ? `#${asset.tokenId}` : 'Token')}
+                          </p>
+                          {!asset.isNFT && asset.amount && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                              {parseFloat(asset.amount).toFixed(1)} {asset.symbol?.slice(0, 4) || ''}
                             </p>
-                            {!asset.isNFT && asset.amount && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                                {parseFloat(asset.amount).toFixed(1)} {asset.symbol?.slice(0, 4) || ''}
-              </p>
-            )}
-                          </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="h-full flex items-center justify-center">
-                          <Plus className="w-4 h-4 lg:w-8 lg:h-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                  );
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={index} className="h-full flex items-center justify-center">
+                        <Plus className="w-4 h-4 lg:w-8 lg:h-8 text-gray-400" />
+                      </div>
+                    );
+                  }
                 })}
               </div>
               

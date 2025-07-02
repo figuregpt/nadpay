@@ -401,13 +401,13 @@ export function AssetSelector({
               </div>
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-white truncate">{getDisplayName(selectedAsset)}</span>
-                  {selectedAsset.type === 'token' && isKnownToken(selectedAsset.data) && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
-                      ({selectedAsset.data.symbol})
-                    </span>
-                  )}
-                </div>
+                    <span className="font-medium text-gray-900 dark:text-white truncate">{getDisplayName(selectedAsset)}</span>
+                    {selectedAsset.type === 'token' && isKnownToken(selectedAsset.data) && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+                        ({selectedAsset.data.symbol})
+                      </span>
+                    )}
+                  </div>
                 {/* Show balance/description on second line */}
                 <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {selectedAsset.type === 'token' && (() => {

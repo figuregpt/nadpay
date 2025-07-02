@@ -90,7 +90,9 @@ export function useNadRaffleV4FastContract() {
     try {
       const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
       
-      if (log.address.toLowerCase() === RAFFLE_V4_FAST_CONTRACT_ADDRESS.toLowerCase()) {
+      // Find the RaffleCreated event in logs
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() === RAFFLE_V4_FAST_CONTRACT_ADDRESS.toLowerCase()) {
           if (log.topics && log.topics.length > 1) {
             try {
               const raffleIdHex = log.topics[1];
@@ -98,8 +100,16 @@ export function useNadRaffleV4FastContract() {
                 throw new Error('RaffleId topic is undefined');
               }
               const raffleId = parseInt(raffleIdHex, 16);
-              {
-              } catch (error) {
+              return raffleId;
+            } catch (error) {
+              console.error('Topic parsing error:', error);
+            }
+          }
+        }
+      }
+      
+      throw new Error('Raffle creation event not found');
+    } catch (error) {
       console.error('Error extracting raffle ID from transaction:', error);
       throw error;
     }
@@ -228,7 +238,9 @@ export interface RaffleV3 {
 }
 
 export function formatRaffleV3(rawRaffle: unknown): RaffleV3 {
-  ) {
+  let dataArray: any[];
+  
+  if (Array.isArray(rawRaffle)) {
     dataArray = rawRaffle;
   } else if (rawRaffle && typeof rawRaffle === 'object') {
     // If it's an object, try to extract values
@@ -264,6 +276,27 @@ export function formatRaffleV3(rawRaffle: unknown): RaffleV3 {
     console.error('🔥 formatRaffleV3 - Data:', dataArray);
     throw new Error(`Invalid raffle data structure - array length ${dataArray.length}, expected 18`);
   }
+
+  const result: RaffleV3 = {
+    id: BigInt(dataArray[0]),
+    creator: dataArray[1],
+    title: dataArray[2],
+    description: dataArray[3],
+    rewardType: Number(dataArray[4]),
+    rewardTokenAddress: dataArray[5],
+    rewardAmount: BigInt(dataArray[6]),
+    ticketPrice: BigInt(dataArray[7]),
+    ticketPaymentToken: dataArray[8],
+    maxTickets: BigInt(dataArray[9]),
+    ticketsSold: BigInt(dataArray[10]),
+    totalEarned: BigInt(dataArray[11]),
+    expirationTime: BigInt(dataArray[12]),
+    autoDistributeOnSoldOut: Boolean(dataArray[13]),
+    winner: dataArray[14],
+    status: Number(dataArray[15]),
+    rewardClaimed: Boolean(dataArray[16]),
+    createdAt: BigInt(dataArray[17]),
+  };
 
   return result;
 }
