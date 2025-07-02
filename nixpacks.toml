@@ -1,7 +1,6 @@
-# Cache bust: 1735830920
+# Cache bust: 1735831100
 [phases.setup]
-nixPkgs = ['nodejs-18_x']
-aptPkgs = ['g++', 'make', 'python3']
+nixPkgs = ['nodejs-18_x', 'python39']
 
 [phases.install]
 cmds = [
