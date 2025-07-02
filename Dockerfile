@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies with cache mount for faster builds
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=npm-deps,target=/root/.npm \
     npm ci --only=production
 
 # Stage 2: Build
@@ -18,7 +18,7 @@ COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies for build)
 # Use cache mount and parallel installation
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=npm-build,target=/root/.npm \
     npm ci --prefer-offline --no-audit --no-fund
 
 # Copy source code
