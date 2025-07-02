@@ -1,5 +1,6 @@
-# DOCKER BUILD DISABLED - Using nixpacks for faster builds
-# 
+# Nixpacks will be used automatically when this section is commented out
+# Nixpacks is much faster than Docker for Railway deployments
+#
 # [build]
 # builder = "DOCKERFILE"
 # dockerfilePath = "Dockerfile"

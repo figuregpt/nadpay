@@ -1,24 +1,25 @@
-# Cache bust: 1735831100
 [phases.setup]
-nixPkgs = ['nodejs-18_x', 'python39']
+nixPkgs = ['nodejs-18_x']
 
 [phases.install]
 cmds = [
-    'npm install -g pm2',
-    'npm ci --omit=dev --prefer-offline --no-audit --no-fund --legacy-peer-deps'
+    # Only install production dependencies for runtime
+    'npm ci --omit=dev --prefer-offline --no-audit --no-fund'
 ]
-cacheDirectories = ['/root/.npm']
 
 [phases.build]
 cmds = [
-    'npm run build'
+    # Install all dependencies for build
+    'npm ci --prefer-offline --no-audit --no-fund',
+    # Build the app
+    'npm run build',
+    # Remove dev dependencies after build
+    'npm prune --production'
 ]
-cacheDirectories = ['/app/.next/cache']
 
 [start]
 cmd = 'pm2-runtime start ecosystem.config.js'
 
 [variables]
 NODE_ENV = 'production'
-NPM_CONFIG_LOGLEVEL = 'error'
-NODE_OPTIONS = '--max-old-space-size=2048' 
+NPM_CONFIG_LOGLEVEL = 'error' 
