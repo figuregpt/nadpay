@@ -1,32 +1,41 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-  throw new Error('MONGODB_URI is not defined in environment variables');
-}
-
 let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let clientPromise: Promise<MongoClient> | null = null;
 
-if (process.env.NODE_ENV === 'development') {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
-  let globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
-
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri);
-    globalWithMongo._mongoClientPromise = client.connect();
+function getMongoClient(): Promise<MongoClient> {
+  if (clientPromise) {
+    return clientPromise;
   }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri);
-  clientPromise = client.connect();
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    // Return a rejected promise instead of throwing immediately
+    return Promise.reject(new Error('MONGODB_URI is not defined in environment variables'));
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    // In development mode, use a global variable so that the value
+    // is preserved across module reloads caused by HMR (Hot Module Replacement).
+    let globalWithMongo = global as typeof globalThis & {
+      _mongoClientPromise?: Promise<MongoClient>;
+    };
+
+    if (!globalWithMongo._mongoClientPromise) {
+      client = new MongoClient(uri);
+      globalWithMongo._mongoClientPromise = client.connect();
+    }
+    clientPromise = globalWithMongo._mongoClientPromise;
+  } else {
+    // In production mode, it's best to not use a global variable.
+    client = new MongoClient(uri);
+    clientPromise = client.connect();
+  }
+
+  return clientPromise;
 }
 
-export default clientPromise;
+export default getMongoClient;
 
 export interface UserPoints {
   _id?: string;
@@ -57,8 +66,13 @@ export interface PointTransaction {
 }
 
 export async function getDatabase(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db('nadpay_points');
+  try {
+    const client = await getMongoClient();
+    return client.db('nadpay_points');
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    throw error;
+  }
 }
 
 export async function getUserPointsCollection(): Promise<Collection<UserPoints>> {
@@ -78,8 +92,13 @@ export function calculatePoints(monAmount: string, basePoints: number = 4): numb
 
 // Get user points by wallet address
 export async function getUserPoints(walletAddress: string): Promise<UserPoints | null> {
-  const collection = await getUserPointsCollection();
-  return await collection.findOne({ walletAddress: walletAddress.toLowerCase() });
+  try {
+    const collection = await getUserPointsCollection();
+    return await collection.findOne({ walletAddress: walletAddress.toLowerCase() });
+  } catch (error) {
+    console.error('Error getting user points:', error);
+    return null;
+  }
 }
 
 // Update or create user points
@@ -88,92 +107,107 @@ export async function updateUserPoints(
   transaction: PointTransaction,
   twitterHandle?: string
 ): Promise<void> {
-  const collection = await getUserPointsCollection();
-  const lowercaseAddress = walletAddress.toLowerCase();
-  
-  const existingUser = await collection.findOne({ walletAddress: lowercaseAddress });
-  
-  if (existingUser) {
-    // Update existing user
-    const updatedBreakdown = { ...existingUser.pointsBreakdown };
+  try {
+    const collection = await getUserPointsCollection();
+    const lowercaseAddress = walletAddress.toLowerCase();
     
-    // Update specific category
-    if (transaction.type === 'nadswap') {
-      updatedBreakdown.nadswap += transaction.points;
-    } else if (transaction.type.startsWith('nadpay')) {
-      updatedBreakdown.nadpay += transaction.points;
-    } else if (transaction.type.startsWith('nadraffle')) {
-      updatedBreakdown.nadraffle += transaction.points;
-    }
+    const existingUser = await collection.findOne({ walletAddress: lowercaseAddress });
     
-    await collection.updateOne(
-      { walletAddress: lowercaseAddress },
-      {
-        $set: {
-          totalPoints: existingUser.totalPoints + transaction.points,
-          pointsBreakdown: updatedBreakdown,
-          updatedAt: new Date(),
-          ...(twitterHandle && { twitterHandle })
-        },
-        $push: { transactions: transaction }
+    if (existingUser) {
+      // Update existing user
+      const updatedBreakdown = { ...existingUser.pointsBreakdown };
+      
+      // Update specific category
+      if (transaction.type === 'nadswap') {
+        updatedBreakdown.nadswap += transaction.points;
+      } else if (transaction.type.startsWith('nadpay')) {
+        updatedBreakdown.nadpay += transaction.points;
+      } else if (transaction.type.startsWith('nadraffle')) {
+        updatedBreakdown.nadraffle += transaction.points;
       }
-    );
-  } else {
-    // Create new user
-    const breakdown = {
-      nadswap: 0,
-      nadpay: 0,
-      nadraffle: 0
-    };
-    
-    if (transaction.type === 'nadswap') {
-      breakdown.nadswap = transaction.points;
-    } else if (transaction.type.startsWith('nadpay')) {
-      breakdown.nadpay = transaction.points;
-    } else if (transaction.type.startsWith('nadraffle')) {
-      breakdown.nadraffle = transaction.points;
+      
+      await collection.updateOne(
+        { walletAddress: lowercaseAddress },
+        {
+          $set: {
+            totalPoints: existingUser.totalPoints + transaction.points,
+            pointsBreakdown: updatedBreakdown,
+            updatedAt: new Date(),
+            ...(twitterHandle && { twitterHandle })
+          },
+          $push: { transactions: transaction }
+        }
+      );
+    } else {
+      // Create new user
+      const breakdown = {
+        nadswap: 0,
+        nadpay: 0,
+        nadraffle: 0
+      };
+      
+      if (transaction.type === 'nadswap') {
+        breakdown.nadswap = transaction.points;
+      } else if (transaction.type.startsWith('nadpay')) {
+        breakdown.nadpay = transaction.points;
+      } else if (transaction.type.startsWith('nadraffle')) {
+        breakdown.nadraffle = transaction.points;
+      }
+      
+      const newUser: UserPoints = {
+        walletAddress: lowercaseAddress,
+        twitterHandle,
+        totalPoints: transaction.points,
+        pointsBreakdown: breakdown,
+        transactions: [transaction],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await collection.insertOne(newUser);
     }
-    
-    const newUser: UserPoints = {
-      walletAddress: lowercaseAddress,
-      twitterHandle,
-      totalPoints: transaction.points,
-      pointsBreakdown: breakdown,
-      transactions: [transaction],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    await collection.insertOne(newUser);
+  } catch (error) {
+    console.error('Error updating user points:', error);
+    throw error;
   }
 }
 
 // Get leaderboard
 export async function getLeaderboard(limit: number = 100): Promise<UserPoints[]> {
-  const collection = await getUserPointsCollection();
-  
-  // Get all users with points > 0
-  const users = await collection
-    .find({ totalPoints: { $gt: 0 } })
-    .sort({ totalPoints: -1 })
-    .limit(limit)
-    .toArray();
+  try {
+    const collection = await getUserPointsCollection();
     
-    // Debug: Database getLeaderboard
-    // console.log('🔍 Database getLeaderboard:', {
-    //   totalUsers: users.length,
-    //   firstUser: users[0],
-    //   hasAnyUsers: users.length > 0
-    // });
-  
-  return users;
+    // Get all users with points > 0
+    const users = await collection
+      .find({ totalPoints: { $gt: 0 } })
+      .sort({ totalPoints: -1 })
+      .limit(limit)
+      .toArray();
+      
+      // Debug: Database getLeaderboard
+      // console.log('🔍 Database getLeaderboard:', {
+      //   totalUsers: users.length,
+      //   firstUser: users[0],
+      //   hasAnyUsers: users.length > 0
+      // });
+    
+    return users;
+  } catch (error) {
+    console.error('Error getting leaderboard:', error);
+    return [];
+  }
 }
 
 // Check if transaction already processed (prevent double counting)
 export async function isTransactionProcessed(txHash: string): Promise<boolean> {
-  const collection = await getUserPointsCollection();
-  const result = await collection.findOne({
-    'transactions.txHash': txHash
-  });
-  return result !== null;
+  try {
+    const collection = await getUserPointsCollection();
+    const result = await collection.findOne({
+      'transactions.txHash': txHash
+    });
+    return result !== null;
+  } catch (error) {
+    console.error('Error checking transaction:', error);
+    return false;
+  }
 } 
