@@ -100,7 +100,7 @@ export const KNOWN_NFTS: KnownNFT[] = [
   },
   {
     address: "0x05b16393517026d6c635B6e87C256923E91cAf90",
-    name: ".mon",
+    name: "AllDomains",
     description: "",
     image: "https://metadata.alldomains.id/.mon/collection_image.png",
     website: "",
