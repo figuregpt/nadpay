@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNFTMetadata } from '@/hooks/useNFTMetadata';
+import { useNFTMetadataEnhanced } from '@/hooks/useNFTMetadataEnhanced';
 import { 
   Clock, 
   CheckCircle, 
@@ -35,11 +35,19 @@ interface SwapProposalCardProps {
   currentUserAddress?: string;
 }
 
-// NFT Image Component with metadata fetching
+// NFT Image Component with enhanced metadata fetching
 function NFTImage({ asset }: { asset: any }) {
   // tokenId should already be a string from useNadSwapV3Contract
   const tokenIdString = String(asset.tokenId);
-  const { metadata, isLoading } = useNFTMetadata(asset.contractAddress, tokenIdString);
+  
+  console.log('🖼️ NFTImage component:', {
+    contractAddress: asset.contractAddress,
+    tokenId: tokenIdString,
+    hasImage: !!asset.image,
+    image: asset.image
+  });
+  
+  const { metadata, isLoading } = useNFTMetadataEnhanced(asset.contractAddress, tokenIdString);
   
   // Function to open MagicEden page
   const openMagicEden = () => {
@@ -49,6 +57,7 @@ function NFTImage({ asset }: { asset: any }) {
   
   // If asset already has an image, use it directly
   if (asset.image) {
+    console.log('✅ Using asset.image directly:', asset.image);
     return (
       <div 
         className="relative group cursor-pointer w-full h-full" 
@@ -62,6 +71,7 @@ function NFTImage({ asset }: { asset: any }) {
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
+            console.error('❌ Image load error:', asset.image);
           }}
         />
       </div>
@@ -77,6 +87,7 @@ function NFTImage({ asset }: { asset: any }) {
   }
   
   if (metadata?.image) {
+    console.log('✅ Using metadata.image:', metadata.image);
     return (
       <div 
         className="relative group cursor-pointer w-full h-full" 
@@ -90,11 +101,14 @@ function NFTImage({ asset }: { asset: any }) {
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
+            console.error('❌ Metadata image load error:', metadata.image);
           }}
         />
       </div>
     );
   }
+  
+  console.warn('⚠️ No image available for NFT:', asset.contractAddress, tokenIdString);
   
   return (
     <div 

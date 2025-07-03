@@ -639,11 +639,23 @@ export function useNadSwapV3Contract() {
       if (asset.isNFT) {
         console.log('🖼️ Processing NFT:', asset.contractAddress, 'tokenId:', tokenIdString);
         
+        // Normalize contract address to lowercase for comparison
+        const normalizedAddress = asset.contractAddress.toLowerCase();
+        const isNadNameService = normalizedAddress === "0x3019bf1dfb84e5b46ca9d0eec37de08a59a41308";
+        
         // Check known NFT collections first
         const knownNFT = getKnownNFT(asset.contractAddress);
         
+        console.log('🎯 NFT Detection:', {
+          contractAddress: asset.contractAddress,
+          normalizedAddress: normalizedAddress,
+          isNadNameService: isNadNameService,
+          knownNFT: knownNFT?.name || 'Unknown',
+          tokenId: tokenIdString
+        });
+        
         // For Nad Name Service, use special formatting with hardcoded image
-        if (asset.contractAddress.toLowerCase() === "0x3019bf1dfb84e5b46ca9d0eec37de08a59a41308") {
+        if (isNadNameService) {
           return {
             ...baseAsset,
             name: `m${tokenIdString}.nad`,
@@ -707,7 +719,7 @@ export function useNadSwapV3Contract() {
               let httpUrl = convertToHttpUrl(tokenURI as string);
               
               // Special handling for AllDomains - append tokenId if URL ends with /
-              if (asset.contractAddress.toLowerCase() === "0x05b16393517026d6c635b6e87c256923e91caf90" && httpUrl.endsWith('/')) {
+              if (normalizedAddress === "0x05b16393517026d6c635b6e87c256923e91caf90" && httpUrl.endsWith('/')) {
                 httpUrl = `${httpUrl}${tokenIdString}`;
                 console.log('🔗 AllDomains URL with tokenId:', httpUrl);
               }
@@ -721,10 +733,17 @@ export function useNadSwapV3Contract() {
                 
                 console.log('✅ NFT metadata loaded:', metadata.name, imageUrl ? '(with image)' : '(no image)');
 
-                // For AllDomains, append .mon to the name if it doesn't have it
+                // Only for AllDomains, append .mon to the name if it doesn't have it
                 let displayName = metadata.name || `NFT #${tokenIdString}`;
-                if (asset.contractAddress.toLowerCase() === "0x05b16393517026d6c635b6e87c256923e91caf90" && !displayName.endsWith('.mon')) {
+                if (normalizedAddress === "0x05b16393517026d6c635b6e87c256923e91caf90" && !displayName.endsWith('.mon')) {
                   displayName = `${displayName}.mon`;
+                }
+                
+                // Check if name already has .nad extension (shouldn't happen for non-NNS NFTs)
+                if (displayName.endsWith('.nad') && !isNadNameService) {
+                  console.warn('⚠️ Non-NNS NFT has .nad extension in metadata:', displayName);
+                  // Remove .nad extension for non-NNS NFTs
+                  displayName = displayName.replace(/\.nad$/, '');
                 }
 
                 return {
@@ -735,12 +754,39 @@ export function useNadSwapV3Contract() {
                 };
               } else {
                 console.warn('❌ Failed to fetch metadata, response status:', response.status);
+                // Fallback to known NFT data if available
+                if (knownNFT) {
+                  return {
+                    ...baseAsset,
+                    name: `${knownNFT.name} #${tokenIdString}`,
+                    symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
+                    image: knownNFT.image
+                  };
+                }
               }
             } else {
               console.warn('❌ No tokenURI returned from contract');
+              // Fallback to known NFT data if available
+              if (knownNFT) {
+                return {
+                  ...baseAsset,
+                  name: `${knownNFT.name} #${tokenIdString}`,
+                  symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
+                  image: knownNFT.image
+                };
+              }
             }
           } catch (error) {
             console.warn('❌ Failed to fetch NFT metadata:', error);
+            // Always try to use known NFT data on error
+            if (knownNFT) {
+              return {
+                ...baseAsset,
+                name: `${knownNFT.name} #${tokenIdString}`,
+                symbol: knownNFT.name.split(' ').map(w => w[0]).join('').toUpperCase(),
+                image: knownNFT.image
+              };
+            }
           }
         }
 

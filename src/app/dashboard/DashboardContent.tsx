@@ -72,7 +72,7 @@ const NADPAY_V2_ABI = [
     "type": "function"
   }
 ];
-import { useCreatorRafflesV6, formatRaffleV6, formatPriceV6, RaffleInfoV6, RAFFLE_STATES_V6 } from "@/hooks/useNadRaffleV6Contract";
+import { useCreatorRafflesV7, formatRaffleV7, formatPriceV7, RaffleInfoV7, RAFFLE_STATES_V7 } from "@/hooks/useNadRaffleV7Contract";
 import { NADPAY_CONTRACT } from "@/lib/contract";
 import { createPredictableSecureRaffleId } from "@/lib/linkUtils";
 import { getKnownToken, getKnownNFT } from "@/lib/knownAssets";
@@ -111,6 +111,8 @@ interface RaffleData {
   rewardAmount: string;
   rewardTokenAddress?: string; // Add this for token info
   ticketPrice: string;
+  ticketPaymentToken?: string; // V7: Token address for ticket payments
+  ticketPaymentTokenSymbol?: string; // V7: Token symbol for display
   maxTickets: bigint;
   ticketsSold: bigint;
   totalEarned: string;
@@ -209,15 +211,15 @@ export default function DashboardContent() {
     totalLinksError: totalLinksError?.message,
     contractAddress: CONTRACT_ADDRESS
   });
-  // V6 contract - raffle hooks (load immediately)
+  // V7 contract - raffle hooks (load immediately)
   const {
     data: creatorRafflesData,
     isLoading: loadingRaffles,
     refetch: refetchRaffles,
-  } = useCreatorRafflesV6(address);
+  } = useCreatorRafflesV7(address);
   
   // Debug logging for raffles
-  console.log('🎫 Raffle Debug: V6 hooks enabled', {
+  console.log('🎫 Raffle Debug: V7 hooks enabled', {
     creatorRafflesData,
     loadingRaffles
   });
@@ -424,7 +426,7 @@ export default function DashboardContent() {
   const formatRewardDisplay = (ticket: any) => {
     if (ticket.rewardType === undefined || ticket.rewardType === null) return 'Loading...';
     
-    // V6 Contract RewardType values:
+    // V7 Contract RewardType values:
     // 0 = MON_TOKEN
     // 1 = ERC20_TOKEN (CHOG etc.)
     // 2 = NFT_TOKEN
@@ -569,16 +571,16 @@ export default function DashboardContent() {
     }) : [];
   }, [creatorLinksData]);
 
-  // Convert V6 raffle contract data to display format - MEMOIZED to prevent unnecessary re-renders
-  console.log('creatorRafflesData V6:', creatorRafflesData);
+  // Convert V7 raffle contract data to display format - MEMOIZED to prevent unnecessary re-renders
+  console.log('creatorRafflesData V7:', creatorRafflesData);
   console.log('loadingRaffles:', loadingRaffles);
   console.log('address:', address);
   
   const raffles: RaffleData[] = useMemo(() => {
     return creatorRafflesData ? creatorRafflesData
-    .map((raffle: RaffleInfoV6, index: number) => {
+    .map((raffle: RaffleInfoV7, index: number) => {
       try {
-        console.log('Processing V6 raffle:', raffle);
+        console.log('Processing V7 raffle:', raffle);
         
         // Calculate total earned (tickets sold * ticket price)
         const totalEarned = raffle.soldTickets * raffle.ticketPrice;
@@ -586,12 +588,12 @@ export default function DashboardContent() {
         return {
           id: raffle.raffleId !== undefined ? raffle.raffleId.toString() : index.toString(),
           creator: raffle.creator || '',
-          title: `V6 Raffle #${raffle.raffleId !== undefined ? raffle.raffleId : index}`, // V6 doesn't have title/description
+          title: `V7 Raffle #${raffle.raffleId !== undefined ? raffle.raffleId : index}`, // V7 doesn't have title/description
             // Fix description to use correct field based on reward type
             description: `Reward: ${
               raffle.rewardType === 1 
                 ? (() => {
-                    const amount = formatPriceV6(raffle.rewardTokenId || BigInt(0));
+                    const amount = formatPriceV7(raffle.rewardTokenId || BigInt(0));
                     const token = raffle.rewardTokenAddress 
                       ? getKnownToken(raffle.rewardTokenAddress.toLowerCase())
                       : null;
@@ -607,13 +609,13 @@ export default function DashboardContent() {
                     const name = nft ? nft.name : 'NFT';
                     return `${name} #${tokenId}`;
                   })()
-                : formatPriceV6(raffle.rewardAmount) + ' MON'
+                : formatPriceV7(raffle.rewardAmount) + ' MON'
             }`,
           rewardType: Number(raffle.rewardType) || 0,
             // For ERC20 tokens (type 1), amount is in rewardTokenId, not rewardAmount
             // For NFTs (type 2), show collection name + token ID instead of amount
             rewardAmount: raffle.rewardType === 1 
-              ? formatPriceV6(raffle.rewardTokenId || BigInt(0))
+              ? formatPriceV7(raffle.rewardTokenId || BigInt(0))
               : raffle.rewardType === 2
               ? (() => {
                   const tokenId = (raffle.rewardTokenId || BigInt(0)).toString();
@@ -623,23 +625,32 @@ export default function DashboardContent() {
                   const name = nft ? nft.name : 'NFT';
                   return `${name} #${tokenId}`;
                 })()
-              : formatPriceV6(raffle.rewardAmount),
+              : formatPriceV7(raffle.rewardAmount),
             rewardTokenAddress: raffle.rewardTokenAddress, // Include token address for identifying specific tokens
-          ticketPrice: formatPriceV6(raffle.ticketPrice),
+          ticketPrice: formatPriceV7(raffle.ticketPrice),
+          ticketPaymentToken: raffle.ticketPaymentToken, // V7: payment token address
+          ticketPaymentTokenSymbol: (() => {
+            // Get ticket payment token symbol
+            if (!raffle.ticketPaymentToken || raffle.ticketPaymentToken === '0x0000000000000000000000000000000000000000') {
+              return 'MON'; // Default to MON
+            }
+            const token = getKnownToken(raffle.ticketPaymentToken.toLowerCase());
+            return token ? token.symbol : 'MON';
+          })(),
           maxTickets: raffle.maxTickets || BigInt(0),
           ticketsSold: raffle.soldTickets || BigInt(0),
-          totalEarned: formatPriceV6(totalEarned),
-          status: Number(raffle.state) || 0, // V6 uses 'state' instead of 'status'
+          totalEarned: formatPriceV7(totalEarned),
+          status: Number(raffle.state) || 0, // V7 uses 'state' instead of 'status'
           createdAt: raffle.startTime ? new Date(Number(raffle.startTime) * 1000).toISOString() : new Date().toISOString(),
           expirationTime: raffle.endTime || BigInt(0),
           winner: raffle.winner !== '0x0000000000000000000000000000000000000000' ? raffle.winner : undefined,
         };
       } catch (error) {
-        console.error('Error formatting V6 raffle data:', error, raffle);
+        console.error('Error formatting V7 raffle data:', error, raffle);
         return {
           id: index.toString(),
           creator: '',
-          title: 'Error Loading V6 Raffle',
+          title: 'Error Loading V7 Raffle',
           description: 'This raffle could not be loaded',
           rewardType: 0,
           rewardAmount: '0',
@@ -763,7 +774,7 @@ export default function DashboardContent() {
     const maxTickets = Number(raffle.maxTickets);
     const isSoldOut = ticketsSold >= maxTickets;
 
-    // V6 Smart Logic:
+    // V7 Smart Logic:
     // 1. If tickets sold > 0 and expired → "Finished" (yellow)
     // 2. If not expired and tickets not sold out → "Active" (green)
     // 3. If tickets sold = 0 and expired → "Cancelled" (red)
@@ -779,16 +790,17 @@ export default function DashboardContent() {
       // Fallback to old logic for edge cases
       switch (raffle.status) {
         case 0: return 'Active';
-        case 1: return 'Finished';
-        case 2: return 'Cancelled';
-        case 3: return 'Cancelled'; // V6 EMERGENCY state
+        case 1: return 'Finished'; // SOLD_OUT
+        case 2: return 'Finished'; // COMPLETED
+        case 3: return 'Cancelled';
+        case 4: return 'Cancelled'; // V7 EMERGENCY state
         default: return 'Unknown';
       }
     }
   };
 
   const getRewardTypeText = (rewardType: number) => {
-    // V6 Contract RewardType values:
+    // V7 Contract RewardType values:
     // 0 = MON_TOKEN
     // 1 = ERC20_TOKEN
     // 2 = NFT_TOKEN
@@ -1941,7 +1953,7 @@ export default function DashboardContent() {
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Ticket Price</p>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {raffle.ticketPrice} MON
+                              {raffle.ticketPrice} {raffle.ticketPaymentTokenSymbol || 'MON'}
                             </p>
                           </div>
                           <div>
@@ -1953,7 +1965,7 @@ export default function DashboardContent() {
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Total Earned</p>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {raffle.totalEarned} MON
+                              {raffle.totalEarned} {raffle.ticketPaymentTokenSymbol || 'MON'}
                             </p>
                           </div>
                           <div>
