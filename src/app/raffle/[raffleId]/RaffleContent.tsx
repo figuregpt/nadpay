@@ -92,6 +92,14 @@ export default function RaffleContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const participantsPerPage = 20;
   
+  // Winner Twitter data
+  const [winnerTwitter, setWinnerTwitter] = useState<{
+    handle?: string;
+    name?: string;
+    avatar?: string;
+  } | null>(null);
+  const [loadingWinnerTwitter, setLoadingWinnerTwitter] = useState(false);
+  
   // Track processed hashes to prevent duplicate notifications
   const processedPurchases = useRef<Set<string>>(new Set());
   
@@ -223,15 +231,17 @@ export default function RaffleContent() {
     fetchParticipants();
   }, [fetchParticipants]);
 
-  // Filter participants based on search query
-  const filteredParticipants = participants.filter(participant => {
-    const query = searchQuery.toLowerCase();
-    return (
-      participant.address.toLowerCase().includes(query) ||
-      (participant.twitterHandle && participant.twitterHandle.toLowerCase().includes(query)) ||
-      (participant.twitterName && participant.twitterName.toLowerCase().includes(query))
-    );
-  });
+  // Filter and sort participants based on search query and ticket count
+  const filteredParticipants = participants
+    .filter(participant => {
+      const query = searchQuery.toLowerCase();
+      return (
+        participant.address.toLowerCase().includes(query) ||
+        (participant.twitterHandle && participant.twitterHandle.toLowerCase().includes(query)) ||
+        (participant.twitterName && participant.twitterName.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) => b.tickets - a.tickets); // Sort by ticket count: highest to lowest
 
   // Pagination logic
   const totalPages = Math.ceil(filteredParticipants.length / participantsPerPage);
@@ -275,6 +285,45 @@ export default function RaffleContent() {
 
     return () => clearInterval(interval);
   }, [refreshParticipants]);
+
+  // Fetch winner Twitter data when winner is available
+  useEffect(() => {
+    const fetchWinnerTwitter = async () => {
+      if (!raffle?.winner || raffle.winner === '0x0000000000000000000000000000000000000000') {
+        setWinnerTwitter(null);
+        return;
+      }
+
+      setLoadingWinnerTwitter(true);
+      try {
+        console.log('🐦 Fetching Twitter info for winner:', raffle.winner);
+        const twitterResponse = await fetch(`/api/profile/${raffle.winner}`);
+        const twitterData = await twitterResponse.json();
+        
+        if (twitterResponse.ok && twitterData.profile?.twitter) {
+          setWinnerTwitter({
+            handle: twitterData.profile.twitter.username,
+            name: twitterData.profile.twitter.name,
+            avatar: twitterData.profile.twitter.profile_image_url
+          });
+          console.log('✅ Winner Twitter info found:', {
+            handle: twitterData.profile.twitter.username,
+            name: twitterData.profile.twitter.name
+          });
+        } else {
+          setWinnerTwitter(null);
+          console.log('❌ No Twitter info found for winner');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching winner Twitter info:', error);
+        setWinnerTwitter(null);
+      } finally {
+        setLoadingWinnerTwitter(false);
+      }
+    };
+
+    fetchWinnerTwitter();
+  }, [raffle?.winner]);
   
   // Debug raffle data
   if (raffle) {
@@ -393,7 +442,7 @@ export default function RaffleContent() {
         
         trackNadRaffleTicketPurchase(hash, totalPrice.toString(), raffleId.toString(), metadata)
           .then((result) => {
-            console.log('🎉 Points awarded for ticket purchase!', result);
+            console.log('🎉 Points awarded for ticket purchase! Creator points awarded automatically.', result);
           })
           .catch(error => {
             console.error('❌ Error tracking ticket purchase points:', error);
@@ -513,7 +562,7 @@ export default function RaffleContent() {
         
         trackNadRaffleTicketPurchase(purchaseHash, totalAmount, raffleId.toString(), metadata)
           .then((result) => {
-            console.log('🎉 Points awarded for ticket purchase!', result);
+            console.log('🎉 Points awarded for ticket purchase! Creator points awarded automatically.', result);
           })
           .catch(error => {
             console.error('❌ Error tracking ticket purchase points:', error);
@@ -1040,13 +1089,72 @@ export default function RaffleContent() {
             {raffle.winner && raffle.winner !== '0x0000000000000000000000000000000000000000' && (
               <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-dark-700">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">🏆 Winner</h2>
-                <p className="text-gray-600 dark:text-gray-300 mb-2">Congratulations to:</p>
-                <p className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-                  {raffle.winner.slice(0, 6)}...{raffle.winner.slice(-4)}
-                </p>
-                {isWinner() && (
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-2">🎉 That's you!</p>
-                )}
+                <p className="text-gray-600 dark:text-gray-300 mb-4">Congratulations to:</p>
+                
+                <div className="flex items-center space-x-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                  {/* Winner Avatar */}
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                    {winnerTwitter?.avatar ? (
+                      <img 
+                        src={winnerTwitter.avatar} 
+                        alt={winnerTwitter.name || 'Winner'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center">
+                        <Trophy className="w-8 h-8 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    {/* Wallet Address */}
+                    <p className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                      {raffle.winner.slice(0, 6)}...{raffle.winner.slice(-4)}
+                    </p>
+                    
+                    {/* Twitter Info */}
+                    {loadingWinnerTwitter ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm text-yellow-700 dark:text-yellow-300">Loading Twitter...</span>
+                      </div>
+                    ) : winnerTwitter?.handle ? (
+                      <a
+                        href={`https://twitter.com/${winnerTwitter.handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 hover:underline transition-all duration-200"
+                      >
+                        <Twitter className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                          @{winnerTwitter.handle}
+                        </span>
+                        {winnerTwitter.name && (
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            ({winnerTwitter.name})
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        No Twitter connected
+                      </p>
+                    )}
+                    
+                    {/* Winner indicators */}
+                    <div className="flex items-center space-x-2 mt-2">
+                      {isWinner() && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                          🎉 That's you!
+                        </span>
+                      )}
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                        🏆 Raffle Winner
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

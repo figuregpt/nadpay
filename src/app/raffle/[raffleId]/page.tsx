@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { formatEther } from "viem";
 import { publicClient } from "@/lib/wagmi";
 import { getKnownToken, KNOWN_NFTS } from "@/lib/knownAssets";
+import { decodePredictableSecureRaffleId } from "@/lib/linkUtils";
 
 // Dynamically import the raffle content
 const RaffleContent = dynamic(() => import('./RaffleContent'), {
@@ -55,12 +56,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const { raffleId } = await params;
     
+    // Decode secure raffle ID to get the actual raffle ID
+    let actualRaffleId: number;
+    
+    // First check if it's a simple numeric string (like "0", "1", "2")
+    const numericId = parseInt(raffleId);
+    if (!isNaN(numericId) && numericId.toString() === raffleId) {
+      actualRaffleId = numericId;
+    } else {
+      // If not numeric, try to decode as secure hex ID
+      const decodedId = decodePredictableSecureRaffleId(raffleId);
+      if (decodedId !== null) {
+        actualRaffleId = decodedId;
+      } else {
+        // If both fail, return default metadata
+        return {
+          title: "Invalid Raffle ID - NadPay RaffleHouse",
+          description: "This raffle ID is invalid.",
+        };
+      }
+    }
+    
     // Fetch raffle data from V7 contract
     const raffleData = await publicClient.readContract({
       address: RAFFLE_V7_CONTRACT_ADDRESS,
       abi: V7_ABI,
       functionName: 'getRaffleDetails',
-      args: [BigInt(raffleId)]
+      args: [BigInt(actualRaffleId)]
     });
 
     if (!raffleData || !raffleData.creator || raffleData.creator === '0x0000000000000000000000000000000000000000') {
@@ -89,7 +111,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
     
     const ticketsRemaining = Number(maxTickets) - Number(soldTickets);
-    const pageTitle = `${rewardInfo} - Raffle #${raffleId} | NadPay RaffleHouse`;
+    const pageTitle = `${rewardInfo} - Raffle #${actualRaffleId} | NadPay RaffleHouse`;
     const pageDescription = `${rewardInfo} | Ticket Price: ${ticketPriceFormatted} ${ticketTokenSymbol} | ${ticketsRemaining} tickets remaining | Enter to win on Monad blockchain`;
 
     return {
