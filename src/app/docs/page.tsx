@@ -33,7 +33,9 @@ import {
   CheckCircle,
   AlertCircle,
   Home,
-  BarChart3
+  BarChart3,
+  X,
+  Clock
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
@@ -92,12 +94,12 @@ export default function DocsPage() {
     },
     {
       id: "rafflehouse",
-      title: "RaffleHouse - V6 Raffles",
+      title: "RaffleHouse - V7 Raffles",
       icon: Globe,
       subsections: [
         { id: "raffle-overview", title: "Overview" },
         { id: "creating-raffles", title: "Creating Raffles" },
-        { id: "v6-features", title: "V6 Features" },
+        { id: "v7-features", title: "V7 Features" },
         { id: "raffle-participation", title: "Participating in Raffles" }
       ]
     },
@@ -143,7 +145,7 @@ export default function DocsPage() {
                 What is NadPay Ecosystem?
               </h3>
               <p className="text-primary-700 dark:text-primary-300">
-                NadPay is a comprehensive DeFi platform featuring NadPay for payment links, RaffleHouse V6 for ultra-fast raffles, 
+                NadPay is a comprehensive DeFi platform featuring NadPay for payment links, RaffleHouse V7 for ultra-fast raffles, 
                 and NadSwap V3 for secure asset trading. Connect your Twitter account to earn points for every activity and 
                 compete on the leaderboard. All built with ultra-secure smart contracts on Monad blockchain.
               </p>
@@ -169,7 +171,7 @@ export default function DocsPage() {
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
                 <Trophy className="w-8 h-8 text-purple-500 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  RaffleHouse V6
+                  RaffleHouse V7
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Ultra-secure raffle system with instant finalization. Earn 4 points per 0.1 MON in raffle activity.
@@ -878,41 +880,41 @@ export default function DocsPage() {
           <div className="space-y-8">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                RaffleHouse - V4 Fast Raffles
+                RaffleHouse - V7 Ultra-Secure Raffles
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Ultra-fast raffle system with 2-minute reveal windows optimized for Monad blockchain.
+                Ultra-secure raffle system with multi-token support and advanced finalization features.
               </p>
             </div>
 
             <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
-                ⚡ V4 Fast Technology
+                ⚡ V7 Ultra-Secure Technology
               </h3>
               <p className="text-purple-700 dark:text-purple-300">
-                Revolutionary raffle system with 2-minute reveal windows, ultra-secure randomness, and emergency 
-                winner selection. Optimized for Monad's 0.5-second block time.
+                Latest generation raffle system with multi-token ticket purchases, enhanced security features, 
+                and ultra-fast finalization. Optimized for Monad's high-performance blockchain.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  🚀 V4 Fast Features
+                  🚀 V7 Ultra-Secure Features
                 </h3>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                     <div>
-                      <strong className="text-gray-900 dark:text-white">2-Minute Reveal Window</strong>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">Ultra-fast winner selection vs 1-hour in other versions</p>
+                      <strong className="text-gray-900 dark:text-white">Multi-Token Tickets</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Purchase tickets with MON, USDC, USDT, or any ERC20 token</p>
                     </div>
                   </li>
                   <li className="flex items-start">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                     <div>
-                      <strong className="text-gray-900 dark:text-white">Ultra-Secure Randomness</strong>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">Commit-reveal scheme with emergency fallback</p>
+                      <strong className="text-gray-900 dark:text-white">Ultra-Fast Finalization</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Instant winner selection with automated finalization system</p>
                     </div>
                   </li>
                   <li className="flex items-start">
@@ -925,8 +927,8 @@ export default function DocsPage() {
                   <li className="flex items-start">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                     <div>
-                      <strong className="text-gray-900 dark:text-white">Real-Time Countdown</strong>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">Live countdown timers for reveal windows</p>
+                      <strong className="text-gray-900 dark:text-white">Emergency Security</strong>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Advanced emergency winner selection and security features</p>
                     </div>
                   </li>
                 </ul>
@@ -978,10 +980,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded text-sm break-all">
-                      0xa874905B117242eC6c966E35B18985e9242Bb633
+                      0xBd32ce277D91b6beD459454C7964528f54A54f75
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
+                      onClick={() => copyToClipboard("0xBd32ce277D91b6beD459454C7964528f54A54f75")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700"
                     >
                       <Copy className="w-4 h-4" />
@@ -990,7 +992,7 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">V4 Fast</p>
+                  <p className="mt-1 text-gray-900 dark:text-white">V7 Ultra-Secure</p>
                 </div>
               </div>
             </div>
@@ -1426,10 +1428,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25
+                      0x091f3ae2E54584BE7195E2A8C5eD3976d0851905
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25")}
+                      onClick={() => copyToClipboard("0x091f3ae2E54584BE7195E2A8C5eD3976d0851905")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -1447,21 +1449,21 @@ export default function DocsPage() {
               </div>
             </div>
 
-            {/* NadRaffle V4 Fast Contract */}
+            {/* NadRaffle V7 Ultra-Secure Contract */}
             <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Globe className="w-5 h-5 mr-2 text-purple-500" />
-                NadRaffle V4 Fast Contract
+                NadRaffle V7 Ultra-Secure Contract
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0xa874905B117242eC6c966E35B18985e9242Bb633
+                      0xBd32ce277D91b6beD459454C7964528f54A54f75
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0xa874905B117242eC6c966E35B18985e9242Bb633")}
+                      onClick={() => copyToClipboard("0xBd32ce277D91b6beD459454C7964528f54A54f75")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -1470,11 +1472,11 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Version</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">V4 Fast</p>
+                  <p className="mt-1 text-gray-900 dark:text-white">V7 Ultra-Secure</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">Ultra-Fast Raffles with 2-min Reveals</p>
+                  <p className="mt-1 text-gray-900 dark:text-white">Multi-Token Raffles with Ultra-Fast Finalization</p>
                 </div>
               </div>
             </div>
@@ -1490,10 +1492,10 @@ export default function DocsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</label>
                   <div className="flex items-center mt-1">
                     <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-2 rounded text-xs sm:text-sm break-all">
-                      0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f
+                      0x0ebDFAFbef16A22eA8ffaba4DdA051AC4df8f979
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f")}
+                      onClick={() => copyToClipboard("0x0ebDFAFbef16A22eA8ffaba4DdA051AC4df8f979")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
@@ -1568,23 +1570,23 @@ export default function DocsPage() {
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg overflow-hidden">
                 <div className="bg-purple-50 dark:bg-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
                   <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200">
-                    🎯 NadRaffle V6 Ultra-Secure
+                    🎯 NadRaffle V7 Ultra-Secure
                   </h3>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm break-all">
-                      0x51bA8C7AFA1bf51cCba0Abf0Da56f4e5c07D351A
+                      0xBd32ce277D91b6beD459454C7964528f54A54f75
                     </code>
                     <button 
-                      onClick={() => copyToClipboard("0x51bA8C7AFA1bf51cCba0Abf0Da56f4e5c07D351A")}
+                      onClick={() => copyToClipboard("0xBd32ce277D91b6beD459454C7964528f54A54f75")}
                       className="ml-2 p-2 text-gray-500 hover:text-gray-700 flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
-                    2-phase finalization system, Ultra-fast finalizer bot, Reentrancy protection, Safe transfers
+                    Multi-token ticket support, Ultra-fast finalizer bot, Reentrancy protection, Safe transfers
                   </p>
                 </div>
               </div>
@@ -2937,6 +2939,1323 @@ export default function DocsPage() {
                   <li>• Keep detailed records of participants for future marketing</li>
                   <li>• Announce winners publicly to build credibility</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "payment-process":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Payment Process
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Understanding how payments work in the NadPay ecosystem.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🔄 How Payments Work
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 mb-4">
+                NadPay V2 uses smart contracts to process payments securely and transparently. All transactions are recorded on the Monad blockchain.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Customer Opens Link</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Customer clicks your payment link and sees product details</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Wallet Connection</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Customer connects their wallet and selects payment method</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Smart Contract Payment</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Payment is processed through ultra-secure smart contract</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Instant Distribution</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">98% goes to creator, 2% platform fee, both instantly</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  💳 Supported Payment Methods
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">MON</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Monad (MON)</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Native blockchain currency</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">20</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">ERC20 Tokens</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">USDC, USDT, CHOG, and more</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔒 Security Features
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Reentrancy protection</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Rate limiting (anti-spam)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Emergency pause capability</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Automatic fee distribution</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                ⚡ Transaction Speed
+              </h3>
+              <p className="text-green-700 dark:text-green-300 mb-4">
+                Built on Monad's ultra-fast blockchain infrastructure for instant payments.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">0.5s</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Block Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">1s</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Finality</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">~$0.001</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Transaction Cost</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "nadpay-features":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Advanced NadPay Features
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Explore the advanced features that make NadPay V2 the most powerful payment platform on Monad.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📊 Real-time Analytics
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Monitor your payment link performance with comprehensive analytics dashboard.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Total sales and revenue tracking</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Customer demographics analysis</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Payment method preferences</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Conversion rate optimization</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🎨 Customization Options
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Personalize your payment links to match your brand and style.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Custom cover images (IPFS storage)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Rich text descriptions</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Sales limits and expiration dates</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Per-wallet purchase limits</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                🔗 Integration Capabilities
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4">
+                Seamlessly integrate NadPay into your existing workflow and tools.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">API Access</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• REST API for link management</li>
+                    <li>• Real-time webhooks</li>
+                    <li>• GraphQL endpoint</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Social Integration</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Twitter sharing optimization</li>
+                    <li>• Discord bot integration</li>
+                    <li>• Telegram bot support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                💡 Pro Tips
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Optimize Your Cover Image</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Use high-quality, compelling images that represent your product well. Images are automatically compressed and stored on IPFS.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Set Strategic Limits</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Use total sales limits to create urgency and per-wallet limits to ensure fair distribution.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Monitor Performance</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Regular check your analytics to understand customer behavior and optimize your offerings.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "creating-raffles":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Creating Raffles
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Step-by-step guide to creating engaging raffles with NadRaffle V7 multi-token system.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                🎯 V7 Multi-Token Features
+              </h3>
+              <p className="text-green-700 dark:text-green-300 mb-4">
+                NadRaffle V7 allows customers to buy tickets using any ERC20 token, not just MON.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">MON</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Native Token</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">USDC</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Stablecoin</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">CHOG</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Community Token</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📝 Step-by-Step Guide
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Connect Your Wallet</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Connect your wallet and ensure you have enough MON for the 0.1 MON creation fee.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Choose Reward Type</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Select between TOKEN rewards (MON, USDC, etc.) or NFT rewards from your collection.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Set Ticket Payment Token</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Choose which token customers will use to buy tickets (MON, USDC, CHOG, etc.).</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Configure Raffle Settings</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Set ticket price, maximum tickets, and duration (1-24 hours).</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">5</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Launch Your Raffle</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Review all settings and launch your raffle. The ultra-fast finalizer will handle everything automatically.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    🎁 Reward Types
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">💰</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">Token Rewards</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">MON, USDC, USDT, or any ERC20 token</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm">🎨</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">NFT Rewards</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Unique NFTs from your collection</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    ⚡ Automatic Features
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Instant sold-out detection</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Automatic winner selection</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Automatic reward distribution</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Expired raffle cleanup</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                ⚠️ Important Notes
+              </h3>
+              <div className="space-y-2">
+                <p className="text-red-700 dark:text-red-300 text-sm">
+                  • Creation fee: 0.1 MON (non-refundable)
+                </p>
+                <p className="text-red-700 dark:text-red-300 text-sm">
+                  • Platform fee: 2.5% of total ticket sales
+                </p>
+                <p className="text-red-700 dark:text-red-300 text-sm">
+                  • Minimum duration: 1 hour, Maximum: 24 hours
+                </p>
+                <p className="text-red-700 dark:text-red-300 text-sm">
+                  • You must have the reward tokens/NFTs in your wallet before creating
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "v7-features":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                V7 Multi-Token Features
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Discover the advanced features of NadRaffle V7 that make it the most powerful raffle system on Monad.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                🚀 What's New in V7
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4">
+                V7 introduces multi-token ticket payments while maintaining all the security and automation features of V6.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">New in V7</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Multi-token ticket payments</li>
+                    <li>• Enhanced asset selector</li>
+                    <li>• Improved gas optimization</li>
+                    <li>• Better token validation</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Preserved from V6</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• 2-phase security system</li>
+                    <li>• Ultra-fast finalizer</li>
+                    <li>• Automatic distributions</li>
+                    <li>• Emergency controls</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔄 2-Phase Security System
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Advanced security mechanism that prevents manipulation and ensures fair results.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Sold Out Detection</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">When last ticket is sold, raffle is marked as SOLD_OUT</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Winner Selection</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Separate transaction selects winner and distributes rewards</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  ⚡ Ultra-Fast Finalizer
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Automated bot that monitors and finalizes raffles in real-time.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">30-second monitoring cycles</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Instant sold-out processing</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Automatic expired cleanup</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Gas-optimized operations</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                💎 Multi-Token Support
+              </h3>
+              <p className="text-green-700 dark:text-green-300 mb-4">
+                Accept ticket payments in any ERC20 token, expanding your reach and accessibility.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">MON</span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Monad Native</div>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">USDC</span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Stablecoin</div>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">CHOG</span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Community</div>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">+</span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Any ERC20</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                🔧 Advanced Configuration
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Duration Settings</h4>
+                  <ul className="text-sm text-yellow-600 dark:text-yellow-400 space-y-1">
+                    <li>• Minimum: 1 hour</li>
+                    <li>• Maximum: 24 hours</li>
+                    <li>• Automatic expiration</li>
+                    <li>• Manual early ending</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Reward Options</h4>
+                  <ul className="text-sm text-yellow-600 dark:text-yellow-400 space-y-1">
+                    <li>• ERC20 token rewards</li>
+                    <li>• NFT rewards (ERC721)</li>
+                    <li>• Automatic distribution</li>
+                    <li>• Pending claim system</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "raffle-participation":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Participating in Raffles
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Learn how to participate in exciting raffles and maximize your chances of winning.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🎫 How to Buy Tickets
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 mb-4">
+                Purchasing raffle tickets is simple and secure with our V7 multi-token system.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Browse Active Raffles</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Visit RaffleHouse to see all active raffles with their rewards and ticket prices</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Connect Your Wallet</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Connect your wallet and make sure you have the required token for ticket purchase</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Purchase Tickets</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Choose how many tickets to buy and complete the transaction</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Wait for Results</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Sit back and wait for the raffle to end - winners are selected automatically</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🎯 Winning Strategies
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">💡</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Buy More Tickets</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">More tickets = higher chances of winning</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">⏰</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Act Fast</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Popular raffles sell out quickly</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">🎯</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Choose Wisely</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Focus on raffles with valuable rewards</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  💰 Points & Rewards
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Earn points for every ticket purchase to climb the leaderboard.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">4 points per 0.1 MON ticket value</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Works with any payment token</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Compete on global leaderboard</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Bonus for Twitter connected users</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                🏆 After Winning
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4">
+                Winners receive their rewards automatically thanks to our advanced smart contract system.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Automatic Distribution</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Rewards sent directly to your wallet</li>
+                    <li>• No manual claiming required</li>
+                    <li>• Instant notification of win</li>
+                    <li>• Transaction recorded on blockchain</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Backup System</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Pending rewards if transfer fails</li>
+                    <li>• Manual claim option available</li>
+                    <li>• Support team assistance</li>
+                    <li>• Full transparency on explorer</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                ⚠️ Important Guidelines
+              </h3>
+              <div className="space-y-2">
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                  • Only buy tickets from official RaffleHouse interface
+                </p>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                  • Check raffle details carefully before purchasing
+                </p>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                  • Winners are selected randomly by smart contract
+                </p>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                  • Connect Twitter account to earn points and compete
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "creating-swaps":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Creating Swap Proposals
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Learn how to create secure peer-to-peer asset swap proposals on NadSwap V3.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🔄 How Swap Proposals Work
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 mb-4">
+                NadSwap V3 uses an escrow-based system to ensure secure peer-to-peer trading without intermediaries.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Create Proposal</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Specify what you're offering and what you want in return</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Assets in Escrow</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Your offered assets are held securely in the smart contract</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Counterparty Accepts</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Target wallet or anyone can accept and complete the swap</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200">Automatic Exchange</h4>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">Assets are automatically exchanged between parties</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📝 Step-by-Step Guide
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Connect Your Wallet</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Connect your wallet and ensure you have 0.1 MON for the proposal fee.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Select Assets to Offer</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Choose ERC20 tokens or NFTs you want to trade from your wallet.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Specify Requested Assets</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Define exactly what assets you want to receive in exchange.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Set Target Wallet (Optional)</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Optionally specify a target wallet, or leave open for anyone to accept.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">5</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Submit Proposal</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Pay the 0.1 MON fee and submit your proposal to the blockchain.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    🎯 Supported Assets
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">💰</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">ERC20 Tokens</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">MON, USDC, USDT, CHOG, or any ERC20 token</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm">🎨</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">NFTs (ERC721)</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Unique NFTs from any collection</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">🔗</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">Mixed Assets</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Combine multiple tokens and NFTs in one proposal</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    ⚠️ Important Notes
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">0.1 MON proposal fee (non-refundable)</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Proposals expire after 1 hour</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Assets must be approved for trading</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-500" />
+                      <span className="text-gray-700 dark:text-gray-300 text-sm">Can be cancelled before acceptance</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                💡 Best Practices
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Fair Value Exchange</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Ensure your proposal offers fair value to attract potential traders.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Check Asset Approvals</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Make sure all assets are approved for trading before creating the proposal.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Monitor Actively</h4>
+                    <p className="text-yellow-600 dark:text-yellow-400 text-sm">Keep an eye on your proposals and be ready to accept counter-offers.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "swap-process":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Swap Process
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Understanding the complete swap process from proposal to completion on NadSwap V3.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🔄 Complete Swap Lifecycle
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 mb-4">
+                Every swap goes through several stages to ensure security and fairness for all parties.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="font-bold">1</span>
+                  </div>
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200">Proposal</h4>
+                  <p className="text-blue-600 dark:text-blue-400 text-sm">Created & Assets Escrowed</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="font-bold">2</span>
+                  </div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200">Discovery</h4>
+                  <p className="text-purple-600 dark:text-purple-400 text-sm">Visible to All Users</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="font-bold">3</span>
+                  </div>
+                  <h4 className="font-semibold text-green-800 dark:text-green-200">Acceptance</h4>
+                  <p className="text-green-600 dark:text-green-400 text-sm">Counterparty Accepts</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="font-bold">4</span>
+                  </div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Completion</h4>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-sm">Assets Exchanged</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📤 For Proposal Creators
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">1</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Create Proposal</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Pay 0.1 MON fee and lock assets in escrow</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">2</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Wait for Acceptance</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Proposal is visible to all users for 1 hour</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">3</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Receive Assets</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Get requested assets automatically when accepted</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  📥 For Acceptors
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">1</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Browse Proposals</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Find interesting swap proposals to accept</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">2</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Accept Proposal</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Pay 0.1 MON fee and provide requested assets</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">3</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Receive Assets</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Get offered assets automatically upon acceptance</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                🛡️ Security Features
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4">
+                NadSwap V3 includes comprehensive security measures to protect all participants.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Escrow Protection</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Assets locked in smart contract</li>
+                    <li>• No counterparty risk</li>
+                    <li>• Automatic asset exchange</li>
+                    <li>• Emergency withdrawal options</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Anti-Fraud Measures</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Asset ownership verification</li>
+                    <li>• Approval requirement checks</li>
+                    <li>• Gas griefing protection</li>
+                    <li>• Rate limiting on proposals</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                ⚡ Points & Rewards
+              </h3>
+              <p className="text-green-700 dark:text-green-300 mb-4">
+                Earn points for every swap activity to climb the leaderboard and compete with other traders.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">4pts</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Per Proposal Created</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-200">2pts</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Per Proposal Accepted</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                🔄 Possible Outcomes
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-green-800 dark:text-green-200">Completed</h4>
+                  <p className="text-green-600 dark:text-green-400 text-sm">Both parties receive their desired assets</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <X className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Cancelled</h4>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-sm">Creator cancels and assets are returned</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-red-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-red-800 dark:text-red-200">Expired</h4>
+                  <p className="text-red-600 dark:text-red-400 text-sm">Proposal expires and assets are returned</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "v3-features":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                NadSwap V3 Features
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6">
+                Explore the advanced features that make NadSwap V3 the most secure and efficient trading platform on Monad.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                🚀 Ultra-Secure Architecture
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 mb-4">
+                V3 introduces comprehensive security measures and gas optimizations for enterprise-grade trading.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Security Enhancements</h4>
+                  <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
+                    <li>• Reentrancy protection</li>
+                    <li>• Safe external calls</li>
+                    <li>• Gas griefing prevention</li>
+                    <li>• Emergency pause capability</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Performance Optimizations</h4>
+                  <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
+                    <li>• Optimized gas usage</li>
+                    <li>• Efficient storage patterns</li>
+                    <li>• Batch operations support</li>
+                    <li>• Automatic expiration cleanup</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔄 Escrow-Based Trading
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Advanced escrow system ensures secure asset exchange without counterparty risk.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Assets locked in smart contract</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Automatic asset verification</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Instant settlement on acceptance</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">Emergency withdrawal options</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🎯 Multi-Asset Support
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Trade any combination of ERC20 tokens and NFTs in a single proposal.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">💰</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">ERC20 Tokens</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">MON, USDC, USDT, and all ERC20 tokens</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm">🎨</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">NFTs (ERC721)</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Unique digital assets and collectibles</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">🔗</div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Batch Trading</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">Multiple assets in single proposal</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                ⚡ Advanced Trading Features
+              </h3>
+              <p className="text-green-700 dark:text-green-300 mb-4">
+                V3 includes powerful features for professional traders and casual users alike.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Proposal Management</h4>
+                  <ul className="text-sm text-green-600 dark:text-green-400 space-y-1">
+                    <li>• Flexible proposal duration (1 hour default)</li>
+                    <li>• Target wallet specification</li>
+                    <li>• Public or private proposals</li>
+                    <li>• Proposal cancellation before acceptance</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Discovery & Matching</h4>
+                  <ul className="text-sm text-green-600 dark:text-green-400 space-y-1">
+                    <li>• Real-time proposal browsing</li>
+                    <li>• Advanced filtering options</li>
+                    <li>• Asset type categorization</li>
+                    <li>• Value estimation tools</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                🔧 Developer Features
+              </h3>
+              <p className="text-purple-700 dark:text-purple-300 mb-4">
+                Built with developers in mind, offering comprehensive integration options.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Smart Contract Integration</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• Comprehensive ABI documentation</li>
+                    <li>• Event-driven architecture</li>
+                    <li>• Gas-optimized functions</li>
+                    <li>• Upgradeable proxy pattern</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Frontend SDK</h4>
+                  <ul className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+                    <li>• TypeScript/JavaScript hooks</li>
+                    <li>• Real-time event listeners</li>
+                    <li>• Automatic transaction handling</li>
+                    <li>• Error handling and recovery</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                📊 Analytics & Monitoring
+              </h3>
+              <p className="text-yellow-700 dark:text-yellow-300 mb-4">
+                Comprehensive analytics and monitoring tools for traders and administrators.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <BarChart3 className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Trading Volume</h4>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-sm">Real-time volume tracking</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Success Rates</h4>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-sm">Proposal completion analytics</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">User Activity</h4>
+                  <p className="text-yellow-600 dark:text-yellow-400 text-sm">Active trader metrics</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                🚨 Emergency Features
+              </h3>
+              <p className="text-red-700 dark:text-red-300 mb-4">
+                Built-in emergency features ensure user funds are always protected.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">For Users</h4>
+                  <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
+                    <li>• Emergency asset withdrawal</li>
+                    <li>• Proposal cancellation</li>
+                    <li>• Asset recovery assistance</li>
+                    <li>• Support ticket system</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">For Administrators</h4>
+                  <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
+                    <li>• Contract pause capability</li>
+                    <li>• Malicious proposal flagging</li>
+                    <li>• Asset blacklist management</li>
+                    <li>• Emergency fund recovery</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

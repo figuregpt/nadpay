@@ -1,14 +1,14 @@
-# NadPay Contract Deployment Guide
+# NadPay Ecosystem Contract Deployment Guide
 
 ## Prerequisites
 
 1. **Monad Testnet MON Tokens**: You need MON tokens for deployment
    - Get testnet tokens from Monad faucet
-   - Ensure you have enough for gas fees
+   - Ensure you have enough for gas fees (typically 0.1-0.5 MON per contract)
 
 2. **Private Key**: Export your wallet private key
    - ⚠️ **NEVER** commit private keys to git
-   - Use a dedicated deployment wallet
+   - Use a dedicated deployment wallet for security
 
 ## Deployment Steps
 
@@ -54,13 +54,25 @@ The deployment script will:
 - Save deployment info to `deployment-monadTestnet.json`
 - Attempt to verify the contract on Monad Explorer
 
-## Contract Features
+## Ecosystem Features
 
-- **Payment Link Creation**: Users can create payment links with custom parameters
-- **Decentralized Purchases**: All transactions are on-chain
-- **Platform Fee**: 1% fee (configurable by owner, max 5%)
-- **Security**: ReentrancyGuard and access controls
-- **Events**: All actions emit events for frontend integration
+### NadPay V2 Ultra-Secure
+- **Multi-Token Payments**: Support for MON and ERC20 tokens
+- **Ultra-Secure Architecture**: Reentrancy protection, rate limiting
+- **Emergency Controls**: Pause functionality and withdrawal limits
+- **Low Platform Fee**: 2% fee on all transactions
+
+### NadRaffle V7 Multi-Token
+- **Multi-Token Ticket Payments**: Accept any ERC20 token (MON, USDC, CHOG, etc.)
+- **Automatic Reward Distribution**: No manual claiming required
+- **2-Phase Security**: Sold out → winner selection → automatic distribution
+- **Ultra-Fast Finalizer**: Automated bot for instant raffle completion
+
+### NadSwap V3 Ultra-Secure
+- **Escrow-Based Trading**: Secure peer-to-peer asset swaps
+- **Multi-Asset Support**: Trade ERC20 tokens and NFTs
+- **Automatic Expiration**: Proposals expire after set duration
+- **Gas Griefing Protection**: Safe external calls with gas limits
 
 ## Network Configuration
 
@@ -107,16 +119,25 @@ If contract verification fails:
 - Test thoroughly on testnet before mainnet
 - Consider using a multisig for contract ownership
 
-## Contract Addresses
+## Current Contract Addresses
 
-### NadPay (Payment Links)
-- **Monad Testnet**: `0x17c31F99b27c10fbFF0aA241202DF687377DC24A`
+### NadPay V2 Ultra-Secure (Payment Links)
+- **Monad Testnet**: `0xfeF2c348d0c8a14b558df27034526d87Ac1f9f25`
+- **Features**: Multi-token payments, ultra-secure contracts, rate limiting
+- **Platform Fee**: 2%
+- **Security**: Reentrancy protection, emergency controls
 
-### NadRaffle (Raffle System) 
-- **Monad Testnet**: `0x3F5701E0d8c7e98106e63B5E45B6F88B0453d74e`
-- **Features**: Native MON token rewards, NFT rewards, auto-distribution
-- **Platform Fee**: 2% (200 basis points)
-- **Deployment Block**: 22854210
+### NadRaffle V7 Multi-Token (Raffle System)
+- **Monad Testnet**: `0xBd32ce277D91b6beD459454C7964528f54A54f75`
+- **Features**: Multi-token ticket payments (MON, USDC, CHOG, etc.), automatic reward distribution
+- **Platform Fee**: 2.5%
+- **Security**: 2-phase finalization, ultra-fast finalizer bot
+
+### NadSwap V3 Ultra-Secure (Asset Trading)
+- **Monad Testnet**: `0x982403dcb43b6aaD6E5425CC360fDBbc81FB6a3f`
+- **Features**: Escrow-based swaps, multi-asset support, automatic expiration
+- **Platform Fee**: 0.1 MON per proposal
+- **Security**: Safe transfers, gas griefing protection
 
 ## Support
 

@@ -1,11 +1,20 @@
 # Contract Address Update Summary
 
-## 🔄 Updated Contract Address
+> **⚠️ HISTORICAL NOTE**: This document refers to the V3 contract upgrade. The current active contract is **NadRaffle V7** at `0xBd32ce277D91b6beD459454C7964528f54A54f75` with multi-token support.
+
+## 🔄 V3 Contract Update (Historical)
 
 - **Old Address**: `0x83426a95730224330FE2BFE626E08bf7C67E16fb`
-- **New Address**: `0x55B20b9114B49E262eEDeea91684a3DBF83caf69`
+- **V3 Address**: `0x55B20b9114B49E262eEDeea91684a3DBF83caf69`
 - **Network**: Monad Testnet (Chain ID: 10143)
-- **Deployed**: June 24, 2025 - 19:32:18 UTC
+- **Deployed**: June 24, 2024 - 19:32:18 UTC
+
+## 🚀 Current Active Contract (V7)
+
+- **Current Address**: `0xBd32ce277D91b6beD459454C7964528f54A54f75`
+- **Version**: NadRaffle V7 Multi-Token
+- **Deployed**: July 2, 2024
+- **Key Features**: Multi-token ticket payments (MON, USDC, CHOG, etc.)
 
 ## 🔥 New Features Added
 
